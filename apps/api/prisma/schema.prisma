@@ -1,0 +1,230 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Trainer {
+  id                String    @id @default(uuid())
+  email             String    @unique
+  name              String?
+  stripeAccountId   String?   @map("stripe_account_id")
+  clients           Client[]
+  plans             WorkoutPlan[]
+  templates         WorkoutPlan[] @relation("TrainerTemplates")
+  socialAccounts    SocialAccount[]
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  @@map("trainers")
+}
+
+model Client {
+  id                String    @id @default(uuid())
+  trainerId         String    @map("trainer_id")
+  trainer           Trainer   @relation(fields: [trainerId], references: [id], onDelete: Cascade)
+  name              String
+  phone             String    @unique
+  instagramId       String?   @unique @map("instagram_id")
+  igHandle          String?   @map("ig_handle")
+  email             String?
+  goals             String?
+  notes             String?
+  status            ClientStatus @default(PENDING_PAYMENT)
+  timezone          String    @default("Europe/London")
+  preferredChannel  MessageChannel @default(WHATSAPP) @map("preferred_channel")
+  
+  assignments       PlanAssignment[]
+  checkIns          CheckIn[]
+  workoutLogs       WorkoutLog[]
+  payments          Payment[]
+  messages          Message[]
+  
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  @@map("clients")
+}
+
+enum MessageChannel {
+  WHATSAPP
+  INSTAGRAM
+}
+
+enum ClientStatus {
+  PENDING_PAYMENT
+  INTAKE_SENT
+  INTAKE_COMPLETE
+  PLAN_ASSIGNED
+  ACTIVE
+  PAUSED
+  INACTIVE
+}
+
+model WorkoutPlan {
+  id                String    @id @default(uuid())
+  trainerId         String    @map("trainer_id")
+  trainer           Trainer   @relation(fields: [trainerId], references: [id], onDelete: Cascade)
+  isTemplate        Boolean   @default(false) @map("is_template")
+  ownerTrainerId    String?   @map("owner_trainer_id")
+  ownerTrainer      Trainer?  @relation("TrainerTemplates", fields: [ownerTrainerId], references: [id])
+  title             String
+  description       String?
+  
+  days              WorkoutDay[]
+  assignments       PlanAssignment[]
+  
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  @@map("workout_plans")
+}
+
+model WorkoutDay {
+  id                String    @id @default(uuid())
+  planId            String    @map("plan_id")
+  plan              WorkoutPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  dayNumber         Int       @map("day_number")
+  title             String?
+  
+  exercises         WorkoutExercise[]
+
+  @@map("workout_days")
+}
+
+model WorkoutExercise {
+  id                String    @id @default(uuid())
+  dayId             String    @map("day_id")
+  day               WorkoutDay @relation(fields: [dayId], references: [id], onDelete: Cascade)
+  exerciseId        String    @map("exercise_id")
+  exercise          Exercise  @relation(fields: [exerciseId], references: [id])
+  order             Int
+  sets              Int
+  reps              String?
+  rest              String?
+  notes             String?
+
+  @@map("workout_exercises")
+}
+
+model Exercise {
+  id                String    @id @default(uuid())
+  name              String    @unique
+  category          String
+  muscles           String[]
+  demoVideoUrl      String?   @map("demo_video_url")
+  workoutExercises  WorkoutExercise[]
+
+  @@map("exercises")
+}
+
+model PlanAssignment {
+  id                String    @id @default(uuid())
+  clientId          String    @map("client_id")
+  client            Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  planId            String    @map("plan_id")
+  plan              WorkoutPlan @relation(fields: [planId], references: [id])
+  startDate         DateTime  @map("start_date")
+  scheduleDays      Int[]     @map("schedule_days") // [1, 3, 5] for Mon, Wed, Fri
+  isActive          Boolean   @default(true) @map("is_active")
+  compliance        Int       @default(100)
+  workoutLogs       WorkoutLog[]
+
+  @@map("plan_assignments")
+}
+
+model CheckIn {
+  id                String    @id @default(uuid())
+  clientId          String    @map("client_id")
+  client            Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  weight            Float?
+  energy            Int?      // 1-5
+  sleep             String?
+  notes             String?
+  photoUrl          String?   @map("photo_url")
+  
+  createdAt         DateTime  @default(now()) @map("created_at")
+
+  @@map("check_ins")
+}
+
+model WorkoutLog {
+  id                String    @id @default(uuid())
+  clientId          String    @map("client_id")
+  client            Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  assignmentId      String    @map("assignment_id")
+  assignment        PlanAssignment @relation(fields: [assignmentId], references: [id])
+  dayNumber         Int       @map("day_number")
+  status            WorkoutStatus @default(COMPLETED)
+  notes             String?
+  
+  createdAt         DateTime  @default(now()) @map("created_at")
+
+  @@map("workout_logs")
+}
+
+enum WorkoutStatus {
+  COMPLETED
+  SKIPPED
+  MODIFIED
+}
+
+model Payment {
+  id                String    @id @default(uuid())
+  clientId          String    @map("client_id")
+  client            Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  stripeSessionId   String    @unique @map("stripe_session_id")
+  amount            Int       // In cents
+  currency          String    @default("gbp")
+  status            PaymentStatus @default(PENDING)
+  
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  @@map("payments")
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+}
+
+model Message {
+  id                String    @id @default(uuid())
+  clientId          String    @map("client_id")
+  client            Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  channel           MessageChannel
+  direction         MessageDirection
+  content           String
+  metaMessageId     String?   @unique @map("meta_message_id")
+  status            String?   // delivered, read, etc.
+  
+  createdAt         DateTime  @default(now()) @map("created_at")
+
+  @@map("messages")
+}
+
+enum MessageDirection {
+  INBOUND
+  OUTBOUND
+}
+
+model SocialAccount {
+  id                String    @id @default(uuid())
+  trainerId         String    @map("trainer_id")
+  trainer           Trainer   @relation(fields: [trainerId], references: [id], onDelete: Cascade)
+  platform          MessageChannel
+  platformId        String    @map("platform_id")
+  accessToken       String    @map("access_token")
+  pageId            String?   @map("page_id") // For IG
+  
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  @@map("social_accounts")
+}
