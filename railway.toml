@@ -1,9 +1,9 @@
 [build]
 builder = "nixpacks"
-buildCommand = "pnpm install && pnpm build"
+buildCommand = "pnpm install && pnpm --filter @fitflow/api build"
 
 [deploy]
-startCommand = "pnpm start"
+startCommand = "pnpm --filter @fitflow/api start"
 healthcheckPath = "/health"
 healthcheckTimeout = 100
 restartPolicyType = "on_failure"

@@ -23,7 +23,8 @@ const avatarGradients = [
 ];
 
 const getAvatarGradient = (name: string) => {
-    const index = name.charCodeAt(0) % avatarGradients.length;
+    const codePoint = name.codePointAt(0) || 0;
+    const index = codePoint % avatarGradients.length;
     return avatarGradients[index];
 };
 
@@ -46,7 +47,7 @@ export const ClientCard = ({ client }: { client: Client }) => {
                         "avatar-md bg-gradient-to-br text-white shadow-inner",
                         gradient
                     )}>
-                        {client.name.charAt(0)}
+                        {Array.from(client.name)[0]}
                     </div>
                     <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button
