@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { CheckCircle2, Loader2, Dumbbell, Activity, Heart } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 
-export default function OnboardingPage() {
+function OnboardingContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
     const clientId = searchParams.get("id");
@@ -237,6 +237,18 @@ export default function OnboardingPage() {
                 </AnimatePresence>
             </div>
         </div>
+    );
+}
+
+export default function OnboardingPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen bg-black text-white flex items-center justify-center">
+                <Loader2 className="h-10 w-10 animate-spin text-brand-blue" />
+            </div>
+        }>
+            <OnboardingContent />
+        </Suspense>
     );
 }
 
