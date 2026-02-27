@@ -12,6 +12,7 @@ import paymentWebhookRouter from "./routes/payment-webhook";
 import analyticsRouter from "./routes/analytics";
 import intakeRouter from "./routes/intake";
 import messagesRouter from "./routes/messages";
+import flowsRouter from "./routes/flows";
 import "./workers/workoutProcessor"; // Starts the BullMQ worker
 import { startDailyScheduler } from "./jobs/daily-scheduler";
 import { startWeeklyCheckinScheduler } from "./jobs/weekly-checkin";
@@ -52,6 +53,7 @@ app.use("/payments", paymentWebhookRouter);
 app.use("/analytics", analyticsRouter);
 app.use("/intake", intakeRouter);
 app.use("/messages", messagesRouter);
+app.use("/flows", flowsRouter);
 
 // 404
 app.use((_req: Request, res: Response) => {

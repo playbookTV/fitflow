@@ -1,0 +1,202 @@
+{
+  "version": "5.0",
+  "screens": [
+    {
+      "id": "WEIGHT",
+      "title": "Weekly Check-in",
+      "data": {},
+      "layout": {
+        "type": "SingleColumnLayout",
+        "children": [
+          {
+            "type": "TextHeading",
+            "text": "Current Weight"
+          },
+          {
+            "type": "TextBody",
+            "text": "What's your weight this week?"
+          },
+          {
+            "type": "TextInput",
+            "name": "weight",
+            "label": "Weight",
+            "input-type": "number",
+            "required": true,
+            "helper-text": "Enter your weight"
+          },
+          {
+            "type": "Dropdown",
+            "name": "weight_unit",
+            "label": "Unit",
+            "required": true,
+            "data-source": [
+              { "id": "kg", "title": "kg" },
+              { "id": "lbs", "title": "lbs" }
+            ]
+          },
+          {
+            "type": "Footer",
+            "label": "Next",
+            "on-click-action": {
+              "name": "navigate",
+              "next": {
+                "type": "screen",
+                "name": "ENERGY"
+              },
+              "payload": {
+                "weight": "${form.weight}",
+                "weight_unit": "${form.weight_unit}"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "ENERGY",
+      "title": "Energy Level",
+      "data": {
+        "weight": { "type": "string", "__example__": "75" },
+        "weight_unit": { "type": "string", "__example__": "kg" }
+      },
+      "layout": {
+        "type": "SingleColumnLayout",
+        "children": [
+          {
+            "type": "TextHeading",
+            "text": "How's your energy?"
+          },
+          {
+            "type": "TextBody",
+            "text": "Rate your overall energy this week"
+          },
+          {
+            "type": "RadioButtonsGroup",
+            "name": "energy",
+            "label": "Energy Level",
+            "required": true,
+            "data-source": [
+              { "id": "1", "title": "1 - Very Low" },
+              { "id": "2", "title": "2 - Low" },
+              { "id": "3", "title": "3 - Moderate" },
+              { "id": "4", "title": "4 - High" },
+              { "id": "5", "title": "5 - Excellent" }
+            ]
+          },
+          {
+            "type": "Footer",
+            "label": "Next",
+            "on-click-action": {
+              "name": "navigate",
+              "next": {
+                "type": "screen",
+                "name": "SLEEP"
+              },
+              "payload": {
+                "weight": "${data.weight}",
+                "weight_unit": "${data.weight_unit}",
+                "energy": "${form.energy}"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "SLEEP",
+      "title": "Sleep Quality",
+      "data": {
+        "weight": { "type": "string", "__example__": "75" },
+        "weight_unit": { "type": "string", "__example__": "kg" },
+        "energy": { "type": "string", "__example__": "4" }
+      },
+      "layout": {
+        "type": "SingleColumnLayout",
+        "children": [
+          {
+            "type": "TextHeading",
+            "text": "Sleep Quality"
+          },
+          {
+            "type": "TextBody",
+            "text": "How well have you been sleeping?"
+          },
+          {
+            "type": "Dropdown",
+            "name": "sleep",
+            "label": "Sleep Quality",
+            "required": true,
+            "data-source": [
+              { "id": "excellent", "title": "Excellent - 8+ hours, restful" },
+              { "id": "good", "title": "Good - 7+ hours, mostly restful" },
+              { "id": "ok", "title": "OK - 6+ hours, some issues" },
+              { "id": "poor", "title": "Poor - Less than 6 hours or restless" }
+            ]
+          },
+          {
+            "type": "Footer",
+            "label": "Next",
+            "on-click-action": {
+              "name": "navigate",
+              "next": {
+                "type": "screen",
+                "name": "NOTES"
+              },
+              "payload": {
+                "weight": "${data.weight}",
+                "weight_unit": "${data.weight_unit}",
+                "energy": "${data.energy}",
+                "sleep": "${form.sleep}"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "NOTES",
+      "title": "Additional Notes",
+      "data": {
+        "weight": { "type": "string", "__example__": "75" },
+        "weight_unit": { "type": "string", "__example__": "kg" },
+        "energy": { "type": "string", "__example__": "4" },
+        "sleep": { "type": "string", "__example__": "good" }
+      },
+      "layout": {
+        "type": "SingleColumnLayout",
+        "children": [
+          {
+            "type": "TextHeading",
+            "text": "Any issues this week?"
+          },
+          {
+            "type": "TextBody",
+            "text": "Pain, injuries, stress, or anything else your trainer should know?"
+          },
+          {
+            "type": "TextArea",
+            "name": "notes",
+            "label": "Notes (optional)",
+            "required": false,
+            "helper-text": "Leave blank if nothing to report"
+          },
+          {
+            "type": "Footer",
+            "label": "Submit Check-in",
+            "on-click-action": {
+              "name": "complete",
+              "payload": {
+                "weight": "${data.weight}",
+                "weight_unit": "${data.weight_unit}",
+                "energy": "${data.energy}",
+                "sleep": "${data.sleep}",
+                "notes": "${form.notes}",
+                "flow_type": "weekly_checkin"
+              }
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

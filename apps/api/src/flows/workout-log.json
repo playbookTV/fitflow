@@ -1,0 +1,137 @@
+{
+  "version": "5.0",
+  "screens": [
+    {
+      "id": "STATUS",
+      "title": "Workout Log",
+      "data": {},
+      "layout": {
+        "type": "SingleColumnLayout",
+        "children": [
+          {
+            "type": "TextHeading",
+            "text": "How did your workout go?"
+          },
+          {
+            "type": "TextBody",
+            "text": "Let us know how you completed today's session"
+          },
+          {
+            "type": "RadioButtonsGroup",
+            "name": "status",
+            "label": "Workout Status",
+            "required": true,
+            "data-source": [
+              { "id": "COMPLETED", "title": "Completed as planned" },
+              { "id": "MODIFIED", "title": "Modified (adjusted exercises/weights)" },
+              { "id": "SKIPPED", "title": "Skipped today" }
+            ]
+          },
+          {
+            "type": "Footer",
+            "label": "Next",
+            "on-click-action": {
+              "name": "navigate",
+              "next": {
+                "type": "screen",
+                "name": "RPE"
+              },
+              "payload": {
+                "status": "${form.status}"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "RPE",
+      "title": "Effort Level",
+      "data": {
+        "status": { "type": "string", "__example__": "COMPLETED" }
+      },
+      "layout": {
+        "type": "SingleColumnLayout",
+        "children": [
+          {
+            "type": "TextHeading",
+            "text": "Rate Your Effort (RPE)"
+          },
+          {
+            "type": "TextBody",
+            "text": "How hard did you push? 1 = very easy, 10 = max effort"
+          },
+          {
+            "type": "RadioButtonsGroup",
+            "name": "rpe",
+            "label": "RPE (1-10)",
+            "required": true,
+            "data-source": [
+              { "id": "1", "title": "1-2: Very Easy" },
+              { "id": "3", "title": "3-4: Light" },
+              { "id": "5", "title": "5-6: Moderate" },
+              { "id": "7", "title": "7-8: Hard" },
+              { "id": "9", "title": "9-10: Maximum" }
+            ]
+          },
+          {
+            "type": "Footer",
+            "label": "Next",
+            "on-click-action": {
+              "name": "navigate",
+              "next": {
+                "type": "screen",
+                "name": "NOTES"
+              },
+              "payload": {
+                "status": "${data.status}",
+                "rpe": "${form.rpe}"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "NOTES",
+      "title": "Session Notes",
+      "data": {
+        "status": { "type": "string", "__example__": "COMPLETED" },
+        "rpe": { "type": "string", "__example__": "7" }
+      },
+      "layout": {
+        "type": "SingleColumnLayout",
+        "children": [
+          {
+            "type": "TextHeading",
+            "text": "Any notes?"
+          },
+          {
+            "type": "TextBody",
+            "text": "PRs, modifications, or anything else?"
+          },
+          {
+            "type": "TextArea",
+            "name": "notes",
+            "label": "Notes (optional)",
+            "required": false,
+            "helper-text": "e.g. 'Hit a new squat PR!' or 'Skipped deadlifts - back tightness'"
+          },
+          {
+            "type": "Footer",
+            "label": "Submit Workout Log",
+            "on-click-action": {
+              "name": "complete",
+              "payload": {
+                "status": "${data.status}",
+                "rpe": "${data.rpe}",
+                "notes": "${form.notes}",
+                "flow_type": "workout_log"
+              }
+            }
+          }
+        ]
+      }
+    }
+  ]
+}
