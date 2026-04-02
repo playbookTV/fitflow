@@ -79,8 +79,8 @@ function OnboardingContent() {
                         </div>
                         <h2 className="text-2xl font-bold mb-2">You're All Set!</h2>
                         <p className="text-text-secondary mb-8">
-                            Thanks {clientName || "there"}! Your goals and info have been sent to your trainer.
-                            They will notify you on WhatsApp once your custom plan is ready.
+                            Thanks {clientName || "there"}! Your goals and info have been sent to your coach.
+                            They will notify you once your custom plan is ready.
                         </p>
                         <button onClick={() => window.close()} className="btn-secondary">
                             Close Window
@@ -197,7 +197,7 @@ function OnboardingContent() {
                                                 />
                                             </div>
                                             <p className="text-[10px] text-text-faint italic font-mono uppercase tracking-widest">
-                                                Note: This information is only visible to your trainer.
+                                                Note: This information is only visible to your coach.
                                             </p>
                                         </div>
                                     </div>

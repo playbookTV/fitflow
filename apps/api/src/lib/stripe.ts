@@ -6,7 +6,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
 
 export const createCheckoutSession = async (
     clientId: string,
-    trainerId: string,
+    coachId: string,
     successUrl: string,
     cancelUrl: string
 ) => {
@@ -33,7 +33,7 @@ export const createCheckoutSession = async (
         cancel_url: cancelUrl,
         metadata: {
             clientId,
-            trainerId,
+            coachId,
         },
         client_reference_id: clientId,
     });

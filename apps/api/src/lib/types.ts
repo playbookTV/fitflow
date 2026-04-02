@@ -2,6 +2,7 @@ export enum JobType {
     WORKOUT_DELIVERY = "WORKOUT_DELIVERY",
     CHECKIN_REMINDER = "CHECKIN_REMINDER",
     ONBOARDING_INTAKE = "ONBOARDING_INTAKE",
+    RENEWAL_REMINDER = "RENEWAL_REMINDER",
 }
 
 export interface WorkoutDeliveryJob {
@@ -12,17 +13,17 @@ export interface WorkoutDeliveryJob {
 
 export interface CheckinReminderJob {
     clientId: string;
-    trainerId: string;
+    coachId: string;
 }
 
 export interface OnboardingIntakeJob {
     clientId: string;
-    trainerId: string;
+    coachId: string;
 }
 
 export interface ProcessMessageJob {
     clientId: string;
-    trainerId: string;
+    coachId: string;
     body: string;
     messageSid: string;
 }

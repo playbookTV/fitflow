@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { DashboardStats } from "@/components/DashboardStats";
 import { ClientGrid } from "@/components/ClientGrid";
 import { DashboardLayout } from "@/components/DashboardLayout";
-import { Search, Filter, RefreshCcw, MessageSquare, Plus } from "lucide-react";
+import { Search, Filter, RefreshCcw, MessageSquare, Plus, Send, UserPlus } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
@@ -15,15 +15,19 @@ interface Stats {
     averageCompliance: number;
     revenue: number;
     atRiskClients: Array<{ id: string; name: string }>;
+    channels?: { whatsapp: number; telegram: number };
+    newLeads?: number;
 }
 
 interface Client {
     id: string;
     name: string;
     status: string;
-    phone: string;
+    phone: string | null;
     email?: string;
     goals?: string;
+    preferredChannel?: "WHATSAPP" | "TELEGRAM";
+    telegramChatId?: string | null;
 }
 
 export default function DashboardPage() {
@@ -106,6 +110,37 @@ export default function DashboardPage() {
 
                 {/* Stats */}
                 <DashboardStats stats={stats} loading={loading} />
+
+                {/* Channel Breakdown & Leads */}
+                {!loading && (stats.channels || stats.newLeads) && (
+                    <div className="flex flex-wrap gap-4 mb-10 animate-fade-in">
+                        {stats.channels && (
+                            <div className="card p-4 flex items-center gap-4">
+                                <div className="flex items-center gap-2 text-sm">
+                                    <MessageSquare className="w-4 h-4 text-brand-green" />
+                                    <span className="text-text-secondary">WhatsApp</span>
+                                    <span className="font-bold text-white">{stats.channels.whatsapp}</span>
+                                </div>
+                                <div className="w-px h-6 bg-border" />
+                                <div className="flex items-center gap-2 text-sm">
+                                    <Send className="w-4 h-4 text-brand-blue" />
+                                    <span className="text-text-secondary">Telegram</span>
+                                    <span className="font-bold text-white">{stats.channels.telegram}</span>
+                                </div>
+                            </div>
+                        )}
+                        {(stats.newLeads ?? 0) > 0 && (
+                            <Link
+                                href="/dashboard/leads"
+                                className="card p-4 flex items-center gap-3 hover:border-brand-orange/30 transition-colors"
+                            >
+                                <UserPlus className="w-4 h-4 text-brand-orange" />
+                                <span className="text-sm text-text-secondary">New Leads</span>
+                                <span className="badge badge-orange">{stats.newLeads}</span>
+                            </Link>
+                        )}
+                    </div>
+                )}
 
                 {/* At Risk Alerts */}
                 {stats.atRiskClients?.length > 0 && (

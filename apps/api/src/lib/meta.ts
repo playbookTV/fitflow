@@ -6,9 +6,6 @@ const WA_ACCESS_TOKEN = process.env.META_WHATSAPP_ACCESS_TOKEN;
 const WA_PHONE_NUMBER_ID = process.env.META_WHATSAPP_PHONE_NUMBER_ID;
 const WA_BUSINESS_ACCOUNT_ID = process.env.META_WHATSAPP_BUSINESS_ACCOUNT_ID;
 
-const IG_ACCESS_TOKEN = process.env.META_INSTAGRAM_PAGE_ACCESS_TOKEN || WA_ACCESS_TOKEN;
-const IG_PAGE_ID = process.env.META_INSTAGRAM_PAGE_ID;
-
 const VERSION = "v22.0";
 
 // ═══════════════════════════════════════════════════════════════
@@ -260,7 +257,7 @@ export const sendCheckinFlow = async (
         flowId,
         flowToken,
         "Weekly Check-in",
-        "Hey! It's time for your weekly check-in. This helps your trainer track your progress.",
+        "Hey! It's time for your weekly check-in. This helps your coach track your progress.",
         "Takes less than 1 minute",
         "Start Check-in",
         "WEIGHT",
@@ -347,100 +344,14 @@ export const sendWhatsAppMessage = async (to: string, bodyOrTemplate: string | o
 };
 
 /**
- * Sends an Instagram DM.
- */
-export const sendInstagramMessage = async (recipientId: string, text: string, clientId?: string) => {
-    if (!IG_ACCESS_TOKEN) throw new Error("Instagram API configuration missing");
-
-    const url = `https://graph.facebook.com/${VERSION}/me/messages`;
-
-    const data = {
-        recipient: { id: recipientId },
-        message: { text },
-    };
-
-    try {
-        const response = await axios.post(url, data, {
-            headers: { Authorization: `Bearer ${IG_ACCESS_TOKEN}` },
-        });
-
-        const result = response.data;
-
-        if (clientId && result.message_id) {
-            await prisma.message.create({
-                data: {
-                    clientId,
-                    channel: MessageChannel.INSTAGRAM,
-                    direction: MessageDirection.OUTBOUND,
-                    content: text,
-                    metaMessageId: result.message_id,
-                    status: "sent",
-                },
-            });
-        }
-
-        return result;
-    } catch (error: any) {
-        console.error("[IG API Error]", error.response?.data || error.message);
-        throw error;
-    }
-};
-
-/**
- * Sends an Instagram Quick Reply.
- */
-export const sendInstagramQuickReplies = async (recipientId: string, text: string, quickReplies: { title: string, payload: string }[], clientId?: string) => {
-    if (!IG_ACCESS_TOKEN) throw new Error("Instagram API configuration missing");
-
-    const url = `https://graph.facebook.com/${VERSION}/me/messages`;
-
-    const data = {
-        recipient: { id: recipientId },
-        message: {
-            text,
-            quick_replies: quickReplies.map(qr => ({
-                content_type: "text",
-                title: qr.title,
-                payload: qr.payload,
-            })),
-        },
-    };
-
-    try {
-        const response = await axios.post(url, data, {
-            headers: { Authorization: `Bearer ${IG_ACCESS_TOKEN}` },
-        });
-
-        const result = response.data;
-
-        if (clientId && result.message_id) {
-            await prisma.message.create({
-                data: {
-                    clientId,
-                    channel: MessageChannel.INSTAGRAM,
-                    direction: MessageDirection.OUTBOUND,
-                    content: text,
-                    metaMessageId: result.message_id,
-                    status: "sent",
-                },
-            });
-        }
-
-        return result;
-    } catch (error: any) {
-        console.error("[IG API QuickReply Error]", error.response?.data || error.message);
-        throw error;
-    }
-};
-
-/**
  * Generalized sender based on channel.
+ * Currently only supports WhatsApp. Telegram will be added via the channel abstraction layer.
  */
 export const sendMessage = async (channel: MessageChannel, to: string, content: string | any, clientId?: string) => {
     if (channel === MessageChannel.WHATSAPP) {
         return sendWhatsAppMessage(to, content, clientId);
-    } else {
-        return sendInstagramMessage(to, content, clientId);
     }
+
+    throw new Error(`Unsupported channel: ${channel}`);
 };
 

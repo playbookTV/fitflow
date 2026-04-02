@@ -4,17 +4,17 @@ import { prisma } from "../lib/prisma";
 
 const router: Router = Router();
 
-// GET /clients - List all clients for the authenticated trainer
+// GET /clients - List all clients for the authenticated coach
 router.get("/", authenticate, async (req: AuthRequest, res: Response) => {
-    const trainerId = req.user?.id as string;
+    const coachId = req.user?.id as string;
 
-    if (!trainerId) {
+    if (!coachId) {
         return res.status(401).json({ error: "Unauthorized" });
     }
 
     try {
         const clients = await prisma.client.findMany({
-            where: { trainerId },
+            where: { coachId },
             orderBy: { createdAt: "desc" },
         });
         res.json(clients);
@@ -26,15 +26,15 @@ router.get("/", authenticate, async (req: AuthRequest, res: Response) => {
 
 // POST /clients - Create a new client
 router.post("/", authenticate, async (req: AuthRequest, res: Response) => {
-    const trainerId = req.user?.id as string;
+    const coachId = req.user?.id as string;
     const { name, phone, email, goals, notes } = req.body;
 
-    if (!trainerId) return res.status(401).json({ error: "Unauthorized" });
+    if (!coachId) return res.status(401).json({ error: "Unauthorized" });
 
     try {
         const client = await prisma.client.create({
             data: {
-                trainerId,
+                coachId,
                 name,
                 phone,
                 email,
@@ -51,14 +51,14 @@ router.post("/", authenticate, async (req: AuthRequest, res: Response) => {
 
 // GET /clients/:id - Get single client details
 router.get("/:id", authenticate, async (req: AuthRequest, res: Response) => {
-    const trainerId = req.user?.id as string;
+    const coachId = req.user?.id as string;
     const { id } = req.params;
 
-    if (!trainerId) return res.status(401).json({ error: "Unauthorized" });
+    if (!coachId) return res.status(401).json({ error: "Unauthorized" });
 
     try {
         const client = await prisma.client.findFirst({
-            where: { id: id as string, trainerId },
+            where: { id: id as string, coachId },
             include: {
                 assignments: {
                     include: { plan: true },
@@ -90,15 +90,15 @@ router.get("/:id", authenticate, async (req: AuthRequest, res: Response) => {
 
 // PATCH /clients/:id - Update client
 router.patch("/:id", authenticate, async (req: AuthRequest, res: Response) => {
-    const trainerId = req.user?.id as string;
+    const coachId = req.user?.id as string;
     const { id } = req.params;
     const data = req.body;
 
-    if (!trainerId) return res.status(401).json({ error: "Unauthorized" });
+    if (!coachId) return res.status(401).json({ error: "Unauthorized" });
 
     try {
         const client = await prisma.client.update({
-            where: { id: id as string, trainerId },
+            where: { id: id as string, coachId },
             data,
         });
         res.json(client);

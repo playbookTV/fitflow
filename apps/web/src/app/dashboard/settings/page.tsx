@@ -13,10 +13,12 @@ import {
     Check,
     ExternalLink,
     Smartphone,
+    Send,
+    Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-interface TrainerProfile {
+interface CoachProfile {
     id: string;
     name: string;
     email: string;
@@ -30,6 +32,8 @@ interface TrainerProfile {
     };
     stripeConnected: boolean;
     whatsappConnected: boolean;
+    telegramConnected: boolean;
+    telegramBotUsername: string | null;
 }
 
 type TabId = "profile" | "notifications" | "integrations" | "billing";
@@ -55,7 +59,7 @@ export default function SettingsPage() {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [saved, setSaved] = useState(false);
-    const [profile, setProfile] = useState<TrainerProfile>({
+    const [profile, setProfile] = useState<CoachProfile>({
         id: "",
         name: "",
         email: "",
@@ -69,14 +73,18 @@ export default function SettingsPage() {
         },
         stripeConnected: false,
         whatsappConnected: false,
+        telegramConnected: false,
+        telegramBotUsername: null,
     });
+    const [botToken, setBotToken] = useState("");
+    const [provisioningBot, setProvisioningBot] = useState(false);
 
     useEffect(() => {
         const fetchProfile = async () => {
             try {
                 const token = localStorage.getItem("token");
                 const response = await fetch(
-                    `${process.env.NEXT_PUBLIC_API_URL}/trainers/me`,
+                    `${process.env.NEXT_PUBLIC_API_URL}/coaches/me`,
                     {
                         headers: { Authorization: `Bearer ${token}` },
                     }
@@ -99,7 +107,7 @@ export default function SettingsPage() {
         try {
             const token = localStorage.getItem("token");
             const response = await fetch(
-                `${process.env.NEXT_PUBLIC_API_URL}/trainers/me`,
+                `${process.env.NEXT_PUBLIC_API_URL}/coaches/me`,
                 {
                     method: "PATCH",
                     headers: {
@@ -126,11 +134,43 @@ export default function SettingsPage() {
         }
     };
 
-    const updateProfile = (updates: Partial<TrainerProfile>) => {
+    const updateProfile = (updates: Partial<CoachProfile>) => {
         setProfile((prev) => ({ ...prev, ...updates }));
     };
 
-    const updateNotification = (key: keyof TrainerProfile["notifications"], value: boolean) => {
+    const handleProvisionTelegram = async () => {
+        if (!botToken.trim()) return;
+        setProvisioningBot(true);
+        try {
+            const token = localStorage.getItem("token");
+            const response = await fetch(
+                `${process.env.NEXT_PUBLIC_API_URL}/coaches/provision-telegram`,
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`,
+                    },
+                    body: JSON.stringify({ botToken: botToken.trim() }),
+                }
+            );
+            if (response.ok) {
+                const data = await response.json();
+                setProfile((prev) => ({
+                    ...prev,
+                    telegramConnected: true,
+                    telegramBotUsername: data.botUsername,
+                }));
+                setBotToken("");
+            }
+        } catch (error) {
+            console.error("Failed to provision Telegram bot:", error);
+        } finally {
+            setProvisioningBot(false);
+        }
+    };
+
+    const updateNotification = (key: keyof CoachProfile["notifications"], value: boolean) => {
         setProfile((prev) => ({
             ...prev,
             notifications: { ...prev.notifications, [key]: value },
@@ -400,6 +440,56 @@ export default function SettingsPage() {
                                                 <ExternalLink className="w-3.5 h-3.5" />
                                             </button>
                                         </div>
+                                    </div>
+
+                                    <div className="card p-6">
+                                        <h3 className="text-lg font-semibold text-white mb-6 flex items-center gap-2">
+                                            <Send className="w-5 h-5 text-brand-blue" />
+                                            Telegram Bot
+                                        </h3>
+                                        {profile.telegramConnected ? (
+                                            <div className="flex items-center justify-between p-4 rounded-xl bg-bg-hover">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-brand-blue/10 text-brand-blue">
+                                                        <Send className="w-5 h-5" />
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-medium text-white">Connected</p>
+                                                        <p className="text-sm text-text-faint">
+                                                            @{profile.telegramBotUsername}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <span className="badge badge-green">Active</span>
+                                            </div>
+                                        ) : (
+                                            <div className="space-y-4">
+                                                <p className="text-sm text-text-secondary">
+                                                    Connect a Telegram bot to deliver workouts and check-ins via Telegram.
+                                                    Create a bot with @BotFather and paste the token below.
+                                                </p>
+                                                <div className="flex gap-3">
+                                                    <input
+                                                        type="text"
+                                                        value={botToken}
+                                                        onChange={(e) => setBotToken(e.target.value)}
+                                                        className="input flex-1"
+                                                        placeholder="Paste bot token here..."
+                                                    />
+                                                    <button
+                                                        onClick={handleProvisionTelegram}
+                                                        disabled={provisioningBot || !botToken.trim()}
+                                                        className="btn-primary"
+                                                    >
+                                                        {provisioningBot ? (
+                                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                                        ) : (
+                                                            "Connect"
+                                                        )}
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
 
                                     <div className="card p-6">

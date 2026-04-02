@@ -49,7 +49,7 @@ export const startWeeklyCheckinScheduler = () => {
                         JobType.CHECKIN_REMINDER,
                         {
                             clientId: client.id,
-                            trainerId: client.trainerId
+                            coachId: client.coachId
                         },
                         { delay }
                     );

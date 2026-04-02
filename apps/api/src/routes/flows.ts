@@ -133,7 +133,7 @@ router.delete("/:flowId", authenticate, async (req: AuthRequest, res) => {
  * Body: { clientId: string, flowId: string, mode?: "draft" | "published" }
  */
 router.post("/send/checkin", authenticate, async (req: AuthRequest, res) => {
-    const trainerId = req.user?.id;
+    const coachId = req.user?.id;
     const { clientId, flowId, mode = "published" } = req.body;
 
     if (!clientId || !flowId) {
@@ -142,11 +142,15 @@ router.post("/send/checkin", authenticate, async (req: AuthRequest, res) => {
 
     try {
         const client = await prisma.client.findFirst({
-            where: { id: clientId, trainerId },
+            where: { id: clientId, coachId },
         });
 
         if (!client) {
             return res.status(404).json({ error: "Client not found" });
+        }
+
+        if (!client.phone) {
+            return res.status(400).json({ error: "Client has no phone number for WhatsApp Flow" });
         }
 
         const result = await sendCheckinFlow(client.phone, flowId, clientId, mode);
@@ -162,7 +166,7 @@ router.post("/send/checkin", authenticate, async (req: AuthRequest, res) => {
  * Body: { clientId: string, flowId: string, mode?: "draft" | "published" }
  */
 router.post("/send/workout", authenticate, async (req: AuthRequest, res) => {
-    const trainerId = req.user?.id;
+    const coachId = req.user?.id;
     const { clientId, flowId, mode = "published" } = req.body;
 
     if (!clientId || !flowId) {
@@ -171,11 +175,15 @@ router.post("/send/workout", authenticate, async (req: AuthRequest, res) => {
 
     try {
         const client = await prisma.client.findFirst({
-            where: { id: clientId, trainerId },
+            where: { id: clientId, coachId },
         });
 
         if (!client) {
             return res.status(404).json({ error: "Client not found" });
+        }
+
+        if (!client.phone) {
+            return res.status(400).json({ error: "Client has no phone number for WhatsApp Flow" });
         }
 
         const result = await sendWorkoutLogFlow(client.phone, flowId, clientId, mode);

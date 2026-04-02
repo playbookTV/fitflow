@@ -3,16 +3,17 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { cn, formatRelative, complianceColor } from "@/lib/utils";
-import { Plus, Search, ArrowUpRight } from "lucide-react";
+import { Plus, Search, ArrowUpRight, MessageSquare, Send } from "lucide-react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { StatusBadge } from "@/components/ui";
 
 interface Client {
     id: string;
     name: string;
-    phone: string;
+    phone: string | null;
     email?: string;
     status: string;
+    preferredChannel?: "WHATSAPP" | "TELEGRAM";
     compliance?: number;
     lastCheckIn?: string;
     createdAt: string;
@@ -56,7 +57,7 @@ export default function ClientsPage() {
 
     const filteredClients = clients.filter((client) => {
         const matchesSearch = client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            client.phone.includes(searchQuery);
+            (client.phone?.includes(searchQuery) ?? false);
         const matchesStatus = !statusFilter || client.status === statusFilter;
         return matchesSearch && matchesStatus;
     });
@@ -111,11 +112,13 @@ export default function ClientsPage() {
             {/* Table */}
             {loading ? (
                 <div className="card overflow-hidden">
-                    <div className="data-table-header grid-cols-[1fr_180px_140px_120px]">
+                    <div className="data-table-header grid-cols-[1fr_80px_160px_120px_100px_40px]">
                         <span className="label-mono">Name & Contact</span>
+                        <span className="label-mono">Channel</span>
                         <span className="label-mono">Status</span>
                         <span className="label-mono">Compliance</span>
                         <span className="label-mono">Last Seen</span>
+                        <span></span>
                     </div>
                     {[1, 2, 3, 4, 5].map((i) => (
                         <div key={i} className="skeleton h-[72px]" />
@@ -144,8 +147,9 @@ export default function ClientsPage() {
             ) : (
                 <div className="card overflow-hidden">
                     {/* Header */}
-                    <div className="data-table-header grid-cols-[1fr_180px_140px_120px_40px]">
+                    <div className="data-table-header grid-cols-[1fr_80px_160px_120px_100px_40px]">
                         <span className="label-mono">Name & Contact</span>
+                        <span className="label-mono">Channel</span>
                         <span className="label-mono">Status</span>
                         <span className="label-mono">Compliance</span>
                         <span className="label-mono">Last Seen</span>
@@ -157,15 +161,29 @@ export default function ClientsPage() {
                         <Link
                             key={client.id}
                             href={`/dashboard/clients/${client.id}`}
-                            className="data-table-row grid-cols-[1fr_180px_140px_120px_40px] group"
+                            className="data-table-row grid-cols-[1fr_80px_160px_120px_100px_40px] group"
                         >
                             <div className="flex flex-col gap-0.5">
                                 <span className="text-sm font-medium text-text-primary group-hover:text-brand-green transition-colors">
                                     {client.name}
                                 </span>
                                 <span className="text-xs text-text-faint font-mono">
-                                    {client.phone}
+                                    {client.phone || "Telegram"}
                                 </span>
+                            </div>
+
+                            <div className="flex items-center">
+                                {client.preferredChannel === "TELEGRAM" ? (
+                                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-brand-blue">
+                                        <Send className="w-3 h-3" />
+                                        TG
+                                    </span>
+                                ) : (
+                                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-brand-green">
+                                        <MessageSquare className="w-3 h-3" />
+                                        WA
+                                    </span>
+                                )}
                             </div>
 
                             <div className="flex">

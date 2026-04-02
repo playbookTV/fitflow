@@ -6,16 +6,16 @@ const router: Router = Router();
 
 // POST /clients/:id/assignments - Assign a plan to a client
 router.post("/:id/assignments", authenticate, async (req: AuthRequest, res: Response) => {
-    const trainerId = req.user?.id as string;
+    const coachId = req.user?.id as string;
     const { id } = req.params; // clientId
     const { planId, startDate, scheduleDays } = req.body;
 
-    if (!trainerId) return res.status(401).json({ error: "Unauthorized" });
+    if (!coachId) return res.status(401).json({ error: "Unauthorized" });
 
     try {
-        // Verify client belongs to trainer
+        // Verify client belongs to coach
         const client = await prisma.client.findFirst({
-            where: { id: id as string, trainerId },
+            where: { id: id as string, coachId },
         });
 
         if (!client) return res.status(404).json({ error: "Client not found" });
@@ -46,14 +46,14 @@ router.post("/:id/assignments", authenticate, async (req: AuthRequest, res: Resp
 
 // GET /clients/:id/assignments - List assignments for a client
 router.get("/:id/assignments", authenticate, async (req: AuthRequest, res: Response) => {
-    const trainerId = req.user?.id as string;
+    const coachId = req.user?.id as string;
     const { id } = req.params;
 
     try {
         const assignments = await prisma.planAssignment.findMany({
             where: {
                 clientId: id as string,
-                client: { trainerId }
+                client: { coachId }
             },
             include: { plan: true },
             orderBy: { startDate: "desc" },

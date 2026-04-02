@@ -29,6 +29,7 @@ interface Conversation {
     clientId: string;
     clientName: string;
     clientPhone: string;
+    channel: "WHATSAPP" | "TELEGRAM";
     lastMessage?: string;
     lastMessageAt?: string;
     unreadCount: number;
@@ -44,6 +45,7 @@ const MOCK_CONVERSATIONS: Conversation[] = [
         clientPhone: "+44 7700 900123",
         lastMessage: "Thanks coach! I'll do my best tomorrow.",
         lastMessageAt: "2024-03-21T14:30:00Z",
+        channel: "WHATSAPP",
         unreadCount: 2,
         messages: [
             { id: "m1", content: "Hey Alex! Don't forget your workout tomorrow - Leg Day 💪", direction: "outbound", status: "read", createdAt: "2024-03-21T10:00:00Z" },
@@ -57,6 +59,7 @@ const MOCK_CONVERSATIONS: Conversation[] = [
         clientPhone: "+44 7700 900456",
         lastMessage: "Your payment link: https://pay.fitflow.com/...",
         lastMessageAt: "2024-03-20T09:15:00Z",
+        channel: "TELEGRAM",
         unreadCount: 0,
         messages: [
             { id: "m3", content: "Your payment link: https://pay.fitflow.com/...", direction: "outbound", status: "delivered", createdAt: "2024-03-20T09:15:00Z" },
@@ -69,6 +72,7 @@ const MOCK_CONVERSATIONS: Conversation[] = [
         clientPhone: "+44 7700 900789",
         lastMessage: "Can we adjust my workout schedule?",
         lastMessageAt: "2024-03-19T16:45:00Z",
+        channel: "WHATSAPP",
         unreadCount: 1,
         messages: [
             { id: "m4", content: "Can we adjust my workout schedule?", direction: "inbound", status: "read", createdAt: "2024-03-19T16:45:00Z" },
@@ -147,7 +151,7 @@ export default function MessagesPage() {
     return (
         <DashboardLayout
             title="Messages"
-            subtitle="WhatsApp conversations with clients"
+            subtitle="Conversations with clients across all channels"
             notifications={totalUnread}
         >
             <div className="flex h-[calc(100vh-180px)] rounded-2xl overflow-hidden border border-border bg-bg-card">
@@ -201,8 +205,16 @@ export default function MessagesPage() {
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center justify-between mb-1">
-                                            <span className="font-medium text-white text-sm truncate">
+                                            <span className="font-medium text-white text-sm truncate flex items-center gap-1.5">
                                                 {conv.clientName}
+                                                <span className={cn(
+                                                    "text-[9px] font-bold px-1.5 py-0.5 rounded shrink-0",
+                                                    conv.channel === "TELEGRAM"
+                                                        ? "text-brand-blue bg-brand-blue/10"
+                                                        : "text-brand-green bg-brand-green/10"
+                                                )}>
+                                                    {conv.channel === "TELEGRAM" ? "TG" : "WA"}
+                                                </span>
                                             </span>
                                             {conv.lastMessageAt && (
                                                 <span className="text-[10px] text-text-faint">
@@ -250,8 +262,16 @@ export default function MessagesPage() {
                                         {selectedConversation.clientName.charAt(0)}
                                     </div>
                                     <div>
-                                        <p className="font-medium text-white text-sm">
+                                        <p className="font-medium text-white text-sm flex items-center gap-2">
                                             {selectedConversation.clientName}
+                                            <span className={cn(
+                                                "text-[9px] font-bold px-1.5 py-0.5 rounded",
+                                                selectedConversation.channel === "TELEGRAM"
+                                                    ? "text-brand-blue bg-brand-blue/10"
+                                                    : "text-brand-green bg-brand-green/10"
+                                            )}>
+                                                {selectedConversation.channel === "TELEGRAM" ? "Telegram" : "WhatsApp"}
+                                            </span>
                                         </p>
                                         <p className="text-[10px] text-text-faint font-mono">
                                             {selectedConversation.clientPhone}
@@ -342,7 +362,7 @@ export default function MessagesPage() {
                                 Select a conversation
                             </h3>
                             <p className="text-text-secondary text-sm max-w-xs">
-                                Choose a client from the list to view and send WhatsApp messages.
+                                Choose a client from the list to view and send messages.
                             </p>
                         </div>
                     )}

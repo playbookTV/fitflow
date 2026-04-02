@@ -6,13 +6,13 @@ const router: Router = Router();
 
 // GET /messages/:clientId - Get conversation history
 router.get("/:clientId", authenticate, async (req: AuthRequest, res) => {
-    const trainerId = req.user?.id as string;
+    const coachId = req.user?.id as string;
     const { clientId } = req.params;
 
     try {
-        // Verify client belongs to trainer
+        // Verify client belongs to coach
         const client = await prisma.client.findFirst({
-            where: { id: clientId as string, trainerId }
+            where: { id: clientId as string, coachId }
         });
 
         if (!client) return res.status(404).json({ error: "Client not found" });

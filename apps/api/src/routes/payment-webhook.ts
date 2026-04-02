@@ -1,9 +1,9 @@
 import express, { Router, Request, Response } from "express";
-import { PrismaClient } from "@prisma/client";
 import { verifyWebhook } from "../lib/stripe";
+import { prisma } from "../lib/prisma";
+import { logEvent, EventType } from "../lib/event-logger";
 
 const router: Router = Router();
-const prisma = new PrismaClient();
 
 // POST /payments/webhook - Stripe Webhook Handler (No authentication, uses signature)
 router.post("/webhook", express.raw({ type: "application/json" }), async (req: Request, res: Response) => {
@@ -28,7 +28,13 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req: R
 
             await onboardingQueue.add(JobType.ONBOARDING_INTAKE, {
                 clientId: client.id,
-                trainerId: client.trainerId
+                coachId: client.coachId,
+            });
+
+            await logEvent(EventType.PAYMENT_CONFIRMED, {
+                coachId: client.coachId,
+                clientId: client.id,
+                metadata: { stripeSessionId: session.id },
             });
 
             console.log(`[Stripe Webhook] Client ${clientId} transitions to INTAKE_SENT. Onboarding enqueued.`);

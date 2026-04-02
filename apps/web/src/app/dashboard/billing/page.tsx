@@ -11,12 +11,12 @@ import {
     XCircle,
     ExternalLink,
     Download,
-    Filter,
     ArrowUpRight,
     DollarSign,
     Users,
-    Calendar,
     Send,
+    Landmark,
+    Loader2,
 } from "lucide-react";
 import { cn, formatDate } from "@/lib/utils";
 
@@ -27,6 +27,7 @@ interface Payment {
     amount: number;
     currency: string;
     status: "succeeded" | "pending" | "failed" | "refunded";
+    paymentMethod?: "STRIPE" | "BANK_TRANSFER";
     description?: string;
     createdAt: string;
 }
@@ -75,6 +76,27 @@ export default function BillingPage() {
     const [payments, setPayments] = useState<Payment[]>([]);
     const [loading, setLoading] = useState(true);
     const [statusFilter, setStatusFilter] = useState<string | null>(null);
+    const [showBankTransfer, setShowBankTransfer] = useState(false);
+    const [bankTransferForm, setBankTransferForm] = useState({ clientId: "", amount: "" });
+    const [confirmingTransfer, setConfirmingTransfer] = useState(false);
+    const [clients, setClients] = useState<Array<{ id: string; name: string }>>([]);
+
+    useEffect(() => {
+        // Fetch clients for the bank transfer dropdown
+        const fetchClients = async () => {
+            try {
+                const token = localStorage.getItem("token");
+                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/clients`, {
+                    headers: { Authorization: `Bearer ${token}` },
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    setClients(data.map((c: any) => ({ id: c.id, name: c.name })));
+                }
+            } catch {}
+        };
+        fetchClients();
+    }, []);
 
     useEffect(() => {
         const fetchBillingData = async () => {
@@ -106,8 +128,39 @@ export default function BillingPage() {
         : payments;
 
     const handleSendReminder = async (paymentId: string) => {
-        // API call would go here
         console.log("Sending reminder for payment:", paymentId);
+    };
+
+    const handleConfirmBankTransfer = async () => {
+        if (!bankTransferForm.clientId || !bankTransferForm.amount) return;
+        setConfirmingTransfer(true);
+        try {
+            const token = localStorage.getItem("token");
+            const res = await fetch(
+                `${process.env.NEXT_PUBLIC_API_URL}/payments/confirm-bank-transfer`,
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`,
+                    },
+                    body: JSON.stringify({
+                        clientId: bankTransferForm.clientId,
+                        amount: Math.round(parseFloat(bankTransferForm.amount) * 100),
+                    }),
+                }
+            );
+            if (res.ok) {
+                setShowBankTransfer(false);
+                setBankTransferForm({ clientId: "", amount: "" });
+                // Refresh payment list
+                window.location.reload();
+            }
+        } catch (error) {
+            console.error("Failed to confirm bank transfer:", error);
+        } finally {
+            setConfirmingTransfer(false);
+        }
     };
 
     return (
@@ -116,9 +169,9 @@ export default function BillingPage() {
             subtitle="Track payments and revenue"
             actions={
                 <div className="flex items-center gap-3">
-                    <button className="btn-secondary">
-                        <Download className="w-4 h-4" />
-                        <span className="hidden sm:inline">Export</span>
+                    <button className="btn-secondary" onClick={() => setShowBankTransfer(true)}>
+                        <Landmark className="w-4 h-4" />
+                        <span className="hidden sm:inline">BANK TRANSFER</span>
                     </button>
                     <button className="btn-primary">
                         <CreditCard className="w-4 h-4" />
@@ -127,6 +180,66 @@ export default function BillingPage() {
                 </div>
             }
         >
+            {/* Bank Transfer Confirmation Form */}
+            {showBankTransfer && (
+                <div className="card p-6 mb-8 animate-fade-in">
+                    <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                        <Landmark className="w-5 h-5 text-brand-violet" />
+                        Confirm Bank Transfer
+                    </h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                        <div className="form-field">
+                            <label className="label">Client</label>
+                            <select
+                                value={bankTransferForm.clientId}
+                                onChange={(e) =>
+                                    setBankTransferForm({ ...bankTransferForm, clientId: e.target.value })
+                                }
+                                className="select"
+                            >
+                                <option value="">Select a client...</option>
+                                {clients.map((c) => (
+                                    <option key={c.id} value={c.id}>{c.name}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div className="form-field">
+                            <label className="label">Amount (GBP)</label>
+                            <input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                value={bankTransferForm.amount}
+                                onChange={(e) =>
+                                    setBankTransferForm({ ...bankTransferForm, amount: e.target.value })
+                                }
+                                className="input"
+                                placeholder="50.00"
+                            />
+                        </div>
+                    </div>
+                    <div className="flex gap-3 justify-end">
+                        <button onClick={() => setShowBankTransfer(false)} className="btn-ghost">
+                            Cancel
+                        </button>
+                        <button
+                            onClick={handleConfirmBankTransfer}
+                            disabled={confirmingTransfer || !bankTransferForm.clientId || !bankTransferForm.amount}
+                            className="btn-primary"
+                        >
+                            {confirmingTransfer ? (
+                                <>
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                    Confirming...
+                                </>
+                            ) : (
+                                "Confirm Payment"
+                            )}
+                        </button>
+                    </div>
+                </div>
+            )}
+
             {/* Stats Cards */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                 <div className="stat-card">
@@ -222,9 +335,10 @@ export default function BillingPage() {
                 ) : (
                     <div className="card overflow-hidden">
                         {/* Header */}
-                        <div className="data-table-header grid-cols-[1fr_120px_120px_100px_80px]">
+                        <div className="data-table-header grid-cols-[1fr_100px_100px_100px_100px_80px]">
                             <span className="label-mono">Client</span>
                             <span className="label-mono">Amount</span>
+                            <span className="label-mono">Method</span>
                             <span className="label-mono">Status</span>
                             <span className="label-mono">Date</span>
                             <span></span>
@@ -238,7 +352,7 @@ export default function BillingPage() {
                             return (
                                 <div
                                     key={payment.id}
-                                    className="data-table-row grid-cols-[1fr_120px_120px_100px_80px] group"
+                                    className="data-table-row grid-cols-[1fr_100px_100px_100px_100px_80px] group"
                                 >
                                     <div className="flex flex-col gap-0.5">
                                         <Link
@@ -254,6 +368,10 @@ export default function BillingPage() {
 
                                     <span className="text-sm font-mono text-white">
                                         {formatCurrency(payment.amount, payment.currency)}
+                                    </span>
+
+                                    <span className="text-[10px] font-bold text-text-faint uppercase tracking-wider">
+                                        {payment.paymentMethod === "BANK_TRANSFER" ? "Bank" : "Stripe"}
                                     </span>
 
                                     <div className="flex">

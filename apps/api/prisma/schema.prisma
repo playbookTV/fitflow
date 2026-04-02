@@ -8,42 +8,45 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
-model Trainer {
+model Coach {
   id                String    @id @default(uuid())
   email             String    @unique
   name              String?
+  slug              String?   @unique
   stripeAccountId   String?   @map("stripe_account_id")
+  defaultChannel    MessageChannel? @map("default_channel")
   clients           Client[]
   plans             WorkoutPlan[]
-  templates         WorkoutPlan[] @relation("TrainerTemplates")
-  socialAccounts    SocialAccount[]
+  templates         WorkoutPlan[] @relation("CoachTemplates")
+  botRegistry       BotRegistry?
+  offers            Offer[]
+  leads             Lead[]
   createdAt         DateTime  @default(now()) @map("created_at")
   updatedAt         DateTime  @updatedAt @map("updated_at")
 
-  @@map("trainers")
+  @@map("coaches")
 }
 
 model Client {
   id                String    @id @default(uuid())
-  trainerId         String    @map("trainer_id")
-  trainer           Trainer   @relation(fields: [trainerId], references: [id], onDelete: Cascade)
+  coachId           String    @map("coach_id")
+  coach             Coach     @relation(fields: [coachId], references: [id], onDelete: Cascade)
   name              String
-  phone             String    @unique
-  instagramId       String?   @unique @map("instagram_id")
-  igHandle          String?   @map("ig_handle")
+  phone             String?   @unique
   email             String?
+  telegramChatId    String?   @unique @map("telegram_chat_id")
   goals             String?
   notes             String?
   status            ClientStatus @default(PENDING_PAYMENT)
   timezone          String    @default("Europe/London")
   preferredChannel  MessageChannel @default(WHATSAPP) @map("preferred_channel")
-  
+
   assignments       PlanAssignment[]
   checkIns          CheckIn[]
   workoutLogs       WorkoutLog[]
   payments          Payment[]
   messages          Message[]
-  
+
   createdAt         DateTime  @default(now()) @map("created_at")
   updatedAt         DateTime  @updatedAt @map("updated_at")
 
@@ -52,7 +55,7 @@ model Client {
 
 enum MessageChannel {
   WHATSAPP
-  INSTAGRAM
+  TELEGRAM
 }
 
 enum ClientStatus {
@@ -67,17 +70,17 @@ enum ClientStatus {
 
 model WorkoutPlan {
   id                String    @id @default(uuid())
-  trainerId         String    @map("trainer_id")
-  trainer           Trainer   @relation(fields: [trainerId], references: [id], onDelete: Cascade)
+  coachId           String    @map("coach_id")
+  coach             Coach     @relation(fields: [coachId], references: [id], onDelete: Cascade)
   isTemplate        Boolean   @default(false) @map("is_template")
-  ownerTrainerId    String?   @map("owner_trainer_id")
-  ownerTrainer      Trainer?  @relation("TrainerTemplates", fields: [ownerTrainerId], references: [id])
+  ownerCoachId      String?   @map("owner_coach_id")
+  ownerCoach        Coach?    @relation("CoachTemplates", fields: [ownerCoachId], references: [id])
   title             String
   description       String?
-  
+
   days              WorkoutDay[]
   assignments       PlanAssignment[]
-  
+
   createdAt         DateTime  @default(now()) @map("created_at")
   updatedAt         DateTime  @updatedAt @map("updated_at")
 
@@ -90,7 +93,7 @@ model WorkoutDay {
   plan              WorkoutPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
   dayNumber         Int       @map("day_number")
   title             String?
-  
+
   exercises         WorkoutExercise[]
 
   @@map("workout_days")
@@ -146,7 +149,7 @@ model CheckIn {
   sleep             String?
   notes             String?
   photoUrl          String?   @map("photo_url")
-  
+
   createdAt         DateTime  @default(now()) @map("created_at")
 
   @@map("check_ins")
@@ -161,7 +164,7 @@ model WorkoutLog {
   dayNumber         Int       @map("day_number")
   status            WorkoutStatus @default(COMPLETED)
   notes             String?
-  
+
   createdAt         DateTime  @default(now()) @map("created_at")
 
   @@map("workout_logs")
@@ -177,11 +180,13 @@ model Payment {
   id                String    @id @default(uuid())
   clientId          String    @map("client_id")
   client            Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  stripeSessionId   String    @unique @map("stripe_session_id")
+  stripeSessionId   String?   @unique @map("stripe_session_id")
   amount            Int       // In cents
   currency          String    @default("gbp")
   status            PaymentStatus @default(PENDING)
-  
+  paymentMethod     PaymentMethod @default(STRIPE) @map("payment_method")
+  confirmedBy       String?   @map("confirmed_by") // Coach ID for manual bank transfer confirmations
+
   createdAt         DateTime  @default(now()) @map("created_at")
   updatedAt         DateTime  @updatedAt @map("updated_at")
 
@@ -194,6 +199,11 @@ enum PaymentStatus {
   FAILED
 }
 
+enum PaymentMethod {
+  STRIPE
+  BANK_TRANSFER
+}
+
 model Message {
   id                String    @id @default(uuid())
   clientId          String    @map("client_id")
@@ -203,7 +213,7 @@ model Message {
   content           String
   metaMessageId     String?   @unique @map("meta_message_id")
   status            String?   // delivered, read, etc.
-  
+
   createdAt         DateTime  @default(now()) @map("created_at")
 
   @@map("messages")
@@ -214,17 +224,76 @@ enum MessageDirection {
   OUTBOUND
 }
 
-model SocialAccount {
-  id                String    @id @default(uuid())
-  trainerId         String    @map("trainer_id")
-  trainer           Trainer   @relation(fields: [trainerId], references: [id], onDelete: Cascade)
-  platform          MessageChannel
-  platformId        String    @map("platform_id")
-  accessToken       String    @map("access_token")
-  pageId            String?   @map("page_id") // For IG
-  
-  createdAt         DateTime  @default(now()) @map("created_at")
-  updatedAt         DateTime  @updatedAt @map("updated_at")
+model Offer {
+  id            String          @id @default(uuid())
+  coachId       String          @map("coach_id")
+  coach         Coach           @relation(fields: [coachId], references: [id], onDelete: Cascade)
+  name          String
+  slug          String
+  channelParam  MessageChannel? @map("channel_param")
+  sourceTags    String[]        @map("source_tags")
+  ctaType       String?         @map("cta_type")
+  paymentRoute  String?         @map("payment_route")
+  isActive      Boolean         @default(true) @map("is_active")
+  leads         Lead[]
+  createdAt     DateTime        @default(now()) @map("created_at")
+  updatedAt     DateTime        @updatedAt @map("updated_at")
 
-  @@map("social_accounts")
+  @@unique([coachId, slug])
+  @@map("offers")
+}
+
+model Lead {
+  id              String          @id @default(uuid())
+  coachId         String          @map("coach_id")
+  coach           Coach           @relation(fields: [coachId], references: [id], onDelete: Cascade)
+  offerId         String?         @map("offer_id")
+  offer           Offer?          @relation(fields: [offerId], references: [id])
+  name            String
+  phone           String?
+  email           String?
+  telegramChatId  String?         @map("telegram_chat_id")
+  channelTag      MessageChannel  @map("channel_tag")
+  source          String?
+  intakeData      Json?           @map("intake_data")
+  status          LeadStatus      @default(NEW)
+  createdAt       DateTime        @default(now()) @map("created_at")
+  updatedAt       DateTime        @updatedAt @map("updated_at")
+
+  @@map("leads")
+}
+
+enum LeadStatus {
+  NEW
+  INTAKE_COMPLETE
+  PAYMENT_PENDING
+  CONVERTED
+  REJECTED
+}
+
+model BotRegistry {
+  id            String   @id @default(uuid())
+  coachId       String   @unique @map("coach_id")
+  coach         Coach    @relation(fields: [coachId], references: [id], onDelete: Cascade)
+  botToken      String   @map("bot_token")
+  botUsername   String   @map("bot_username")
+  webhookUrl    String   @map("webhook_url")
+  provisionedAt DateTime @default(now()) @map("provisioned_at")
+
+  @@map("bot_registry")
+}
+
+model EventLog {
+  id          String          @id @default(uuid())
+  coachId     String?         @map("coach_id")
+  clientId    String?         @map("client_id")
+  eventType   String          @map("event_type")
+  channel     MessageChannel?
+  metadata    Json?
+  createdAt   DateTime        @default(now()) @map("created_at")
+
+  @@index([coachId])
+  @@index([clientId])
+  @@index([eventType])
+  @@map("event_logs")
 }

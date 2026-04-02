@@ -40,7 +40,7 @@ export default function LoginPage() {
                     Welcome back
                 </h1>
                 <p className="mb-10 text-sm text-text-secondary">
-                    Enter your details to access your trainer dashboard.
+                    Enter your details to access your coaching dashboard.
                 </p>
 
                 <form onSubmit={handleLogin} className="space-y-6">

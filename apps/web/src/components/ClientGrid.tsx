@@ -1,6 +1,6 @@
 "use client";
 
-import { MoreHorizontal, MessageCircle, ArrowUpRight, Plus } from "lucide-react";
+import { MoreHorizontal, MessageCircle, ArrowUpRight, Plus, MessageSquare, Send } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { StatusBadge } from "@/components/ui";
@@ -9,10 +9,29 @@ interface Client {
     id: string;
     name: string;
     status: string;
-    phone: string;
+    phone: string | null;
     email?: string;
     goals?: string;
+    preferredChannel?: "WHATSAPP" | "TELEGRAM";
+    telegramChatId?: string | null;
 }
+
+const ChannelBadge = ({ channel }: { channel?: "WHATSAPP" | "TELEGRAM" }) => {
+    if (channel === "TELEGRAM") {
+        return (
+            <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-brand-blue bg-brand-blue/10 px-2 py-0.5 rounded-md border border-brand-blue/20">
+                <Send className="w-2.5 h-2.5" />
+                TG
+            </span>
+        );
+    }
+    return (
+        <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-brand-green bg-brand-green/10 px-2 py-0.5 rounded-md border border-brand-green/20">
+            <MessageSquare className="w-2.5 h-2.5" />
+            WA
+        </span>
+    );
+};
 
 const avatarGradients = [
     "from-brand-blue to-brand-violet",
@@ -69,11 +88,14 @@ export const ClientCard = ({ client }: { client: Client }) => {
                     {client.name}
                 </h3>
                 <p className="text-sm text-text-faint mb-4 line-clamp-1 font-mono">
-                    {client.phone}
+                    {client.phone || client.telegramChatId || "No contact"}
                 </p>
 
                 <div className="flex items-center justify-between">
-                    <StatusBadge status={client.status} />
+                    <div className="flex items-center gap-2">
+                        <StatusBadge status={client.status} />
+                        <ChannelBadge channel={client.preferredChannel} />
+                    </div>
                     <ArrowUpRight className="w-4 h-4 text-text-muted group-hover:text-brand-green transition-all transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
                 </div>
             </div>

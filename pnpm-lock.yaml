@@ -26,6 +26,9 @@ importers:
       '@bull-board/express':
         specifier: ^6.2.0
         version: 6.20.3
+      '@fitflow/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
       '@prisma/client':
         specifier: ^5.22.0
         version: 5.22.0(prisma@5.22.0)

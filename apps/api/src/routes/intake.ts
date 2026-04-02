@@ -27,7 +27,7 @@ router.post("/", async (req, res) => {
         });
 
         console.log(`[Intake] Client ${clientId} completed onboarding.`);
-        res.json({ success: true, message: "Onboarding complete! Your trainer will be in touch soon." });
+        res.json({ success: true, message: "Onboarding complete! Your coach will be in touch soon." });
     } catch (error) {
         console.error("[Intake Error]", error);
         res.status(500).json({ error: "Failed to save intake data" });

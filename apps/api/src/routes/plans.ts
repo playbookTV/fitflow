@@ -4,14 +4,14 @@ import { prisma } from "../lib/prisma";
 
 const router: Router = Router();
 
-// GET /plans - List plans for the trainer
+// GET /plans - List plans for the coach
 router.get("/", authenticate, async (req: AuthRequest, res: Response) => {
-    const trainerId = req.user?.id as string;
-    if (!trainerId) return res.status(401).json({ error: "Unauthorized" });
+    const coachId = req.user?.id as string;
+    if (!coachId) return res.status(401).json({ error: "Unauthorized" });
 
     try {
         const plans = await prisma.workoutPlan.findMany({
-            where: { trainerId },
+            where: { coachId },
             include: { days: { include: { exercises: { include: { exercise: true } } } } },
             orderBy: { createdAt: "desc" },
         });
@@ -24,15 +24,15 @@ router.get("/", authenticate, async (req: AuthRequest, res: Response) => {
 
 // POST /plans - Create a new plan
 router.post("/", authenticate, async (req: AuthRequest, res: Response) => {
-    const trainerId = req.user?.id as string;
+    const coachId = req.user?.id as string;
     const { title, description, isTemplate, days } = req.body;
 
-    if (!trainerId) return res.status(401).json({ error: "Unauthorized" });
+    if (!coachId) return res.status(401).json({ error: "Unauthorized" });
 
     try {
         const plan = await prisma.workoutPlan.create({
             data: {
-                trainerId,
+                coachId,
                 title,
                 description,
                 isTemplate: !!isTemplate,

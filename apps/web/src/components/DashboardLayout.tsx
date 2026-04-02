@@ -15,6 +15,9 @@ import {
     LogOut,
     ChevronLeft,
     Menu,
+    Link2,
+    UserPlus,
+    Activity,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -28,9 +31,12 @@ interface NavItem {
 const mainNavItems: NavItem[] = [
     { href: "/dashboard", label: "Overview", icon: LayoutDashboard },
     { href: "/dashboard/clients", label: "Clients", icon: Users },
+    { href: "/dashboard/leads", label: "Leads", icon: UserPlus },
+    { href: "/dashboard/offers", label: "Offers", icon: Link2 },
     { href: "/dashboard/plans", label: "Plans", icon: Dumbbell },
     { href: "/dashboard/messages", label: "Messages", icon: MessageSquare },
     { href: "/dashboard/billing", label: "Billing", icon: CreditCard },
+    { href: "/dashboard/activity", label: "Activity", icon: Activity },
 ];
 
 const bottomNavItems: NavItem[] = [

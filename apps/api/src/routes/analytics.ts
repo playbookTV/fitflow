@@ -4,25 +4,28 @@ import { prisma } from "../lib/prisma";
 
 const router: Router = Router();
 
-// GET /analytics/summary - High-level stats for the trainer dashboard
+// GET /analytics/summary - High-level stats for the coach dashboard
 router.get("/summary", authenticate, async (req: AuthRequest, res: Response) => {
-    const trainerId = req.user?.id as string;
-    if (!trainerId) return res.status(401).json({ error: "Unauthorized" });
+    const coachId = req.user?.id as string;
+    if (!coachId) return res.status(401).json({ error: "Unauthorized" });
 
     try {
-        const [clientCount, activePlanCount, totalWorkouts] = await Promise.all([
-            prisma.client.count({ where: { trainerId } }),
+        const [clientCount, activePlanCount, totalWorkouts, whatsappClients, telegramClients, leadCount] = await Promise.all([
+            prisma.client.count({ where: { coachId } }),
             prisma.planAssignment.count({
                 where: {
                     isActive: true,
-                    client: { trainerId }
+                    client: { coachId }
                 }
             }),
             prisma.checkIn.count({
                 where: {
-                    client: { trainerId }
+                    client: { coachId }
                 }
-            })
+            }),
+            prisma.client.count({ where: { coachId, preferredChannel: "WHATSAPP" } }),
+            prisma.client.count({ where: { coachId, preferredChannel: "TELEGRAM" } }),
+            prisma.lead.count({ where: { coachId, status: "NEW" } }),
         ]);
 
         // At-risk logic: Active clients with no check-ins in last 7 days
@@ -31,7 +34,7 @@ router.get("/summary", authenticate, async (req: AuthRequest, res: Response) => 
 
         const atRiskClients = await prisma.client.findMany({
             where: {
-                trainerId,
+                coachId,
                 status: "ACTIVE",
                 NOT: {
                     checkIns: {
@@ -46,7 +49,7 @@ router.get("/summary", authenticate, async (req: AuthRequest, res: Response) => 
 
         // Calculate aggregate compliance
         const assignments = await prisma.planAssignment.findMany({
-            where: { isActive: true, client: { trainerId } },
+            where: { isActive: true, client: { coachId } },
             select: { compliance: true } as any
         }) as any[];
 
@@ -60,11 +63,36 @@ router.get("/summary", authenticate, async (req: AuthRequest, res: Response) => 
             totalWorkouts,
             averageCompliance: avgCompliance,
             revenue: assignments.length * 50,
-            atRiskClients
+            atRiskClients,
+            channels: {
+                whatsapp: whatsappClients,
+                telegram: telegramClients,
+            },
+            newLeads: leadCount,
         });
     } catch (error) {
         console.error("[GET /analytics/summary]", error);
         res.status(500).json({ error: "Failed to fetch analytics" });
+    }
+});
+
+// GET /analytics/events - Recent event log for the coach
+router.get("/events", authenticate, async (req: AuthRequest, res: Response) => {
+    const coachId = req.user?.id as string;
+    if (!coachId) return res.status(401).json({ error: "Unauthorized" });
+
+    const limit = Math.min(Number(req.query.limit) || 50, 200);
+
+    try {
+        const events = await prisma.eventLog.findMany({
+            where: { coachId },
+            orderBy: { createdAt: "desc" },
+            take: limit,
+        });
+        res.json(events);
+    } catch (error) {
+        console.error("[GET /analytics/events]", error);
+        res.status(500).json({ error: "Failed to fetch events" });
     }
 });
 

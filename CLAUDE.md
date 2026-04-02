@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-FitFlow is a WhatsApp-native trainer CRM for personal fitness coaches. It enables trainers to manage clients, deliver workout plans, collect check-ins, and process payments — all through WhatsApp as the client interface.
+FitFlow is a coaching operations platform for online personal trainers. It enables coaches to manage clients, deliver workout plans, collect check-ins, and process payments — delivered through WhatsApp or Telegram, without asking clients to download another app.
 
 ## Development Commands
 
@@ -36,19 +36,23 @@ pnpm --filter @fitflow/api worker:start
 ## Architecture
 
 ### Monorepo Structure
-- `apps/web` — Next.js 14 trainer dashboard (Supabase auth, Tailwind, Radix UI)
-- `apps/api` — Express.js API (Prisma ORM, BullMQ workers, Meta/Stripe integration)
-- `packages/shared` — Shared types and Zod schemas
+- `apps/web` — Next.js 14 coach dashboard (Supabase auth, Tailwind, Radix UI)
+- `apps/api` — Express.js API (Prisma ORM, BullMQ workers, WhatsApp/Stripe integration)
+- `packages/shared` — Shared types, channel abstraction interfaces, and Zod schemas
 
 ### Key Integration Flows
 1. **WhatsApp Messaging**: Meta Cloud API (direct) → webhook processor → BullMQ queue → workout delivery
-2. **Payments**: Stripe Connect (trainers are merchants) → payment webhooks → client status update
-3. **Scheduling**: BullMQ job queues with timezone-aware cron for workout delivery and check-in reminders
+2. **Telegram Messaging**: Per-coach Telegram Bot API → webhook per coach → BullMQ queue → workout delivery
+3. **Channel Abstraction**: `DeliveryChannel` interface in `packages/shared` with WhatsApp and Telegram adapters
+4. **Payments**: Stripe Connect (coaches are merchants) → payment webhooks → client status update. Bank transfer supported as manual fallback.
+5. **Scheduling**: BullMQ job queues with timezone-aware cron for workout delivery and check-in reminders
 
 ### Data Model (Prisma)
-Core entities: `Trainer` → `Client` → `PlanAssignment` → `WorkoutPlan` → `WorkoutDay` → `WorkoutExercise`
+Core entities: `Coach` → `Client` → `PlanAssignment` → `WorkoutPlan` → `WorkoutDay` → `WorkoutExercise`
 Client progress: `CheckIn` (weekly weight/energy/sleep), `WorkoutLog` (completion status)
-Billing: `Payment` with Stripe session tracking
+Billing: `Payment` with Stripe session tracking and bank transfer support
+Audit: `EventLog` for key state transitions
+Channels: `MessageChannel` enum (`WHATSAPP` | `TELEGRAM`), client has `preferredChannel`
 
 ### Client Status Flow
 `PENDING_PAYMENT` → `INTAKE_SENT` → `INTAKE_COMPLETE` → `PLAN_ASSIGNED` → `ACTIVE` → `PAUSED`/`INACTIVE`
@@ -80,3 +84,5 @@ Required services:
 - All routes authenticated via Supabase middleware
 - WhatsApp webhook processing must be idempotent (dead letter queue for failed messages)
 - Timezone-aware scheduling using `date-fns-tz`
+- Instagram integration permanently removed (PRD v2 decision)
+- Terminology: "Coach" (not "Trainer") throughout codebase

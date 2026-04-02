@@ -13,13 +13,20 @@ import analyticsRouter from "./routes/analytics";
 import intakeRouter from "./routes/intake";
 import messagesRouter from "./routes/messages";
 import flowsRouter from "./routes/flows";
+import coachesRouter from "./routes/coaches";
+import telegramWebhookRouter from "./routes/telegram-webhook";
+import offersRouter from "./routes/offers";
+import leadsRouter from "./routes/leads";
+import publicRouter from "./routes/public";
 import "./workers/workoutProcessor"; // Starts the BullMQ worker
 import { startDailyScheduler } from "./jobs/daily-scheduler";
 import { startWeeklyCheckinScheduler } from "./jobs/weekly-checkin";
+import { startRenewalScheduler } from "./jobs/renewal-scheduler";
 
 // Start Schedulers
 startDailyScheduler();
 startWeeklyCheckinScheduler();
+startRenewalScheduler();
 
 const app: Express = express();
 const PORT = process.env.PORT || 3001;
@@ -47,13 +54,17 @@ app.use("/clients", assignmentsRouter);
 app.use("/exercises", exercisesRouter);
 app.use("/plans", plansRouter);
 app.use("/webhooks", webhooksRouter);
-app.use("/whatsapp/webhook", webhooksRouter); // Backwards compatibility for existing Meta setup
 app.use("/payments", paymentsRouter);
 app.use("/payments", paymentWebhookRouter);
 app.use("/analytics", analyticsRouter);
 app.use("/intake", intakeRouter);
 app.use("/messages", messagesRouter);
 app.use("/flows", flowsRouter);
+app.use("/coaches", coachesRouter);
+app.use("/telegram/webhook", telegramWebhookRouter);
+app.use("/offers", offersRouter);
+app.use("/leads", leadsRouter);
+app.use("/p", publicRouter);
 
 // 404
 app.use((_req: Request, res: Response) => {

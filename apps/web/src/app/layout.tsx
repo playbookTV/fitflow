@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import "@/app/globals.css";
 
 export const metadata: Metadata = {
-    title: "FitFlow — WhatsApp-Native Trainer CRM",
+    title: "FitFlow — Coaching Operations Platform",
     description:
-        "Manage your coaching business from one dashboard. Clients interact via WhatsApp.",
+        "Manage your coaching business from one dashboard. Clients interact via WhatsApp or Telegram.",
 };
 
 export default function RootLayout({
