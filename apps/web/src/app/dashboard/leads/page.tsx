@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { DashboardLayout } from "@/components/DashboardLayout";
-import { UserPlus, ArrowRight, Filter } from "lucide-react";
+import { UserPlus, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Lead {
@@ -39,7 +39,7 @@ export default function LeadsPage() {
     const [statusFilter, setStatusFilter] = useState<string>("ALL");
     const [converting, setConverting] = useState<string | null>(null);
 
-    const fetchLeads = async () => {
+    const fetchLeads = useCallback(async () => {
         try {
             const token = localStorage.getItem("token");
             const url = statusFilter === "ALL"
@@ -54,9 +54,9 @@ export default function LeadsPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [statusFilter]);
 
-    useEffect(() => { fetchLeads(); }, [statusFilter]);
+    useEffect(() => { fetchLeads(); }, [fetchLeads]);
 
     const handleConvert = async (leadId: string) => {
         setConverting(leadId);

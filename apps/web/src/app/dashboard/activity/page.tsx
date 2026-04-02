@@ -22,7 +22,7 @@ interface EventLog {
     clientId: string | null;
     eventType: string;
     channel: "WHATSAPP" | "TELEGRAM" | null;
-    metadata: Record<string, any> | null;
+    metadata: Record<string, unknown> | null;
     createdAt: string;
 }
 

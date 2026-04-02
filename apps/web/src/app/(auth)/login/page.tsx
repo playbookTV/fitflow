@@ -84,7 +84,7 @@ export default function LoginPage() {
                 </form>
 
                 <div className="mt-10 text-center text-xs text-text-faint">
-                    Don't have an account?{" "}
+                    Don&apos;t have an account?{" "}
                     <Link href="/register" className="link-underline">
                         Create one for free
                     </Link>

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { DashboardLayout } from "@/components/DashboardLayout";
-import { Plus, Link2, MoreVertical, Users, Trash2, Copy } from "lucide-react";
+import { Plus, Link2, Users, Trash2, Copy } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Offer {

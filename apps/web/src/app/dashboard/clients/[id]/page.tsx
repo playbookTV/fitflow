@@ -251,7 +251,7 @@ export default function ClientProfilePage() {
                                 </div>
                                 <h3 className="text-lg font-bold text-white mb-1">No Active Plan</h3>
                                 <p className="text-text-secondary text-sm mb-6">
-                                    This client hasn't been assigned a workout plan yet.
+                                    This client hasn&apos;t been assigned a workout plan yet.
                                 </p>
                                 <button className="btn-secondary">Select Plan</button>
                             </div>
@@ -283,7 +283,7 @@ export default function ClientProfilePage() {
                                                 </div>
                                                 {checkIn.notes && (
                                                     <p className="text-sm text-text-faint mt-2 italic">
-                                                        "{checkIn.notes}"
+                                                        &ldquo;{checkIn.notes}&rdquo;
                                                     </p>
                                                 )}
                                             </div>
@@ -313,7 +313,7 @@ export default function ClientProfilePage() {
                                     <Info className="w-3 h-3" /> Coach Notes
                                 </h4>
                                 <p className="text-text-secondary text-xs leading-relaxed italic">
-                                    "{client.notes || "No notes yet."}"
+                                    &ldquo;{client.notes || "No notes yet."}&rdquo;
                                 </p>
                             </div>
                         </div>

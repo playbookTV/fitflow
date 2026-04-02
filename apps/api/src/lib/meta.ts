@@ -161,18 +161,31 @@ export const deleteFlow = async (flowId: string): Promise<any> => {
 /**
  * Send a WhatsApp Flow message to a user
  */
-export const sendFlowMessage = async (
-    to: string,
-    flowId: string,
-    flowToken: string,
-    headerText: string,
-    bodyText: string,
-    footerText: string,
-    ctaText: string,
-    firstScreenId: string = "WEIGHT",
-    clientId?: string,
-    mode: "draft" | "published" = "published"
-): Promise<any> => {
+interface FlowMessageParams {
+    to: string;
+    flowId: string;
+    flowToken: string;
+    headerText: string;
+    bodyText: string;
+    footerText: string;
+    ctaText: string;
+    firstScreenId?: string;
+    clientId?: string;
+    mode?: "draft" | "published";
+}
+
+export const sendFlowMessage = async ({
+    to,
+    flowId,
+    flowToken,
+    headerText,
+    bodyText,
+    footerText,
+    ctaText,
+    firstScreenId = "WEIGHT",
+    clientId,
+    mode = "published",
+}: FlowMessageParams): Promise<any> => {
     if (!WA_ACCESS_TOKEN || !WA_PHONE_NUMBER_ID) {
         throw new Error("WhatsApp API configuration missing");
     }
@@ -252,18 +265,18 @@ export const sendCheckinFlow = async (
 ): Promise<any> => {
     const flowToken = `checkin_${clientId || "unknown"}_${Date.now()}`;
 
-    return sendFlowMessage(
+    return sendFlowMessage({
         to,
         flowId,
         flowToken,
-        "Weekly Check-in",
-        "Hey! It's time for your weekly check-in. This helps your coach track your progress.",
-        "Takes less than 1 minute",
-        "Start Check-in",
-        "WEIGHT",
+        headerText: "Weekly Check-in",
+        bodyText: "Hey! It's time for your weekly check-in. This helps your coach track your progress.",
+        footerText: "Takes less than 1 minute",
+        ctaText: "Start Check-in",
+        firstScreenId: "WEIGHT",
         clientId,
-        mode
-    );
+        mode,
+    });
 };
 
 /**
@@ -277,18 +290,18 @@ export const sendWorkoutLogFlow = async (
 ): Promise<any> => {
     const flowToken = `workout_${clientId || "unknown"}_${Date.now()}`;
 
-    return sendFlowMessage(
+    return sendFlowMessage({
         to,
         flowId,
         flowToken,
-        "Log Your Workout",
-        "Great job finishing your workout! Let's log how it went.",
-        "Quick 30-second log",
-        "Log Workout",
-        "STATUS",
+        headerText: "Log Your Workout",
+        bodyText: "Great job finishing your workout! Let's log how it went.",
+        footerText: "Quick 30-second log",
+        ctaText: "Log Workout",
+        firstScreenId: "STATUS",
         clientId,
-        mode
-    );
+        mode,
+    });
 };
 
 /**
@@ -347,7 +360,7 @@ export const sendWhatsAppMessage = async (to: string, bodyOrTemplate: string | o
  * Generalized sender based on channel.
  * Currently only supports WhatsApp. Telegram will be added via the channel abstraction layer.
  */
-export const sendMessage = async (channel: MessageChannel, to: string, content: string | any, clientId?: string) => {
+export const sendMessage = async (channel: MessageChannel, to: string, content: string | object, clientId?: string) => {
     if (channel === MessageChannel.WHATSAPP) {
         return sendWhatsAppMessage(to, content, clientId);
     }

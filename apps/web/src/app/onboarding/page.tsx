@@ -1,14 +1,13 @@
 "use client";
 
 import { useState, useEffect, Suspense } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { CheckCircle2, Loader2, Dumbbell, Activity, Heart } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 
 function OnboardingContent() {
     const searchParams = useSearchParams();
-    const router = useRouter();
     const clientId = searchParams.get("id");
 
     const [step, setStep] = useState(1);
@@ -77,7 +76,7 @@ function OnboardingContent() {
                         <div className="h-16 w-16 bg-brand-green rounded-full flex items-center justify-center mb-6">
                             <CheckCircle2 className="h-10 w-10 text-black" />
                         </div>
-                        <h2 className="text-2xl font-bold mb-2">You're All Set!</h2>
+                        <h2 className="text-2xl font-bold mb-2">You&apos;re All Set!</h2>
                         <p className="text-text-secondary mb-8">
                             Thanks {clientName || "there"}! Your goals and info have been sent to your coach.
                             They will notify you once your custom plan is ready.
@@ -102,7 +101,7 @@ function OnboardingContent() {
             <div className="w-full max-w-xl relative z-10">
                 <div className="mb-8 text-center animation-fade-in">
                     <h1 className="text-3xl font-bold tracking-tight mb-2">Welcome to FitFlow</h1>
-                    <p className="text-text-secondary">Let's personalize your fitness journey, {clientName || "there"}.</p>
+                    <p className="text-text-secondary">Let&apos;s personalize your fitness journey, {clientName || "there"}.</p>
                 </div>
 
                 <div className="flex gap-2 mb-8 justify-center">

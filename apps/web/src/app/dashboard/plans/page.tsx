@@ -14,7 +14,7 @@ import {
     Trash2,
     Edit3,
 } from "lucide-react";
-import { cn, formatDate } from "@/lib/utils";
+import { formatDate } from "@/lib/utils";
 
 interface WorkoutPlan {
     id: string;

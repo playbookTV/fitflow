@@ -91,7 +91,7 @@ export default function BillingPage() {
                 });
                 if (res.ok) {
                     const data = await res.json();
-                    setClients(data.map((c: any) => ({ id: c.id, name: c.name })));
+                    setClients(data.map((c: { id: string; name: string }) => ({ id: c.id, name: c.name })));
                 }
             } catch {}
         };
