@@ -1,6 +1,9 @@
 import { Router, Response } from "express";
 import { authenticate, AuthRequest } from "../middleware/auth";
 import { prisma } from "../lib/prisma";
+import { onboardingQueue } from "../lib/queue";
+import { JobType } from "../lib/types";
+import { logEvent, EventType } from "../lib/event-logger";
 
 const router: Router = Router();
 
@@ -27,7 +30,7 @@ router.get("/", authenticate, async (req: AuthRequest, res: Response) => {
 // POST /clients - Create a new client
 router.post("/", authenticate, async (req: AuthRequest, res: Response) => {
     const coachId = req.user?.id as string;
-    const { name, phone, email, goals, notes } = req.body;
+    const { name, phone, email, goals, notes, status, preferredChannel } = req.body;
 
     if (!coachId) return res.status(401).json({ error: "Unauthorized" });
 
@@ -40,7 +43,15 @@ router.post("/", authenticate, async (req: AuthRequest, res: Response) => {
                 email,
                 goals,
                 notes,
+                ...(status && { status }),
+                ...(preferredChannel && { preferredChannel }),
             },
+        });
+
+        await logEvent(EventType.CLIENT_CREATED, {
+            coachId,
+            clientId: client.id,
+            channel: client.preferredChannel,
         });
         res.status(201).json(client);
     } catch (error) {
@@ -105,6 +116,37 @@ router.patch("/:id", authenticate, async (req: AuthRequest, res: Response) => {
     } catch (error) {
         console.error(`[PATCH /clients/${id}]`, error);
         res.status(500).json({ error: "Failed to update client" });
+    }
+});
+
+// POST /clients/:id/send-intake - Queue onboarding/intake message for a client
+router.post("/:id/send-intake", authenticate, async (req: AuthRequest, res: Response) => {
+    const coachId = req.user?.id as string;
+    const { id } = req.params;
+
+    if (!coachId) return res.status(401).json({ error: "Unauthorized" });
+
+    try {
+        const client = await prisma.client.findFirst({
+            where: { id: id as string, coachId },
+        });
+
+        if (!client) return res.status(404).json({ error: "Client not found" });
+
+        await prisma.client.update({
+            where: { id: client.id },
+            data: { status: "INTAKE_SENT" },
+        });
+
+        await onboardingQueue.add(JobType.ONBOARDING_INTAKE, {
+            clientId: client.id,
+            coachId,
+        });
+
+        res.json({ success: true });
+    } catch (error) {
+        console.error(`[POST /clients/${id}/send-intake]`, error);
+        res.status(500).json({ error: "Failed to send intake" });
     }
 });
 

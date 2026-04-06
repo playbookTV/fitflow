@@ -12,10 +12,16 @@ router.get("/", authenticate, async (req: AuthRequest, res: Response) => {
     try {
         const plans = await prisma.workoutPlan.findMany({
             where: { coachId },
-            include: { days: { include: { exercises: { include: { exercise: true } } } } },
+            include: {
+                days: { include: { exercises: { include: { exercise: true } } } },
+                _count: { select: { assignments: true } },
+            },
             orderBy: { createdAt: "desc" },
         });
-        res.json(plans);
+        res.json(plans.map((plan) => ({
+            ...plan,
+            daysPerWeek: plan.days.length,
+        })));
     } catch (error) {
         console.error("[GET /plans]", error);
         res.status(500).json({ error: "Failed to fetch plans" });
@@ -59,6 +65,88 @@ router.post("/", authenticate, async (req: AuthRequest, res: Response) => {
     } catch (error) {
         console.error("[POST /plans]", error);
         res.status(500).json({ error: "Failed to create plan" });
+    }
+});
+
+// POST /plans/:id/duplicate - Duplicate an existing workout plan
+router.post("/:id/duplicate", authenticate, async (req: AuthRequest, res: Response) => {
+    const coachId = req.user?.id as string;
+    const { id } = req.params;
+
+    if (!coachId) return res.status(401).json({ error: "Unauthorized" });
+
+    try {
+        const existingPlan = await prisma.workoutPlan.findFirst({
+            where: { id: id as string, coachId },
+            include: {
+                days: {
+                    include: {
+                        exercises: true,
+                    },
+                    orderBy: { dayNumber: "asc" },
+                },
+            },
+        });
+
+        if (!existingPlan) return res.status(404).json({ error: "Plan not found" });
+
+        const duplicatedPlan = await prisma.workoutPlan.create({
+            data: {
+                coachId,
+                title: `${existingPlan.title} Copy`,
+                description: existingPlan.description,
+                isTemplate: existingPlan.isTemplate,
+                days: {
+                    create: existingPlan.days.map((day) => ({
+                        dayNumber: day.dayNumber,
+                        title: day.title,
+                        exercises: {
+                            create: day.exercises.map((exercise) => ({
+                                exerciseId: exercise.exerciseId,
+                                order: exercise.order,
+                                sets: exercise.sets,
+                                reps: exercise.reps,
+                                rest: exercise.rest,
+                                notes: exercise.notes,
+                            })),
+                        },
+                    })),
+                },
+            },
+            include: {
+                days: { include: { exercises: { include: { exercise: true } } } },
+                _count: { select: { assignments: true } },
+            },
+        });
+
+        res.status(201).json({
+            ...duplicatedPlan,
+            daysPerWeek: duplicatedPlan.days.length,
+        });
+    } catch (error) {
+        console.error(`[POST /plans/${id}/duplicate]`, error);
+        res.status(500).json({ error: "Failed to duplicate plan" });
+    }
+});
+
+// DELETE /plans/:id - Delete a workout plan
+router.delete("/:id", authenticate, async (req: AuthRequest, res: Response) => {
+    const coachId = req.user?.id as string;
+    const { id } = req.params;
+
+    if (!coachId) return res.status(401).json({ error: "Unauthorized" });
+
+    try {
+        const result = await prisma.workoutPlan.deleteMany({
+            where: { id: id as string, coachId },
+        });
+
+        if (result.count === 0) return res.status(404).json({ error: "Plan not found" });
+
+        res.json({ success: true });
+    } catch (error) {
+        console.error(`[DELETE /plans/${id}]`, error);
+        res.status(500).json({ error: "Failed to delete plan" });
     }
 });
 

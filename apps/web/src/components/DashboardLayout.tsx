@@ -3,6 +3,8 @@
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { createClient } from "@/lib/supabase/client";
+import { syncAuthToken } from "@/lib/auth";
 import { Logo } from "@/components/ui";
 import {
     LayoutDashboard,
@@ -19,7 +21,7 @@ import {
     UserPlus,
     Activity,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 interface NavItem {
     href: string;
@@ -59,8 +61,29 @@ export function DashboardLayout({
     notifications = 0,
 }: DashboardLayoutProps) {
     const pathname = usePathname();
+    const [supabase] = useState(() => createClient());
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+    useEffect(() => {
+        syncAuthToken();
+
+        const {
+            data: { subscription },
+        } = supabase.auth.onAuthStateChange(() => {
+            void syncAuthToken();
+        });
+
+        return () => {
+            subscription.unsubscribe();
+        };
+    }, [supabase]);
+
+    const handleLogout = async () => {
+        await supabase.auth.signOut();
+        localStorage.removeItem("token");
+        window.location.href = "/login";
+    };
 
     const isActiveRoute = (href: string) => {
         if (href === "/dashboard") {
@@ -152,6 +175,7 @@ export function DashboardLayout({
                         <NavLink key={item.href} item={item} />
                     ))}
                     <button
+                        onClick={handleLogout}
                         className={cn(
                             "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 w-full",
                             "text-text-faint hover:text-brand-red hover:bg-brand-red/5"

@@ -15,6 +15,24 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req: R
         if (event.type === "checkout.session.completed") {
             const session = event.data.object as any;
             const clientId = session.metadata.clientId;
+            const amount = session.amount_total ?? 0;
+            const currency = session.currency ?? "gbp";
+
+            await prisma.payment.upsert({
+                where: { stripeSessionId: session.id },
+                update: {
+                    amount,
+                    currency,
+                    status: "SUCCEEDED",
+                },
+                create: {
+                    clientId,
+                    stripeSessionId: session.id,
+                    amount,
+                    currency,
+                    status: "SUCCEEDED",
+                },
+            });
 
             // Transition state: PENDING_PAYMENT -> INTAKE_SENT
             const client = await prisma.client.update({

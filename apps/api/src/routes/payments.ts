@@ -32,6 +32,27 @@ router.post("/checkout", authenticate, async (req: AuthRequest, res: Response) =
             cancelUrl
         );
 
+        if (!session.url) {
+            throw new Error("Stripe checkout session did not include a URL");
+        }
+
+        await prisma.payment.upsert({
+            where: { stripeSessionId: session.id },
+            update: {
+                clientId,
+                amount: session.amount_total ?? 5000,
+                currency: session.currency ?? "gbp",
+                status: "PENDING",
+            },
+            create: {
+                clientId,
+                stripeSessionId: session.id,
+                amount: session.amount_total ?? 5000,
+                currency: session.currency ?? "gbp",
+                status: "PENDING",
+            },
+        });
+
         res.json({ url: session.url });
     } catch (error) {
         console.error("[POST /payments/checkout]", error);

@@ -40,6 +40,7 @@ app.use(cors({
     ],
     credentials: true
 }));
+app.use("/payments", paymentWebhookRouter);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -55,7 +56,6 @@ app.use("/exercises", exercisesRouter);
 app.use("/plans", plansRouter);
 app.use("/webhooks", webhooksRouter);
 app.use("/payments", paymentsRouter);
-app.use("/payments", paymentWebhookRouter);
 app.use("/analytics", analyticsRouter);
 app.use("/intake", intakeRouter);
 app.use("/messages", messagesRouter);

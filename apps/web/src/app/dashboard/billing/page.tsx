@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { DashboardLayout } from "@/components/DashboardLayout";
+import { getAuthHeaders } from "@/lib/auth";
 import {
     CreditCard,
     TrendingUp,
@@ -39,14 +40,6 @@ interface BillingStats {
     activeSubscriptions: number;
 }
 
-// Mock data for development
-const MOCK_STATS: BillingStats = {
-    totalRevenue: 2450000,
-    monthlyRevenue: 385000,
-    pendingPayments: 3,
-    activeSubscriptions: 12,
-};
-
 const MOCK_PAYMENTS: Payment[] = [
     { id: "p1", clientId: "c1", clientName: "Alex Rivera", amount: 35000, currency: "NGN", status: "succeeded", description: "Monthly coaching - March", createdAt: "2024-03-15T10:30:00Z" },
     { id: "p2", clientId: "c2", clientName: "Sarah Chen", amount: 35000, currency: "NGN", status: "pending", description: "Monthly coaching - March", createdAt: "2024-03-14T14:00:00Z" },
@@ -63,8 +56,8 @@ const statusConfig: Record<string, { label: string; className: string; icon: Rea
     refunded: { label: "Refunded", className: "badge-blue", icon: ArrowUpRight },
 };
 
-function formatCurrency(amount: number, currency: string = "NGN") {
-    return new Intl.NumberFormat("en-NG", {
+function formatCurrency(amount: number, currency: string = "GBP") {
+    return new Intl.NumberFormat("en-GB", {
         style: "currency",
         currency,
         minimumFractionDigits: 0,
@@ -72,7 +65,12 @@ function formatCurrency(amount: number, currency: string = "NGN") {
 }
 
 export default function BillingPage() {
-    const [stats, setStats] = useState<BillingStats>(MOCK_STATS);
+    const [stats, setStats] = useState<BillingStats>({
+        totalRevenue: 0,
+        monthlyRevenue: 0,
+        pendingPayments: 0,
+        activeSubscriptions: 0,
+    });
     const [payments, setPayments] = useState<Payment[]>([]);
     const [loading, setLoading] = useState(true);
     const [statusFilter, setStatusFilter] = useState<string | null>(null);
@@ -85,9 +83,8 @@ export default function BillingPage() {
         // Fetch clients for the bank transfer dropdown
         const fetchClients = async () => {
             try {
-                const token = localStorage.getItem("token");
                 const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/clients`, {
-                    headers: { Authorization: `Bearer ${token}` },
+                    headers: await getAuthHeaders(),
                 });
                 if (res.ok) {
                     const data = await res.json();
@@ -101,19 +98,41 @@ export default function BillingPage() {
     useEffect(() => {
         const fetchBillingData = async () => {
             try {
-                const token = localStorage.getItem("token");
-                const [statsRes, paymentsRes] = await Promise.all([
-                    fetch(`${process.env.NEXT_PUBLIC_API_URL}/billing/stats`, {
-                        headers: { Authorization: `Bearer ${token}` },
-                    }),
-                    fetch(`${process.env.NEXT_PUBLIC_API_URL}/billing/payments`, {
-                        headers: { Authorization: `Bearer ${token}` },
-                    }),
-                ]);
+                const paymentsRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/payments/history`, {
+                    headers: await getAuthHeaders(),
+                });
 
-                if (statsRes.ok) setStats(await statsRes.json());
-                if (paymentsRes.ok) setPayments(await paymentsRes.json());
-                else setPayments(MOCK_PAYMENTS);
+                if (paymentsRes.ok) {
+                    const paymentHistory: Payment[] = await paymentsRes.json();
+                    setPayments(paymentHistory);
+
+                    const now = new Date();
+                    const currentMonthRevenue = paymentHistory
+                        .filter((payment) => {
+                            const createdAt = new Date(payment.createdAt);
+                            return (
+                                payment.status === "succeeded" &&
+                                createdAt.getUTCFullYear() === now.getUTCFullYear() &&
+                                createdAt.getUTCMonth() === now.getUTCMonth()
+                            );
+                        })
+                        .reduce((sum, payment) => sum + payment.amount, 0);
+
+                    setStats({
+                        totalRevenue: paymentHistory
+                            .filter((payment) => payment.status === "succeeded")
+                            .reduce((sum, payment) => sum + payment.amount, 0),
+                        monthlyRevenue: currentMonthRevenue,
+                        pendingPayments: paymentHistory.filter((payment) => payment.status === "pending").length,
+                        activeSubscriptions: new Set(
+                            paymentHistory
+                                .filter((payment) => payment.status === "succeeded")
+                                .map((payment) => payment.clientId)
+                        ).size,
+                    });
+                } else {
+                    setPayments(MOCK_PAYMENTS);
+                }
             } catch {
                 setPayments(MOCK_PAYMENTS);
             } finally {
@@ -135,14 +154,13 @@ export default function BillingPage() {
         if (!bankTransferForm.clientId || !bankTransferForm.amount) return;
         setConfirmingTransfer(true);
         try {
-            const token = localStorage.getItem("token");
             const res = await fetch(
                 `${process.env.NEXT_PUBLIC_API_URL}/payments/confirm-bank-transfer`,
                 {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
-                        Authorization: `Bearer ${token}`,
+                        ...(await getAuthHeaders()),
                     },
                     body: JSON.stringify({
                         clientId: bankTransferForm.clientId,
