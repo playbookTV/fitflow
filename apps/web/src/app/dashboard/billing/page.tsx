@@ -40,14 +40,6 @@ interface BillingStats {
     activeSubscriptions: number;
 }
 
-const MOCK_PAYMENTS: Payment[] = [
-    { id: "p1", clientId: "c1", clientName: "Alex Rivera", amount: 35000, currency: "NGN", status: "succeeded", description: "Monthly coaching - March", createdAt: "2024-03-15T10:30:00Z" },
-    { id: "p2", clientId: "c2", clientName: "Sarah Chen", amount: 35000, currency: "NGN", status: "pending", description: "Monthly coaching - March", createdAt: "2024-03-14T14:00:00Z" },
-    { id: "p3", clientId: "c3", clientName: "Marcus Thorne", amount: 35000, currency: "NGN", status: "succeeded", description: "Monthly coaching - March", createdAt: "2024-03-12T09:15:00Z" },
-    { id: "p4", clientId: "c4", clientName: "Elena Rodriguez", amount: 35000, currency: "NGN", status: "failed", description: "Monthly coaching - March", createdAt: "2024-03-10T16:45:00Z" },
-    { id: "p5", clientId: "c5", clientName: "James Wilson", amount: 50000, currency: "NGN", status: "succeeded", description: "Premium coaching - March", createdAt: "2024-03-08T11:00:00Z" },
-    { id: "p6", clientId: "c1", clientName: "Alex Rivera", amount: 35000, currency: "NGN", status: "succeeded", description: "Monthly coaching - February", createdAt: "2024-02-15T10:30:00Z" },
-];
 
 const statusConfig: Record<string, { label: string; className: string; icon: React.ElementType }> = {
     succeeded: { label: "Paid", className: "badge-green", icon: CheckCircle2 },
@@ -131,10 +123,10 @@ export default function BillingPage() {
                         ).size,
                     });
                 } else {
-                    setPayments(MOCK_PAYMENTS);
+                    setPayments([]);
                 }
             } catch {
-                setPayments(MOCK_PAYMENTS);
+                setPayments([]);
             } finally {
                 setLoading(false);
             }

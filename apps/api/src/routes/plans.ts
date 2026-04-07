@@ -137,11 +137,33 @@ router.delete("/:id", authenticate, async (req: AuthRequest, res: Response) => {
     if (!coachId) return res.status(401).json({ error: "Unauthorized" });
 
     try {
-        const result = await prisma.workoutPlan.deleteMany({
-            where: { id: id as string, coachId },
+        const result = await prisma.$transaction(async (tx) => {
+            const plan = await tx.workoutPlan.findFirst({
+                where: { id: id as string, coachId },
+            });
+            if (!plan) return null;
+
+            const assignmentIds = (
+                await tx.planAssignment.findMany({
+                    where: { planId: id as string },
+                    select: { id: true },
+                })
+            ).map((a) => a.id);
+
+            if (assignmentIds.length > 0) {
+                await tx.workoutLog.deleteMany({
+                    where: { assignmentId: { in: assignmentIds } },
+                });
+                await tx.planAssignment.deleteMany({
+                    where: { planId: id as string },
+                });
+            }
+
+            await tx.workoutPlan.delete({ where: { id: plan.id } });
+            return plan;
         });
 
-        if (result.count === 0) return res.status(404).json({ error: "Plan not found" });
+        if (!result) return res.status(404).json({ error: "Plan not found" });
 
         res.json({ success: true });
     } catch (error) {
