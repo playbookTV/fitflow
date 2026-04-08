@@ -1,12 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { syncAuthToken } from "@/lib/auth";
 import { Logo } from "@/components/ui";
+import { CheckCircle2 } from "lucide-react";
 
-export default function LoginPage() {
+function LoginContent() {
+    const searchParams = useSearchParams();
+    const confirmed = searchParams.get("confirmed") === "true";
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [loading, setLoading] = useState(false);
@@ -44,6 +48,13 @@ export default function LoginPage() {
                 <p className="mb-10 text-sm text-text-secondary">
                     Enter your details to access your coaching dashboard.
                 </p>
+
+                {confirmed && (
+                    <div className="mb-6 flex items-center gap-2 rounded-lg border border-brand-green/20 bg-brand-green/10 px-4 py-3 text-sm text-brand-green">
+                        <CheckCircle2 className="h-4 w-4 shrink-0" />
+                        Email confirmed! You can now log in.
+                    </div>
+                )}
 
                 <form onSubmit={handleLogin} className="space-y-6">
                     <div className="form-field">
@@ -93,5 +104,13 @@ export default function LoginPage() {
                 </div>
             </div>
         </div>
+    );
+}
+
+export default function LoginPage() {
+    return (
+        <Suspense>
+            <LoginContent />
+        </Suspense>
     );
 }

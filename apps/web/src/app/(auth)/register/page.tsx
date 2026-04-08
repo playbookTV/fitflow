@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { Logo } from "@/components/ui";
+import { Mail } from "lucide-react";
 
 export default function RegisterPage() {
     const [email, setEmail] = useState("");
@@ -11,6 +12,7 @@ export default function RegisterPage() {
     const [name, setName] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [emailSent, setEmailSent] = useState(false);
     const supabase = createClient();
 
     const handleRegister = async (e: React.FormEvent) => {
@@ -25,6 +27,7 @@ export default function RegisterPage() {
                 data: {
                     full_name: name,
                 },
+                emailRedirectTo: `${window.location.origin}/auth/callback`,
             },
         });
 
@@ -32,9 +35,47 @@ export default function RegisterPage() {
             setError(error.message);
             setLoading(false);
         } else {
-            window.location.href = "/login?message=Check your email to verify your account.";
+            setEmailSent(true);
+            setLoading(false);
         }
     };
+
+    if (emailSent) {
+        return (
+            <div className="flex min-h-screen items-center justify-center p-6 sm:p-12">
+                <div className="w-full max-w-[400px] animate-fade-in text-center">
+                    <Logo size="sm" showText className="mb-12" />
+
+                    <div className="mb-6 mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-brand-green/10">
+                        <Mail className="h-8 w-8 text-brand-green" />
+                    </div>
+
+                    <h1 className="mb-2 font-display text-2xl font-semibold text-text-primary">
+                        Check your email
+                    </h1>
+                    <p className="mb-2 text-sm text-text-secondary">
+                        We sent a verification link to
+                    </p>
+                    <p className="mb-8 text-sm font-medium text-text-primary">
+                        {email}
+                    </p>
+                    <p className="text-xs text-text-faint">
+                        Click the link in your email to verify your account, then log in.
+                    </p>
+
+                    <div className="mt-10 text-center text-xs text-text-faint">
+                        Didn&apos;t receive an email?{" "}
+                        <button
+                            onClick={() => setEmailSent(false)}
+                            className="link-underline"
+                        >
+                            Try again
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="flex min-h-screen items-center justify-center p-6 sm:p-12">
