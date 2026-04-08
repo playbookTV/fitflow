@@ -14,16 +14,16 @@ export type YMoveExercise = {
     instructions?: string[];
 };
 
-async function ymoveGet<T>(path: string): Promise<T> {
+async function ymoveGet<T>(path: string, retries = 2): Promise<T> {
     const res = await fetch(`${BASE}${path}`, {
         headers: { "X-API-Key": KEY! },
     });
 
-    if (res.status === 429) {
+    if (res.status === 429 && retries > 0) {
         const body = await res.json();
         const retryAfterMs = body.retryAfterMs ?? 2000;
         await new Promise((r) => setTimeout(r, retryAfterMs));
-        return ymoveGet(path);
+        return ymoveGet(path, retries - 1);
     }
 
     if (!res.ok) {
@@ -46,7 +46,7 @@ export async function searchExercises(params: {
             .map(([k, v]) => [k, String(v)])
     );
     const data = await ymoveGet<{ exercises: YMoveExercise[] }>(`/exercises?${q}`);
-    return data.exercises;
+    return data.exercises ?? [];
 }
 
 export async function fetchExercise(idOrSlug: string): Promise<YMoveExercise> {

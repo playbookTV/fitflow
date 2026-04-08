@@ -83,6 +83,13 @@ export async function ensureDefaultBot(): Promise<void> {
     const existing = await prisma.botRegistry.findUnique({ where: { coachId } });
     if (existing) return;
 
+    // Verify the coach exists before attempting to provision (FK constraint)
+    const coach = await prisma.coach.findUnique({ where: { id: coachId } });
+    if (!coach) {
+        console.warn(`[BotProvisioner] Coach ${coachId} not found — skipping auto-provision. Coach must sign up first.`);
+        return;
+    }
+
     try {
         const result = await provisionBot(coachId, botToken);
         console.log(`[BotProvisioner] Auto-provisioned @${result.botUsername} for default coach`);

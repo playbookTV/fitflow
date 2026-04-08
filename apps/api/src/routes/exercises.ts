@@ -123,7 +123,7 @@ router.get("/unified-search", authenticate, async (req: AuthRequest, res: Respon
     const [localResult, ymoveResult] = await Promise.allSettled([localPromise, ymovePromise]);
 
     const localExercises = localResult.status === "fulfilled" ? localResult.value : [];
-    const ymoveExercises = ymoveResult.status === "fulfilled" ? ymoveResult.value : [];
+    const ymoveExercises = ymoveResult.status === "fulfilled" ? ymoveResult.value ?? [] : [];
     const ymoveUnavailable = ymoveResult.status === "rejected";
 
     // Build dedup sets from local exercises
