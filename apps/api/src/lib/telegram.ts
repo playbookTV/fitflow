@@ -74,6 +74,37 @@ export async function sendTelegramInlineKeyboard(
 }
 
 /**
+ * Send a video via Telegram Bot API.
+ */
+export async function sendTelegramVideo(
+    botToken: string,
+    chatId: string,
+    videoUrl: string,
+    caption: string,
+    parseMode: "MarkdownV2" | "HTML" | "Markdown" | undefined = "Markdown"
+): Promise<TelegramMessageResult> {
+    const url = `${TELEGRAM_API}/bot${botToken}/sendVideo`;
+
+    const data: any = {
+        chat_id: chatId,
+        video: videoUrl,
+        caption,
+    };
+    if (parseMode) data.parse_mode = parseMode;
+
+    try {
+        const response = await axios.post(url, data);
+        if (!response.data.ok) {
+            throw new Error(response.data.description || "Telegram API error");
+        }
+        return response.data.result;
+    } catch (error: any) {
+        console.error("[Telegram API Error] sendVideo:", error.response?.data || error.message);
+        throw error;
+    }
+}
+
+/**
  * Answer a callback query (acknowledges button press to remove loading state).
  */
 export async function answerCallbackQuery(

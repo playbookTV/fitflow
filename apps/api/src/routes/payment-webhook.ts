@@ -49,6 +49,12 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req: R
                 coachId: client.coachId,
             });
 
+            // Send payment confirmed template to the client
+            await onboardingQueue.add(JobType.PAYMENT_CONFIRMED, {
+                clientId: client.id,
+                coachId: client.coachId,
+            });
+
             await logEvent(EventType.PAYMENT_CONFIRMED, {
                 coachId: client.coachId,
                 clientId: client.id,

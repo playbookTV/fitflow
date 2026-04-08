@@ -2,6 +2,8 @@ import { Router } from "express";
 import { MessageChannel, MessageDirection } from "@prisma/client";
 import { workoutQueue } from "../lib/queue";
 import { prisma } from "../lib/prisma";
+import { routeCoachCommand } from "../handlers/coachCommandRouter";
+import { sendWhatsAppMessage } from "../lib/meta";
 
 const router: Router = Router();
 
@@ -152,6 +154,23 @@ router.post("/", async (req, res) => {
                 });
 
                 if (!client) {
+                    // Check if sender is a coach (for exercise commands via WhatsApp)
+                    if (msg.type === "text" && msg.text?.body && /^\/(?:exercise|ex|send|workout)\b/i.test(msg.text.body.trim())) {
+                        const coach = await prisma.coach.findFirst({
+                            where: { clients: { some: { phone: { contains: msg.from } } } },
+                        });
+                        // If no coach match by client phone, try direct — coaches may message from any number
+                        // For now, skip unknown senders
+                        if (!coach) {
+                            console.log(`[Webhook] Unknown sender (not client or coach): ${msg.from}`);
+                            continue;
+                        }
+                        const response = await routeCoachCommand(coach.id, msg.text.body);
+                        if (response) {
+                            await sendWhatsAppMessage(msg.from, response);
+                        }
+                        continue;
+                    }
                     console.log(`[Webhook] Unknown sender: ${msg.from}`);
                     continue;
                 }

@@ -13,14 +13,9 @@ import { formatSchedulerError } from "../lib/background-jobs";
 const PLAN_DURATION_DAYS = 30;
 
 /**
- * Days before expiry to send a renewal reminder.
- */
-const REMINDER_DAYS_BEFORE = 3;
-
-/**
  * Renewal Scheduler: Runs daily at 06:00 UTC.
  * Checks for active plan assignments approaching their renewal window
- * and enqueues renewal reminders via the client's preferred channel.
+ * and enqueues renewal reminders at 7 days, 2 days, and 2 days post-expiry.
  */
 export const startRenewalScheduler = () => {
     cron.schedule("0 6 * * *", async () => {
@@ -42,14 +37,35 @@ export const startRenewalScheduler = () => {
                 const daysInCurrentCycle = daysSinceStart % PLAN_DURATION_DAYS;
                 const daysUntilRenewal = PLAN_DURATION_DAYS - daysInCurrentCycle;
 
-                // Send reminder when within the reminder window
-                if (daysUntilRenewal <= REMINDER_DAYS_BEFORE && daysUntilRenewal > 0) {
+                let jobType: string | null = null;
+
+                if (daysUntilRenewal === 7) {
+                    jobType = JobType.RENEWAL_7DAY;
+                } else if (daysUntilRenewal === 2) {
+                    jobType = JobType.RENEWAL_2DAY;
+                } else if (daysUntilRenewal === -2 || daysInCurrentCycle === 2) {
+                    // 2 days after expiry (start of new cycle, day 2)
+                    // Only send post-expiry if no payment was made in the last cycle
+                    const recentPayment = await prisma.payment.findFirst({
+                        where: {
+                            clientId: assignment.clientId,
+                            status: "SUCCEEDED",
+                            createdAt: { gte: new Date(Date.now() - PLAN_DURATION_DAYS * 24 * 60 * 60 * 1000) },
+                        },
+                    });
+
+                    if (!recentPayment) {
+                        jobType = JobType.RENEWAL_POST_EXPIRY;
+                    }
+                }
+
+                if (jobType) {
                     console.log(
-                        `[RenewalScheduler] Enqueuing renewal reminder for ${assignment.client.name} (${daysUntilRenewal} days left)`
+                        `[RenewalScheduler] Enqueuing ${jobType} for ${assignment.client.name} (${daysUntilRenewal} days)`
                     );
 
                     await renewalQueue.add(
-                        JobType.RENEWAL_REMINDER,
+                        jobType,
                         {
                             clientId: assignment.clientId,
                             coachId: assignment.client.coachId,

@@ -18,14 +18,20 @@ import telegramWebhookRouter from "./routes/telegram-webhook";
 import offersRouter from "./routes/offers";
 import leadsRouter from "./routes/leads";
 import publicRouter from "./routes/public";
+import coachExercisesRouter from "./routes/coach-exercises";
 import { startDailyScheduler } from "./jobs/daily-scheduler";
 import { startWeeklyCheckinScheduler } from "./jobs/weekly-checkin";
 import { startRenewalScheduler } from "./jobs/renewal-scheduler";
+import { startEngagementScheduler } from "./jobs/engagement-scheduler";
+import { startWeeklySummaryScheduler } from "./jobs/weekly-summary-scheduler";
+import { startMissedCheckinScheduler } from "./jobs/missed-checkin-scheduler";
+import { startYMoveUsageScheduler } from "./jobs/ymove-usage-scheduler";
 import { schedulersEnabled, workersEnabled } from "./lib/background-jobs";
 
 if (workersEnabled()) {
     require("./workers/workoutProcessor");
-    console.log("[Startup] Background workers enabled");
+    require("./workers/engagementWorker");
+    console.log("[Startup] Background workers enabled (workout + engagement)");
 } else {
     console.log("[Startup] Background workers disabled");
 }
@@ -34,7 +40,11 @@ if (schedulersEnabled()) {
     startDailyScheduler();
     startWeeklyCheckinScheduler();
     startRenewalScheduler();
-    console.log("[Startup] Schedulers enabled");
+    startEngagementScheduler();
+    startWeeklySummaryScheduler();
+    startMissedCheckinScheduler();
+    startYMoveUsageScheduler();
+    console.log("[Startup] Schedulers enabled (7 active)");
 } else {
     console.log("[Startup] Schedulers disabled");
 }
@@ -76,6 +86,7 @@ app.use("/telegram/webhook", telegramWebhookRouter);
 app.use("/offers", offersRouter);
 app.use("/leads", leadsRouter);
 app.use("/p", publicRouter);
+app.use("/coach-exercises", coachExercisesRouter);
 
 // 404
 app.use((_req: Request, res: Response) => {

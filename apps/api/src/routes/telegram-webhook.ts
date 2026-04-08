@@ -1,9 +1,10 @@
 import { Router } from "express";
 import { MessageChannel, MessageDirection } from "@prisma/client";
 import { prisma } from "../lib/prisma";
-import { answerCallbackQuery } from "../lib/telegram";
+import { answerCallbackQuery, sendTelegramMessage } from "../lib/telegram";
 import { workoutQueue } from "../lib/queue";
 import { logEvent, EventType } from "../lib/event-logger";
+import { routeCoachCommand } from "../handlers/coachCommandRouter";
 
 const router: Router = Router();
 
@@ -102,15 +103,23 @@ router.post("/:coachId", async (req, res) => {
             });
 
             if (!client) {
+                // Check if this is a coach sending exercise commands
+                if (/^\/(?:exercise|ex|send|workout)\b/i.test(text)) {
+                    const response = await routeCoachCommand(coachId, text);
+                    if (response) {
+                        await sendTelegramMessage(botRegistry.botToken, chatId, response);
+                    }
+                    return;
+                }
+
                 console.log(`[TG Webhook] Unknown Telegram sender: ${chatId}`);
 
                 // Handle /start command for new users
                 if (text === "/start") {
-                    const { sendTelegramMessage } = await import("../lib/telegram");
                     await sendTelegramMessage(
                         botRegistry.botToken,
                         chatId,
-                        "👋 Welcome! Your coach will set you up on FitFlow. Please share this chat ID with your coach for onboarding."
+                        "\u{1F44B} Welcome! Your coach will set you up on FitFlow. Please share this chat ID with your coach for onboarding."
                     );
                 }
                 return;

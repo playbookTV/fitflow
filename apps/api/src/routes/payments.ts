@@ -99,6 +99,12 @@ router.post("/confirm-bank-transfer", authenticate, async (req: AuthRequest, res
                 clientId: client.id,
                 coachId,
             });
+
+            // Send bank transfer confirmed template to the client
+            await onboardingQueue.add(JobType.PAYMENT_CONFIRMED, {
+                clientId: client.id,
+                coachId,
+            });
         }
 
         await logEvent(EventType.BANK_TRANSFER_CONFIRMED, {

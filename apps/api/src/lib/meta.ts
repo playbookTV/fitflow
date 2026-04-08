@@ -357,6 +357,57 @@ export const sendWhatsAppMessage = async (to: string, bodyOrTemplate: string | o
 };
 
 /**
+ * Sends a video message via WhatsApp Cloud API.
+ */
+export const sendWhatsAppVideo = async (
+    to: string,
+    videoUrl: string,
+    caption: string,
+    clientId?: string
+) => {
+    if (!WA_ACCESS_TOKEN || !WA_PHONE_NUMBER_ID) {
+        throw new Error("WhatsApp API configuration missing");
+    }
+
+    const cleanTo = to.replaceAll(/\D/g, "");
+    const url = `https://graph.facebook.com/${VERSION}/${WA_PHONE_NUMBER_ID}/messages`;
+
+    const data = {
+        messaging_product: "whatsapp",
+        recipient_type: "individual",
+        to: cleanTo,
+        type: "video",
+        video: { link: videoUrl, caption },
+    };
+
+    try {
+        const response = await axios.post(url, data, {
+            headers: { Authorization: `Bearer ${WA_ACCESS_TOKEN}` },
+        });
+
+        const result = response.data;
+
+        if (clientId && result.messages?.[0]?.id) {
+            await prisma.message.create({
+                data: {
+                    clientId,
+                    channel: MessageChannel.WHATSAPP,
+                    direction: MessageDirection.OUTBOUND,
+                    content: `[Video] ${caption}`,
+                    metaMessageId: result.messages[0].id,
+                    status: "sent",
+                },
+            });
+        }
+
+        return result;
+    } catch (error: any) {
+        console.error("[WA API Error] sendVideo:", error.response?.data || error.message);
+        throw error;
+    }
+};
+
+/**
  * Generalized sender based on channel.
  * Currently only supports WhatsApp. Telegram will be added via the channel abstraction layer.
  */

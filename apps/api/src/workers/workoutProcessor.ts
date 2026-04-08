@@ -4,7 +4,12 @@ import { getChannel, getRecipientId } from "../lib/channels/channel-router";
 import { connection } from "../lib/queue";
 import { JobType } from "../lib/types";
 import { logEvent, EventType } from "../lib/event-logger";
-import { differenceInDays } from "date-fns";
+import { TemplateId } from "@fitflow/shared";
+import { differenceInDays, differenceInWeeks } from "date-fns";
+import { getFreshVideoUrl } from "../services/exerciseCache";
+
+// Ensure all templates are registered
+import "../lib/templates";
 
 /**
  * Worker to process workout delivery.
@@ -20,7 +25,23 @@ export const workoutWorker = new Worker(
             if (job.name === JobType.WORKOUT_DELIVERY) {
                 const assignment = await prisma.planAssignment.findUnique({
                     where: { id: assignmentId },
-                    include: { plan: true, client: true },
+                    include: {
+                        plan: {
+                            include: {
+                                days: {
+                                    include: {
+                                        exercises: {
+                                            include: { exercise: true },
+                                            orderBy: { order: "asc" },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                        client: {
+                            include: { coach: true },
+                        },
+                    },
                 });
 
                 if (!assignment?.isActive) {
@@ -33,13 +54,61 @@ export const workoutWorker = new Worker(
                 const recipientId = getRecipientId(client);
                 const workoutDay = (dayNumber % 7) || 7;
 
-                await channel.sendWorkout(recipientId, {
+                // Find the matching WorkoutDay for this day number
+                const matchingDay = assignment.plan.days.find(d => d.dayNumber === workoutDay);
+                const workoutName = matchingDay?.title || assignment.plan.title;
+
+                // Build exercise list string
+                let exerciseList = "Check your dashboard for today's exercises.";
+                if (matchingDay?.exercises && matchingDay.exercises.length > 0) {
+                    exerciseList = matchingDay.exercises
+                        .map((we, i) => {
+                            const parts = [`${i + 1}. ${we.exercise.name}`];
+                            if (we.sets && we.reps) parts.push(`${we.sets} sets x ${we.reps} reps`);
+                            else if (we.sets) parts.push(`${we.sets} sets`);
+                            if (we.notes) parts.push(we.notes);
+                            return parts.join(" — ");
+                        })
+                        .join("\n");
+                }
+
+                await channel.sendTemplate(recipientId, TemplateId.WORKOUT_DAILY, {
+                    workout_day_number: workoutDay,
+                    workout_name: workoutName,
+                    exercise_list: exerciseList,
                     clientId: client.id,
-                    clientName: client.name,
-                    planTitle: assignment.plan.title,
-                    dayNumber: workoutDay,
-                    dashboardUrl: `${process.env.WEB_URL}/dashboard/workouts`,
                 });
+
+                // Send demo videos for exercises that have YMove IDs
+                if (matchingDay?.exercises && channel.sendVideo) {
+                    const ymoveExercises = matchingDay.exercises.filter(
+                        (we) => we.exercise.ymoveId
+                    );
+
+                    for (const we of ymoveExercises) {
+                        try {
+                            const { videoUrl } = await getFreshVideoUrl(we.exercise.ymoveId!);
+                            const caption = [
+                                `*${we.exercise.name}*`,
+                                we.sets && we.reps ? `${we.sets} \u00D7 ${we.reps} reps` : null,
+                                we.notes || null,
+                            ]
+                                .filter(Boolean)
+                                .join("\n");
+
+                            await channel.sendVideo(recipientId, {
+                                videoUrl,
+                                caption,
+                                clientId: client.id,
+                            });
+                        } catch (err) {
+                            console.error(
+                                `[Workout Worker] Failed to send video for exercise ${we.exercise.name}:`,
+                                err
+                            );
+                        }
+                    }
+                }
 
                 await logEvent(EventType.WORKOUT_DELIVERED, {
                     coachId: client.coachId,
@@ -65,15 +134,33 @@ export const checkinWorker = new Worker(
         const { clientId } = job.data;
         console.log(`[Checkin Worker] Sending reminder to ${clientId}`);
 
-        const client = await prisma.client.findUnique({ where: { id: clientId } });
+        const client = await prisma.client.findUnique({
+            where: { id: clientId },
+            include: { coach: true },
+        });
         if (!client) return;
 
         const channel = await getChannel(client.preferredChannel, client.coachId);
         const recipientId = getRecipientId(client);
 
-        await channel.sendStructuredCheckIn(recipientId, {
+        // Calculate programme week from active assignment
+        const assignment = await prisma.planAssignment.findFirst({
+            where: { clientId, isActive: true },
+            include: { plan: { include: { days: true } } },
+        });
+
+        const programmeWeek = assignment
+            ? differenceInWeeks(new Date(), assignment.startDate) + 1
+            : 1;
+        const totalWeeks = assignment
+            ? Math.ceil(assignment.plan.days.length / assignment.scheduleDays.length)
+            : 12;
+
+        await channel.sendTemplate(recipientId, TemplateId.CHECKIN_WEEKLY_PROMPT, {
+            client_first_name: client.name.split(" ")[0],
+            programme_week: programmeWeek,
+            total_weeks: totalWeeks,
             clientId: client.id,
-            clientName: client.name,
         });
 
         await logEvent(EventType.CHECKIN_SENT, {
@@ -92,25 +179,50 @@ export const onboardingWorker = new Worker(
     "onboarding-intake",
     async (job: Job) => {
         const { clientId } = job.data;
-        console.log(`[Onboarding Worker] Sending intake flow to ${clientId}`);
+        console.log(`[Onboarding Worker] Processing job ${job.name} for ${clientId}`);
 
-        const client = await prisma.client.findUnique({ where: { id: clientId } });
+        const client = await prisma.client.findUnique({
+            where: { id: clientId },
+            include: { coach: true },
+        });
         if (!client) return;
 
         const channel = await getChannel(client.preferredChannel, client.coachId);
         const recipientId = getRecipientId(client);
 
-        await channel.sendOnboarding(recipientId, {
-            clientId: client.id,
-            clientName: client.name,
-            intakeFormUrl: `${process.env.WEB_URL}/onboarding?id=${clientId}`,
-        });
+        if (job.name === JobType.ONBOARDING_INTAKE) {
+            const offerName = client.goals || `${client.coach.name}'s Coaching`;
 
-        await logEvent(EventType.ONBOARDING_SENT, {
-            coachId: client.coachId,
-            clientId: client.id,
-            channel: client.preferredChannel,
-        });
+            await channel.sendTemplate(recipientId, TemplateId.ONBOARDING_WELCOME, {
+                client_first_name: client.name.split(" ")[0],
+                offer_name: offerName,
+                clientId: client.id,
+            });
+
+            await logEvent(EventType.ONBOARDING_SENT, {
+                coachId: client.coachId,
+                clientId: client.id,
+                channel: client.preferredChannel,
+            });
+        } else if (job.name === JobType.PAYMENT_CONFIRMED) {
+            const coachFirstName = client.coach.name?.split(" ")[0] || "Your coach";
+            const offerName = job.data.offerName || client.goals || `${client.coach.name}'s Coaching`;
+            const programmeStartDate = job.data.programmeStartDate || "soon";
+
+            await channel.sendTemplate(recipientId, TemplateId.LEAD_PAYMENT_CONFIRMED, {
+                client_first_name: client.name.split(" ")[0],
+                coach_first_name: coachFirstName,
+                offer_name: offerName,
+                programme_start_date: programmeStartDate,
+            });
+
+            await logEvent(EventType.PAYMENT_CONFIRMED, {
+                coachId: client.coachId,
+                clientId: client.id,
+                channel: client.preferredChannel,
+                metadata: { templateSent: true },
+            });
+        }
     },
     { connection }
 );
@@ -124,23 +236,49 @@ export const renewalWorker = new Worker(
         const { clientId, planTitle, daysUntilRenewal } = job.data;
         console.log(`[Renewal Worker] Sending reminder to ${clientId}`);
 
-        const client = await prisma.client.findUnique({ where: { id: clientId } });
+        const client = await prisma.client.findUnique({
+            where: { id: clientId },
+            include: { coach: true },
+        });
         if (!client) return;
 
         const channel = await getChannel(client.preferredChannel, client.coachId);
         const recipientId = getRecipientId(client);
+        const coachFirstName = client.coach.name?.split(" ")[0] || "Your coach";
 
-        const message = daysUntilRenewal === 1
-            ? `⏰ *Renewal Reminder*\n\nHey ${client.name}! Your *${planTitle}* coaching plan expires tomorrow. Renew now to keep your progress going!`
-            : `⏰ *Renewal Reminder*\n\nHey ${client.name}! Your *${planTitle}* coaching plan renews in ${daysUntilRenewal} days. Get in touch with your coach to continue.`;
+        // Calculate renewal date
+        const renewalDate = new Date();
+        renewalDate.setDate(renewalDate.getDate() + (daysUntilRenewal || 0));
+        const renewalDateStr = renewalDate.toLocaleDateString("en-GB", {
+            day: "numeric",
+            month: "long",
+        });
 
-        await channel.sendMessage(recipientId, message, clientId);
+        const paymentLink = `${process.env.WEB_URL}/pay/${client.coachId}/${clientId}`;
+
+        // Choose template based on job name or days until renewal
+        let templateId: TemplateId;
+        if (job.name === JobType.RENEWAL_POST_EXPIRY || daysUntilRenewal <= 0) {
+            templateId = TemplateId.RENEWAL_POST_EXPIRY;
+        } else if (daysUntilRenewal <= 2) {
+            templateId = TemplateId.RENEWAL_2DAY;
+        } else {
+            templateId = TemplateId.RENEWAL_7DAY;
+        }
+
+        await channel.sendTemplate(recipientId, templateId, {
+            client_first_name: client.name.split(" ")[0],
+            coach_first_name: coachFirstName,
+            renewal_date: renewalDateStr,
+            payment_link: paymentLink,
+            renewal_amount: job.data.renewalAmount || "",
+        });
 
         await logEvent(EventType.CHECKIN_SENT, {
             coachId: client.coachId,
             clientId: client.id,
             channel: client.preferredChannel,
-            metadata: { type: "renewal_reminder", planTitle, daysUntilRenewal },
+            metadata: { type: "renewal_reminder", planTitle, daysUntilRenewal, templateId },
         });
     },
     { connection }
@@ -169,7 +307,7 @@ export const messageWorker = new Worker(
         if (normalizedBody === "DONE") {
             const assignment = await prisma.planAssignment.findFirst({
                 where: { clientId, isActive: true },
-                include: { client: true },
+                include: { client: { include: { coach: true } } },
             });
 
             if (!assignment) {
@@ -201,11 +339,11 @@ export const messageWorker = new Worker(
             const channel = await getChannel(client.preferredChannel, client.coachId);
             const recipientId = getRecipientId(client);
 
-            await channel.sendMessage(
-                recipientId,
-                `🔥 *Boom!* Workout logged for Day ${dayNumber}. Great work, ${client.name}! Your compliance is now ${newCompliance}%. Keep it up! 🏋️‍♂️`,
-                clientId
-            );
+            await channel.sendTemplate(recipientId, TemplateId.WORKOUT_LOGGED_CONFIRMATION, {
+                client_first_name: client.name.split(" ")[0],
+                workout_day_number: dayNumber,
+                compliance: newCompliance,
+            });
 
             await logEvent(EventType.WORKOUT_COMPLETED, {
                 coachId: client.coachId,

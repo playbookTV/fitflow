@@ -4,5 +4,8 @@ export {
     type CheckInPrompt,
     type WorkoutPayload,
     type OnboardingPayload,
+    type VideoPayload,
     type DeliveryChannel,
 } from "./channels/types";
+
+export * from "./templates";

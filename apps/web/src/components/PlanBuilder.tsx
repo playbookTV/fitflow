@@ -4,12 +4,23 @@ import { useState, useEffect } from "react";
 import {
     Plus, Search, GripVertical, Save, Trash2, ChevronDown, ChevronRight
 } from "lucide-react";
+import Image from "next/image";
 
 interface Exercise {
     id: string;
     name: string;
     category: string;
     muscles: string[];
+    demoVideoUrl?: string;
+}
+
+interface YMoveExercise {
+    id: string;
+    slug: string;
+    title: string;
+    muscleGroup: string;
+    equipment: string;
+    thumbnailUrl?: string;
 }
 
 interface PlanExercise {
@@ -20,6 +31,7 @@ interface PlanExercise {
     reps: string;
     rest: string;
     notes: string;
+    demoVideoUrl?: string;
 }
 
 interface PlanDay {
@@ -38,27 +50,45 @@ export default function PlanBuilder() {
     ]);
     const [searchTerm, setSearchTerm] = useState("");
     const [searchResults, setSearchResults] = useState<Exercise[]>([]);
+    const [ymoveResults, setYmoveResults] = useState<YMoveExercise[]>([]);
+    const [searchSource, setSearchSource] = useState<"local" | "ymove">("local");
     const [activeDayIdx, setActiveDayIdx] = useState<number | null>(0);
     const [isSaving, setIsSaving] = useState(false);
 
-    // Mock search results
     useEffect(() => {
-        if (searchTerm.length > 2) {
-            const mockResults: Exercise[] = [
-                { id: "1", name: "Barbell Back Squat", category: "Legs", muscles: ["Quads", "Glutes"] },
-                { id: "2", name: "Bench Press", category: "Chest", muscles: ["Chest", "Triceps"] },
-                { id: "3", name: "Deadlift", category: "Back", muscles: ["Back", "Hamstrings"] },
-                { id: "4", name: "Overhead Press", category: "Shoulders", muscles: ["Shoulders", "Triceps"] },
-                { id: "5", name: "Barbell Row", category: "Back", muscles: ["Back", "Biceps"] },
-                { id: "6", name: "Romanian Deadlift", category: "Legs", muscles: ["Hamstrings", "Glutes"] },
-                { id: "7", name: "Pull-ups", category: "Back", muscles: ["Lats", "Biceps"] },
-                { id: "8", name: "Dumbbell Lunges", category: "Legs", muscles: ["Quads", "Glutes"] },
-            ].filter(ex => ex.name.toLowerCase().includes(searchTerm.toLowerCase()));
-            setSearchResults(mockResults);
-        } else {
+        if (searchTerm.length < 3) {
             setSearchResults([]);
+            setYmoveResults([]);
+            return;
         }
-    }, [searchTerm]);
+
+        const controller = new AbortController();
+        const token = localStorage.getItem("token");
+
+        if (searchSource === "local") {
+            fetch(`${process.env.NEXT_PUBLIC_API_URL}/exercises?search=${encodeURIComponent(searchTerm)}`, {
+                headers: { Authorization: `Bearer ${token}` },
+                signal: controller.signal,
+            })
+                .then((res) => res.ok ? res.json() : [])
+                .then((data: Exercise[]) => setSearchResults(data))
+                .catch((err) => {
+                    if (err.name !== "AbortError") setSearchResults([]);
+                });
+        } else {
+            fetch(`${process.env.NEXT_PUBLIC_API_URL}/exercises/ymove-search?search=${encodeURIComponent(searchTerm)}`, {
+                headers: { Authorization: `Bearer ${token}` },
+                signal: controller.signal,
+            })
+                .then((res) => res.ok ? res.json() : [])
+                .then((data: YMoveExercise[]) => setYmoveResults(data))
+                .catch((err) => {
+                    if (err.name !== "AbortError") setYmoveResults([]);
+                });
+        }
+
+        return () => controller.abort();
+    }, [searchTerm, searchSource]);
 
     const addDay = () => {
         setDays([...days, {
@@ -79,10 +109,30 @@ export default function PlanBuilder() {
             sets: 3,
             reps: "10-12",
             rest: "60s",
-            notes: ""
+            notes: "",
+            demoVideoUrl: ex.demoVideoUrl,
         });
         setDays(newDays);
         setSearchTerm("");
+    };
+
+    const importAndAddYmoveExercise = async (dayIdx: number, ymEx: YMoveExercise) => {
+        const token = localStorage.getItem("token");
+        try {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/exercises/ymove-import`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({ ymoveId: ymEx.id }),
+            });
+            if (!res.ok) throw new Error("Import failed");
+            const imported: Exercise = await res.json();
+            addExerciseToDay(dayIdx, { ...imported, demoVideoUrl: ymEx.thumbnailUrl || imported.demoVideoUrl });
+        } catch (err) {
+            console.error("Failed to import YMove exercise:", err);
+        }
     };
 
     const removeExercise = (dayIdx: number, exIdx: number) => {
@@ -216,6 +266,9 @@ export default function PlanBuilder() {
                                     {day.exercises.map((ex, exIdx) => (
                                         <div key={ex.id} className="flex items-center gap-4 group animate-slide-up">
                                             <GripVertical size={14} className="text-text-muted cursor-grab shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                            {ex.demoVideoUrl && (
+                                                <Image src={ex.demoVideoUrl} alt="" width={28} height={28} className="w-7 h-7 rounded object-cover shrink-0" />
+                                            )}
                                             <span className="text-sm text-text-primary flex-1 truncate font-medium">
                                                 {ex.name}
                                             </span>
@@ -272,10 +325,26 @@ export default function PlanBuilder() {
 
                                     {/* Search / Add Exercise */}
                                     <div className="mt-4 relative">
+                                        {/* Source tabs */}
+                                        <div className="flex gap-1 mb-2">
+                                            <button
+                                                onClick={() => { setSearchSource("local"); setSearchTerm(""); }}
+                                                className={`px-3 py-1 rounded-lg text-[10px] font-mono tracking-wider transition-colors ${searchSource === "local" ? "bg-brand-green-glow text-brand-green border border-brand-green-border" : "text-text-faint hover:text-text-secondary"}`}
+                                            >
+                                                MY EXERCISES
+                                            </button>
+                                            <button
+                                                onClick={() => { setSearchSource("ymove"); setSearchTerm(""); }}
+                                                className={`px-3 py-1 rounded-lg text-[10px] font-mono tracking-wider transition-colors ${searchSource === "ymove" ? "bg-brand-green-glow text-brand-green border border-brand-green-border" : "text-text-faint hover:text-text-secondary"}`}
+                                            >
+                                                YMOVE LIBRARY
+                                            </button>
+                                        </div>
+
                                         <div className="flex items-center gap-2 px-3 py-2.5 bg-bg-secondary/30 rounded-xl border border-dashed border-border hover:border-text-faint transition-colors cursor-text">
                                             <Search size={14} className="text-text-faint" />
                                             <input
-                                                placeholder="Search exercises to add..."
+                                                placeholder={searchSource === "local" ? "Search your exercises..." : "Search YMove library..."}
                                                 value={activeDayIdx === dayIdx ? searchTerm : ""}
                                                 onFocus={() => setActiveDayIdx(dayIdx)}
                                                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -284,7 +353,8 @@ export default function PlanBuilder() {
                                             />
                                         </div>
 
-                                        {activeDayIdx === dayIdx && searchResults.length > 0 && (
+                                        {/* Local results */}
+                                        {activeDayIdx === dayIdx && searchSource === "local" && searchResults.length > 0 && (
                                             <div className="dropdown top-full left-0 right-0 mt-2 animate-scale-in">
                                                 {searchResults.map((ex) => (
                                                     <div
@@ -292,13 +362,43 @@ export default function PlanBuilder() {
                                                         onClick={() => addExerciseToDay(dayIdx, ex)}
                                                         className="dropdown-item flex items-center gap-3"
                                                     >
-                                                        <div className="w-8 h-8 rounded-lg bg-brand-green-glow border border-brand-green-border flex items-center justify-center text-brand-green text-sm">
-                                                            🏋️
-                                                        </div>
+                                                        {ex.demoVideoUrl ? (
+                                                            <Image src={ex.demoVideoUrl} alt="" width={32} height={32} className="w-8 h-8 rounded-lg object-cover" />
+                                                        ) : (
+                                                            <div className="w-8 h-8 rounded-lg bg-brand-green-glow border border-brand-green-border flex items-center justify-center text-brand-green text-sm">
+                                                                {"\u{1F3CB}\u{FE0F}"}
+                                                            </div>
+                                                        )}
                                                         <div>
                                                             <p className="text-sm font-medium text-text-primary">{ex.name}</p>
                                                             <p className="text-xs text-text-faint">{ex.category} · {ex.muscles.join(", ")}</p>
                                                         </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+
+                                        {/* YMove results */}
+                                        {activeDayIdx === dayIdx && searchSource === "ymove" && ymoveResults.length > 0 && (
+                                            <div className="dropdown top-full left-0 right-0 mt-2 animate-scale-in">
+                                                {ymoveResults.map((ymEx) => (
+                                                    <div
+                                                        key={ymEx.id}
+                                                        onClick={() => importAndAddYmoveExercise(dayIdx, ymEx)}
+                                                        className="dropdown-item flex items-center gap-3"
+                                                    >
+                                                        {ymEx.thumbnailUrl ? (
+                                                            <Image src={ymEx.thumbnailUrl} alt="" width={32} height={32} className="w-8 h-8 rounded-lg object-cover" />
+                                                        ) : (
+                                                            <div className="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 text-sm">
+                                                                {"\u{1F3AC}"}
+                                                            </div>
+                                                        )}
+                                                        <div>
+                                                            <p className="text-sm font-medium text-text-primary">{ymEx.title}</p>
+                                                            <p className="text-xs text-text-faint">{ymEx.muscleGroup} · {ymEx.equipment}</p>
+                                                        </div>
+                                                        <span className="ml-auto badge badge-blue text-[9px]">YMOVE</span>
                                                     </div>
                                                 ))}
                                             </div>

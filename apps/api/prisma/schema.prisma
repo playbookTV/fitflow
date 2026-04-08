@@ -120,6 +120,7 @@ model Exercise {
   category          String
   muscles           String[]
   demoVideoUrl      String?   @map("demo_video_url")
+  ymoveId           String?   @unique @map("ymove_id")
   workoutExercises  WorkoutExercise[]
 
   @@map("exercises")

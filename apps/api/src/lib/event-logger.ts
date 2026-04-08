@@ -39,6 +39,21 @@ export const EventType = {
     // Onboarding
     ONBOARDING_SENT: "onboarding.sent",
     INTAKE_COMPLETED: "intake.completed",
+
+    // Engagement & retention
+    MISSED_WORKOUT_FOLLOWUP_SENT: "engagement.missed_workout_sent",
+    ATRISK_ALERT_SENT: "engagement.atrisk_sent",
+    REENGAGEMENT_SENT: "engagement.reengagement_sent",
+    MISSED_CHECKIN_NUDGE_SENT: "engagement.missed_checkin_sent",
+    MILESTONE_SENT: "engagement.milestone_sent",
+    WEEK_SUMMARY_SENT: "engagement.week_summary_sent",
+    RENEWAL_REMINDER_SENT: "renewal.reminder_sent",
+    PAYMENT_CONFIRMED_SENT: "payment.confirmed_sent",
+
+    // Exercise videos
+    EXERCISE_VIDEO_SENT: "exercise.video_sent",
+    EXERCISE_VIDEO_FAILED: "exercise.video_failed",
+    EXERCISE_COMMAND_PARSED: "exercise.command_parsed",
 } as const;
 
 export type EventTypeValue = typeof EventType[keyof typeof EventType];

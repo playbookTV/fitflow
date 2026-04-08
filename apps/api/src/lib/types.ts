@@ -3,6 +3,18 @@ export enum JobType {
     CHECKIN_REMINDER = "CHECKIN_REMINDER",
     ONBOARDING_INTAKE = "ONBOARDING_INTAKE",
     RENEWAL_REMINDER = "RENEWAL_REMINDER",
+
+    // New template-driven job types
+    PAYMENT_CONFIRMED = "PAYMENT_CONFIRMED",
+    MISSED_WORKOUT_FOLLOWUP = "MISSED_WORKOUT_FOLLOWUP",
+    MISSED_CHECKIN_NUDGE = "MISSED_CHECKIN_NUDGE",
+    ATRISK_DETECTION = "ATRISK_DETECTION",
+    REENGAGEMENT = "REENGAGEMENT",
+    MILESTONE_CHECK = "MILESTONE_CHECK",
+    WEEK_SUMMARY = "WEEK_SUMMARY",
+    RENEWAL_7DAY = "RENEWAL_7DAY",
+    RENEWAL_2DAY = "RENEWAL_2DAY",
+    RENEWAL_POST_EXPIRY = "RENEWAL_POST_EXPIRY",
 }
 
 export interface WorkoutDeliveryJob {
@@ -26,4 +38,54 @@ export interface ProcessMessageJob {
     coachId: string;
     body: string;
     messageSid: string;
+}
+
+export interface PaymentConfirmedJob {
+    clientId: string;
+    coachId: string;
+    offerName?: string;
+    programmeStartDate?: string;
+}
+
+export interface MissedWorkoutFollowupJob {
+    clientId: string;
+    coachId: string;
+}
+
+export interface MissedCheckinNudgeJob {
+    clientId: string;
+    coachId: string;
+    programmeWeek: number;
+    checkinLink: string;
+}
+
+export interface AtRiskDetectionJob {
+    clientId: string;
+    coachId: string;
+}
+
+export interface ReengagementJob {
+    clientId: string;
+    coachId: string;
+}
+
+export interface MilestoneCheckJob {
+    clientId: string;
+    coachId: string;
+    assignmentId: string;
+    milestoneType: "halfway" | "completion";
+    programmeWeek: number;
+    totalWeeks: number;
+    offerName: string;
+}
+
+export interface WeekSummaryJob {
+    clientId: string;
+    coachId: string;
+    programmeWeek: number;
+    totalWeeks: number;
+    sessionsCompleted: number;
+    sessionsSkipped: number;
+    sessionsScheduled: number;
+    consistencyRate: number;
 }
