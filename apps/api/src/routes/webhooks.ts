@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { MessageChannel, MessageDirection } from "@prisma/client";
-import { workoutQueue } from "../lib/queue";
+import { messageQueue } from "../lib/queue";
 import { prisma } from "../lib/prisma";
 import { routeCoachCommand } from "../handlers/coachCommandRouter";
 import { sendWhatsAppMessage } from "../lib/meta";
@@ -43,21 +43,37 @@ const summarizeMetaWebhookEvent = (body: any) => {
  * Process a weekly check-in flow response
  */
 async function handleCheckinFlowResponse(clientId: string, data: FlowResponse) {
-    const weight = Number.parseFloat(data.weight);
+    const rawWeight = Number.parseFloat(data.weight);
     const weightUnit = data.weight_unit;
-    const energy = Number.parseInt(data.energy, 10);
+    const rawEnergy = Number.parseInt(data.energy, 10);
     const sleep = data.sleep;
     const notes = data.notes || null;
 
+    // Validate parsed numbers — reject NaN or out-of-range values rather than persisting garbage.
+    if (Number.isNaN(rawWeight) || rawWeight <= 0 || rawWeight > 500) {
+        console.error(`[Flow] Invalid weight for client ${clientId}: ${data.weight}`);
+        throw new Error(`Invalid weight value: ${data.weight}`);
+    }
+
+    if (Number.isNaN(rawEnergy) || rawEnergy < 1 || rawEnergy > 5) {
+        console.error(`[Flow] Invalid energy for client ${clientId}: ${data.energy}`);
+        throw new Error(`Invalid energy value (must be 1–5): ${data.energy}`);
+    }
+
+    if (!sleep || typeof sleep !== "string") {
+        console.error(`[Flow] Missing or invalid sleep for client ${clientId}: ${data.sleep}`);
+        throw new Error(`Invalid sleep value: ${data.sleep}`);
+    }
+
     // Convert to kg if needed
-    const weightKg = weightUnit === "lbs" ? weight * 0.453592 : weight;
+    const weightKg = weightUnit === "lbs" ? rawWeight * 0.453592 : rawWeight;
 
     // Create check-in record
     const checkIn = await prisma.checkIn.create({
         data: {
             clientId,
             weight: weightKg,
-            energy,
+            energy: rawEnergy,
             sleep,
             notes,
         },
@@ -90,26 +106,28 @@ async function handleWorkoutLogFlowResponse(clientId: string, data: FlowResponse
         (Date.now() - assignment.startDate.getTime()) / (1000 * 60 * 60 * 24)
     );
 
-    // Create workout log
-    const workoutLog = await prisma.workoutLog.create({
-        data: {
-            clientId,
-            assignmentId: assignment.id,
-            dayNumber,
-            status,
-            notes: notes ? `RPE: ${rpe} | ${notes} (via Flow)` : `RPE: ${rpe} (via Flow)`,
-        },
-    });
+    // Create workout log and update compliance atomically to prevent TOCTOU races.
+    // Compliance is expressed as a real percentage (logs / dayNumber * 100).
+    const { workoutLog } = await prisma.$transaction(async (tx) => {
+        const log = await tx.workoutLog.create({
+            data: {
+                clientId,
+                assignmentId: assignment.id,
+                dayNumber,
+                status,
+                notes: notes ? `RPE: ${rpe} | ${notes} (via Flow)` : `RPE: ${rpe} (via Flow)`,
+            },
+        });
 
-    // Update compliance
-    const logCount = await prisma.workoutLog.count({
-        where: { assignmentId: assignment.id },
-    });
-    const newCompliance = Math.min(100, logCount * 10);
+        const logCount = await tx.workoutLog.count({ where: { assignmentId: assignment.id } });
+        const newCompliance = Math.min(100, Math.round((logCount / Math.max(dayNumber, 1)) * 100));
 
-    await prisma.planAssignment.update({
-        where: { id: assignment.id },
-        data: { compliance: newCompliance },
+        await tx.planAssignment.update({
+            where: { id: assignment.id },
+            data: { compliance: newCompliance },
+        });
+
+        return { workoutLog: log };
     });
 
     console.log(`[Flow] Created workout log ${workoutLog.id} for client ${clientId}`);
@@ -148,45 +166,44 @@ router.post("/", async (req, res) => {
 
         if (messages) {
             for (const msg of messages) {
-                // Find or identify client by phone
-                const client = await prisma.client.findFirst({
-                    where: { phone: { contains: msg.from } }
-                });
+                // Each message is processed independently so a failure on one doesn't
+                // silently drop subsequent messages in the same batch (Meta sends 200 early).
+                try {
+                    // Find or identify client by phone (exact match to avoid substring collisions)
+                    const client = await prisma.client.findFirst({
+                        where: { phone: msg.from }
+                    });
 
-                if (!client) {
-                    // Check if sender is a coach (for exercise commands via WhatsApp)
-                    if (msg.type === "text" && msg.text?.body && /^\/(?:exercise|ex|send|workout)\b/i.test(msg.text.body.trim())) {
-                        const coach = await prisma.coach.findFirst({
-                            where: { clients: { some: { phone: { contains: msg.from } } } },
-                        });
-                        // If no coach match by client phone, try direct — coaches may message from any number
-                        // For now, skip unknown senders
-                        if (!coach) {
-                            console.log(`[Webhook] Unknown sender (not client or coach): ${msg.from}`);
-                            continue;
-                        }
-                        const response = await routeCoachCommand(coach.id, msg.text.body);
-                        if (response) {
-                            await sendWhatsAppMessage(msg.from, response);
+                    if (!client) {
+                        // Check if sender is a coach (for exercise commands via WhatsApp)
+                        if (msg.type === "text" && msg.text?.body && /^\/(?:exercise|ex|send|workout)\b/i.test(msg.text.body.trim())) {
+                            const coach = await prisma.coach.findFirst({
+                                where: { clients: { some: { phone: msg.from } } },
+                            });
+                            if (!coach) {
+                                console.log(`[Webhook] Unknown sender (not client or coach): ${msg.from}`);
+                                continue;
+                            }
+                            const response = await routeCoachCommand(coach.id, msg.text.body);
+                            if (response) {
+                                await sendWhatsAppMessage(msg.from, response);
+                            }
+                        } else {
+                            console.log(`[Webhook] Unknown sender: ${msg.from}`);
                         }
                         continue;
                     }
-                    console.log(`[Webhook] Unknown sender: ${msg.from}`);
-                    continue;
-                }
 
-                // Check if this is a Flow response (nfm_reply)
-                if (msg.type === "interactive" && msg.interactive?.type === "nfm_reply") {
-                    const nfmReply = msg.interactive.nfm_reply;
-                    const flowToken = nfmReply.body || "";
+                    // Check if this is a Flow response (nfm_reply)
+                    if (msg.type === "interactive" && msg.interactive?.type === "nfm_reply") {
+                        const nfmReply = msg.interactive.nfm_reply;
+                        const flowToken = nfmReply.body || "";
 
-                    try {
                         const responseData: FlowResponse = JSON.parse(nfmReply.response_json);
                         responseData.flow_token = flowToken;
 
                         console.log(`[Webhook] Flow response received:`, responseData);
 
-                        // Log message in DB
                         await prisma.message.create({
                             data: {
                                 clientId: client.id,
@@ -198,7 +215,6 @@ router.post("/", async (req, res) => {
                             }
                         });
 
-                        // Route to appropriate handler based on flow_type or flow_token prefix
                         if (responseData.flow_type === "weekly_checkin" || flowToken.startsWith("checkin_")) {
                             await handleCheckinFlowResponse(client.id, responseData);
                         } else if (responseData.flow_type === "workout_log" || flowToken.startsWith("workout_")) {
@@ -206,32 +222,32 @@ router.post("/", async (req, res) => {
                         } else {
                             console.log(`[Webhook] Unknown flow type: ${responseData.flow_type}`);
                         }
-                    } catch (error) {
-                        console.error("[Webhook] Error parsing Flow response:", error);
+                        continue;
                     }
-                    continue;
-                }
 
-                // Regular text message
-                await prisma.message.create({
-                    data: {
+                    // Regular text message
+                    await prisma.message.create({
+                        data: {
+                            clientId: client.id,
+                            channel: MessageChannel.WHATSAPP,
+                            direction: MessageDirection.INBOUND,
+                            content: msg.text?.body || JSON.stringify(msg),
+                            metaMessageId: msg.id,
+                            status: "received"
+                        }
+                    });
+
+                    await messageQueue.add("process-message", {
                         clientId: client.id,
-                        channel: MessageChannel.WHATSAPP,
-                        direction: MessageDirection.INBOUND,
-                        content: msg.text?.body || JSON.stringify(msg),
-                        metaMessageId: msg.id,
-                        status: "received"
-                    }
-                });
-
-                // Add to queue for processing logic
-                await workoutQueue.add("process-message", {
-                    clientId: client.id,
-                    coachId: client.coachId,
-                    body: msg.text?.body || "",
-                    messageSid: msg.id,
-                    channel: MessageChannel.WHATSAPP
-                });
+                        coachId: client.coachId,
+                        body: msg.text?.body || "",
+                        messageSid: msg.id,
+                        channel: MessageChannel.WHATSAPP
+                    });
+                } catch (msgError) {
+                    // Log and continue — don't let one bad message kill the entire batch.
+                    console.error(`[Webhook] Error processing message ${msg.id} from ${msg.from}:`, msgError);
+                }
             }
         }
     }

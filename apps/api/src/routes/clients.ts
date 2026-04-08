@@ -103,14 +103,25 @@ router.get("/:id", authenticate, async (req: AuthRequest, res: Response) => {
 router.patch("/:id", authenticate, async (req: AuthRequest, res: Response) => {
     const coachId = req.user?.id as string;
     const { id } = req.params;
-    const data = req.body;
 
     if (!coachId) return res.status(401).json({ error: "Unauthorized" });
+
+    // Explicit allowlist — prevents mass-assignment of coachId, status, etc.
+    const { name, phone, email, goals, notes, status, preferredChannel, timezone } = req.body;
+    const allowedData: Record<string, unknown> = {};
+    if (name !== undefined) allowedData.name = name;
+    if (phone !== undefined) allowedData.phone = phone;
+    if (email !== undefined) allowedData.email = email;
+    if (goals !== undefined) allowedData.goals = goals;
+    if (notes !== undefined) allowedData.notes = notes;
+    if (status !== undefined) allowedData.status = status;
+    if (preferredChannel !== undefined) allowedData.preferredChannel = preferredChannel;
+    if (timezone !== undefined) allowedData.timezone = timezone;
 
     try {
         const client = await prisma.client.update({
             where: { id: id as string, coachId },
-            data,
+            data: allowedData,
         });
         res.json(client);
     } catch (error) {

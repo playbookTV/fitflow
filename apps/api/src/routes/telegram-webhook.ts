@@ -2,8 +2,8 @@ import { Router } from "express";
 import { MessageChannel, MessageDirection } from "@prisma/client";
 import { prisma } from "../lib/prisma";
 import { answerCallbackQuery, sendTelegramMessage } from "../lib/telegram";
-import { workoutQueue } from "../lib/queue";
-import { logEvent, EventType } from "../lib/event-logger";
+import { messageQueue } from "../lib/queue";
+
 import { routeCoachCommand } from "../handlers/coachCommandRouter";
 
 const router: Router = Router();
@@ -19,16 +19,30 @@ router.post("/:coachId", async (req, res) => {
     const { coachId } = req.params;
     const update = req.body;
 
-    // Always respond 200 immediately
+    // Look up the bot registry BEFORE responding so we can verify the secret token.
+    const botRegistry = await prisma.botRegistry.findUnique({ where: { coachId } });
+    if (!botRegistry) {
+        // Respond 200 to avoid Telegram retrying, but do nothing.
+        console.log(`[TG Webhook] No bot registered for coach ${coachId}`);
+        res.sendStatus(200);
+        return;
+    }
+
+    // Validate X-Telegram-Bot-Api-Secret-Token to prevent forged updates.
+    // Only enforced for bots provisioned after this change (webhookSecret present).
+    if (botRegistry.webhookSecret) {
+        const incomingSecret = req.headers["x-telegram-bot-api-secret-token"];
+        if (incomingSecret !== botRegistry.webhookSecret) {
+            console.warn(`[TG Webhook] Invalid secret token for coach ${coachId} — rejecting.`);
+            res.sendStatus(401);
+            return;
+        }
+    }
+
+    // Respond 200 immediately so Telegram doesn't retry while we process.
     res.sendStatus(200);
 
     try {
-        // Look up the bot registry to get the bot token for answering callbacks
-        const botRegistry = await prisma.botRegistry.findUnique({ where: { coachId } });
-        if (!botRegistry) {
-            console.log(`[TG Webhook] No bot registered for coach ${coachId}`);
-            return;
-        }
 
         // Handle callback queries (inline keyboard button presses)
         if (update.callback_query) {
@@ -51,7 +65,7 @@ router.post("/:coachId", async (req, res) => {
 
             // Route callback data
             if (data.startsWith("workout_done_")) {
-                await workoutQueue.add("process-message", {
+                await messageQueue.add("process-message", {
                     clientId: client.id,
                     coachId: client.coachId,
                     body: "DONE",
@@ -138,7 +152,7 @@ router.post("/:coachId", async (req, res) => {
             });
 
             // Queue for processing (handles "DONE" keyword etc.)
-            await workoutQueue.add("process-message", {
+            await messageQueue.add("process-message", {
                 clientId: client.id,
                 coachId: client.coachId,
                 body: text,

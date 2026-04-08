@@ -43,8 +43,10 @@ export const startRenewalScheduler = () => {
                     jobType = JobType.RENEWAL_7DAY;
                 } else if (daysUntilRenewal === 2) {
                     jobType = JobType.RENEWAL_2DAY;
-                } else if (daysUntilRenewal === -2 || daysInCurrentCycle === 2) {
-                    // 2 days after expiry (start of new cycle, day 2)
+                } else if (daysInCurrentCycle === 2) {
+                    // 2 days into a new cycle (post-expiry window).
+                    // Note: daysUntilRenewal === -2 was dead code — the modulo calculation
+                    // (PLAN_DURATION_DAYS - daysInCurrentCycle) always yields a positive value.
                     // Only send post-expiry if no payment was made in the last cycle
                     const recentPayment = await prisma.payment.findFirst({
                         where: {

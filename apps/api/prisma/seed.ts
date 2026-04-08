@@ -20,9 +20,9 @@ const exercises = [
     { name: "Plank", category: "Core", muscles: ["Abs", "Obliques"] },
 ];
 
-console.log("Seeding exercises...");
+async function main() {
+    console.log("Seeding exercises...");
 
-try {
     for (const ex of exercises) {
         await prisma.exercise.upsert({
             where: { name: ex.name },
@@ -31,9 +31,11 @@ try {
         });
     }
     console.log("Seed complete.");
-} catch (error) {
-    console.error("Seed failed:", error);
-    process.exit(1);
-} finally {
-    await prisma.$disconnect();
 }
+
+main()
+    .catch((error) => {
+        console.error("Seed failed:", error);
+        process.exit(1);
+    })
+    .finally(() => prisma.$disconnect());

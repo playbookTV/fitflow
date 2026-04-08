@@ -11,6 +11,8 @@ router.get("/", authenticate, async (req: AuthRequest, res: Response) => {
     if (!coachId) return res.status(401).json({ error: "Unauthorized" });
 
     const { status } = req.query;
+    const take = Math.min(Number(req.query.limit) || 50, 200);
+    const skip = Number(req.query.offset) || 0;
 
     try {
         const leads = await prisma.lead.findMany({
@@ -20,6 +22,8 @@ router.get("/", authenticate, async (req: AuthRequest, res: Response) => {
             },
             include: { offer: { select: { name: true, slug: true } } },
             orderBy: { createdAt: "desc" },
+            take,
+            skip,
         });
         res.json(leads);
     } catch (error) {
@@ -54,10 +58,16 @@ router.patch("/:id", authenticate, async (req: AuthRequest, res: Response) => {
     const id = req.params.id as string;
     if (!coachId) return res.status(401).json({ error: "Unauthorized" });
 
+    // Explicit allowlist — prevents mass-assignment of coachId, offerId, etc.
+    const { status, notes } = req.body;
+    const allowedData: Record<string, unknown> = {};
+    if (status !== undefined) allowedData.status = status;
+    if (notes !== undefined) allowedData.notes = notes;
+
     try {
         const result = await prisma.lead.updateMany({
             where: { id, coachId },
-            data: req.body,
+            data: allowedData,
         });
 
         if (result.count === 0) return res.status(404).json({ error: "Lead not found" });

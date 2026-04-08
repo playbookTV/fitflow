@@ -1,6 +1,8 @@
 import express, { Router, Request, Response } from "express";
 import { verifyWebhook } from "../lib/stripe";
 import { prisma } from "../lib/prisma";
+import { onboardingQueue } from "../lib/queue";
+import { JobType } from "../lib/types";
 import { logEvent, EventType } from "../lib/event-logger";
 
 const router: Router = Router();
@@ -18,6 +20,12 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req: R
             const amount = session.amount_total ?? 0;
             const currency = session.currency ?? "gbp";
 
+            // Upsert is idempotent; check whether this is a new payment record to guard
+            // against Stripe retries double-enqueuing onboarding jobs.
+            const existingPayment = await prisma.payment.findUnique({
+                where: { stripeSessionId: session.id },
+            });
+
             await prisma.payment.upsert({
                 where: { stripeSessionId: session.id },
                 update: {
@@ -34,34 +42,36 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req: R
                 },
             });
 
-            // Transition state: PENDING_PAYMENT -> INTAKE_SENT
-            const client = await prisma.client.update({
-                where: { id: clientId },
-                data: { status: "INTAKE_SENT" },
-            });
+            // Only transition status and enqueue onboarding jobs on the *first* successful event.
+            // Stripe may retry the webhook; without this guard the client can be sent duplicate
+            // intake messages and have their status regressed if they have already progressed.
+            if (existingPayment) {
+                console.log(`[Stripe Webhook] Duplicate event for session ${session.id} — skipping onboarding enqueue.`);
+            } else {
+                // Transition state: PENDING_PAYMENT -> INTAKE_SENT
+                const client = await prisma.client.update({
+                    where: { id: clientId, status: "PENDING_PAYMENT" },
+                    data: { status: "INTAKE_SENT" },
+                });
 
-            // Enqueue the first intake Flow
-            const { onboardingQueue } = require("../lib/queue");
-            const { JobType } = require("../lib/types");
+                await onboardingQueue.add(JobType.ONBOARDING_INTAKE, {
+                    clientId: client.id,
+                    coachId: client.coachId,
+                });
 
-            await onboardingQueue.add(JobType.ONBOARDING_INTAKE, {
-                clientId: client.id,
-                coachId: client.coachId,
-            });
+                await onboardingQueue.add(JobType.PAYMENT_CONFIRMED, {
+                    clientId: client.id,
+                    coachId: client.coachId,
+                });
 
-            // Send payment confirmed template to the client
-            await onboardingQueue.add(JobType.PAYMENT_CONFIRMED, {
-                clientId: client.id,
-                coachId: client.coachId,
-            });
+                await logEvent(EventType.PAYMENT_CONFIRMED, {
+                    coachId: client.coachId,
+                    clientId: client.id,
+                    metadata: { stripeSessionId: session.id },
+                });
 
-            await logEvent(EventType.PAYMENT_CONFIRMED, {
-                coachId: client.coachId,
-                clientId: client.id,
-                metadata: { stripeSessionId: session.id },
-            });
-
-            console.log(`[Stripe Webhook] Client ${clientId} transitions to INTAKE_SENT. Onboarding enqueued.`);
+                console.log(`[Stripe Webhook] Client ${clientId} transitions to INTAKE_SENT. Onboarding enqueued.`);
+            }
         }
 
         res.json({ received: true });

@@ -9,6 +9,9 @@ router.get("/", authenticate, async (req: AuthRequest, res: Response) => {
     const coachId = req.user?.id as string;
     if (!coachId) return res.status(401).json({ error: "Unauthorized" });
 
+    const take = Math.min(Number(req.query.limit) || 50, 200);
+    const skip = Number(req.query.offset) || 0;
+
     try {
         const plans = await prisma.workoutPlan.findMany({
             where: { coachId },
@@ -17,6 +20,8 @@ router.get("/", authenticate, async (req: AuthRequest, res: Response) => {
                 _count: { select: { assignments: true } },
             },
             orderBy: { createdAt: "desc" },
+            take,
+            skip,
         });
         res.json(plans.map((plan) => ({
             ...plan,

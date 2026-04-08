@@ -101,4 +101,66 @@ router.post("/ymove-import", authenticate, async (req: AuthRequest, res: Respons
     }
 });
 
+// GET /exercises/unified-search - Search both local and YMove in one request
+router.get("/unified-search", authenticate, async (req: AuthRequest, res: Response) => {
+    const search = req.query.q ? String(req.query.q) : undefined;
+
+    if (!search || search.length < 3) {
+        return res.json({ results: [] });
+    }
+
+    const localPromise = prisma.exercise.findMany({
+        where: { name: { contains: search, mode: "insensitive" } },
+        take: 50,
+        orderBy: { name: "asc" },
+    });
+
+    const ymovePromise = Promise.race([
+        searchExercises({ search, limit: 20 }),
+        new Promise<never>((_, reject) => setTimeout(() => reject(new Error("timeout")), 3000)),
+    ]);
+
+    const [localResult, ymoveResult] = await Promise.allSettled([localPromise, ymovePromise]);
+
+    const localExercises = localResult.status === "fulfilled" ? localResult.value : [];
+    const ymoveExercises = ymoveResult.status === "fulfilled" ? ymoveResult.value : [];
+    const ymoveUnavailable = ymoveResult.status === "rejected";
+
+    // Build dedup sets from local exercises
+    const ymoveIdsSeen = new Set(
+        localExercises.filter((e) => e.ymoveId).map((e) => e.ymoveId)
+    );
+    const localNamesSeen = new Set(
+        localExercises.map((e) => e.name.toLowerCase())
+    );
+
+    // Normalize local results
+    const localResults = localExercises.map((e) => ({
+        id: e.id,
+        name: e.name,
+        category: e.category,
+        muscles: e.muscles,
+        thumbnailUrl: e.demoVideoUrl ?? undefined,
+        source: "local" as const,
+        ymoveId: e.ymoveId ?? undefined,
+    }));
+
+    // Normalize + deduplicate YMove results
+    const ymoveResults = ymoveExercises
+        .filter((ym) => !ymoveIdsSeen.has(ym.id) && !localNamesSeen.has(ym.title.toLowerCase()))
+        .map((ym) => ({
+            id: ym.id,
+            name: ym.title,
+            category: ym.muscleGroup || "Uncategorized",
+            muscles: ym.muscleGroup ? [ym.muscleGroup] : [],
+            thumbnailUrl: ym.thumbnailUrl,
+            source: "ymove" as const,
+            ymoveId: ym.id,
+        }));
+
+    const results = [...localResults, ...ymoveResults].slice(0, 50);
+
+    res.json({ results, ...(ymoveUnavailable && { ymoveUnavailable: true }) });
+});
+
 export default router;

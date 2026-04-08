@@ -68,10 +68,14 @@ router.get("/:clientId", authenticate, async (req: AuthRequest, res) => {
 
         if (!client) return res.status(404).json({ error: "Client not found" });
 
+        const take = Math.min(Number(req.query.limit) || 50, 200);
+        const skip = Number(req.query.offset) || 0;
+
         const messages = await prisma.message.findMany({
             where: { clientId: clientId as string },
             orderBy: { createdAt: "desc" },
-            take: 50
+            take,
+            skip,
         });
 
         res.json(messages);

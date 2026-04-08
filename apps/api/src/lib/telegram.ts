@@ -126,15 +126,20 @@ export async function answerCallbackQuery(
 
 /**
  * Set webhook URL for a Telegram bot.
+ * Pass a `secretToken` (up to 256 chars, [A-Za-z0-9_-]) to enable
+ * X-Telegram-Bot-Api-Secret-Token header validation on incoming updates.
  */
 export async function setTelegramWebhook(
     botToken: string,
-    webhookUrl: string
+    webhookUrl: string,
+    secretToken?: string
 ): Promise<void> {
     const url = `${TELEGRAM_API}/bot${botToken}/setWebhook`;
 
     try {
-        const response = await axios.post(url, { url: webhookUrl });
+        const payload: Record<string, string> = { url: webhookUrl };
+        if (secretToken) payload.secret_token = secretToken;
+        const response = await axios.post(url, payload);
         if (!response.data.ok) {
             throw new Error(response.data.description || "Failed to set webhook");
         }

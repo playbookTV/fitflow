@@ -10,7 +10,7 @@ router.get("/summary", authenticate, async (req: AuthRequest, res: Response) => 
     if (!coachId) return res.status(401).json({ error: "Unauthorized" });
 
     try {
-        const [clientCount, activePlanCount, totalWorkouts, whatsappClients, telegramClients, leadCount] = await Promise.all([
+        const [clientCount, activePlanCount, totalWorkouts, whatsappClients, telegramClients, leadCount, revenueAgg] = await Promise.all([
             prisma.client.count({ where: { coachId } }),
             prisma.planAssignment.count({
                 where: {
@@ -26,12 +26,18 @@ router.get("/summary", authenticate, async (req: AuthRequest, res: Response) => 
             prisma.client.count({ where: { coachId, preferredChannel: "WHATSAPP" } }),
             prisma.client.count({ where: { coachId, preferredChannel: "TELEGRAM" } }),
             prisma.lead.count({ where: { coachId, status: "NEW" } }),
+            // Real revenue: sum of SUCCEEDED payments for this coach's clients (in pence/cents)
+            prisma.payment.aggregate({
+                where: { status: "SUCCEEDED", client: { coachId } },
+                _sum: { amount: true },
+            }),
         ]);
 
         // At-risk logic: Active clients with no check-ins in last 7 days
         const sevenDaysAgo = new Date();
         sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
+        // phone deliberately omitted — it is PII and not needed for the dashboard risk widget.
         const atRiskClients = await prisma.client.findMany({
             where: {
                 coachId,
@@ -44,7 +50,7 @@ router.get("/summary", authenticate, async (req: AuthRequest, res: Response) => 
                     }
                 }
             },
-            select: { id: true, name: true, phone: true }
+            select: { id: true, name: true }
         });
 
         // Calculate aggregate compliance
@@ -62,7 +68,8 @@ router.get("/summary", authenticate, async (req: AuthRequest, res: Response) => 
             activePlans: activePlanCount,
             totalWorkouts,
             averageCompliance: avgCompliance,
-            revenue: assignments.length * 50,
+            // Revenue is summed from actual SUCCEEDED Payment records (in pence/cents)
+            revenue: revenueAgg._sum.amount ?? 0,
             atRiskClients,
             channels: {
                 whatsapp: whatsappClients,

@@ -40,7 +40,9 @@ router.patch("/me", authenticate, async (req: AuthRequest, res: Response) => {
     const coachId = req.user?.id as string;
     if (!coachId) return res.status(401).json({ error: "Unauthorized" });
 
-    const { name, slug, defaultChannel, phone, businessName, timezone } = req.body;
+    // Note: phone, businessName and timezone are not yet columns on the Coach model.
+    // Only persist fields that actually exist in the schema.
+    const { name, slug, defaultChannel } = req.body;
 
     try {
         const coach = await prisma.coach.update({

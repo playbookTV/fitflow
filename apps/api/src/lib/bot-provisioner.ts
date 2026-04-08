@@ -1,6 +1,15 @@
+import crypto from "node:crypto";
 import { prisma } from "./prisma";
 import { getTelegramBotInfo, setTelegramWebhook } from "./telegram";
 import { logEvent, EventType } from "./event-logger";
+
+/**
+ * Generate a Telegram-compatible webhook secret token.
+ * Must only contain characters from [A-Za-z0-9_-] and be ≤ 256 chars.
+ */
+function generateWebhookSecret(): string {
+    return crypto.randomBytes(32).toString("hex"); // 64 hex chars, all [0-9a-f]
+}
 
 const API_BASE_URL = process.env.API_BASE_URL || "http://localhost:3001";
 
@@ -25,8 +34,13 @@ export async function provisionBot(
     // Build the per-coach webhook URL
     const webhookUrl = `${API_BASE_URL}/telegram/webhook/${coachId}`;
 
-    // Set the webhook on Telegram's side
-    await setTelegramWebhook(botToken, webhookUrl);
+    // Generate a secret token for webhook verification.
+    // This is registered with Telegram and validated on every incoming update
+    // via the X-Telegram-Bot-Api-Secret-Token header.
+    const webhookSecret = generateWebhookSecret();
+
+    // Set the webhook on Telegram's side (registers the secret token)
+    await setTelegramWebhook(botToken, webhookUrl, webhookSecret);
 
     // Upsert into BotRegistry (handles re-provisioning)
     await prisma.botRegistry.upsert({
@@ -35,6 +49,7 @@ export async function provisionBot(
             botToken,
             botUsername,
             webhookUrl,
+            webhookSecret,
             provisionedAt: new Date(),
         },
         create: {
@@ -42,6 +57,7 @@ export async function provisionBot(
             botToken,
             botUsername,
             webhookUrl,
+            webhookSecret,
         },
     });
 

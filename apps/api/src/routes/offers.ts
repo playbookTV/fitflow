@@ -84,10 +84,20 @@ router.patch("/:id", authenticate, async (req: AuthRequest, res: Response) => {
     const id = req.params.id as string;
     if (!coachId) return res.status(401).json({ error: "Unauthorized" });
 
+    // Explicit allowlist — prevents mass-assignment of coachId, slug, etc.
+    const { title, description, price, currency, active, intakeFormFields } = req.body;
+    const allowedData: Record<string, unknown> = {};
+    if (title !== undefined) allowedData.title = title;
+    if (description !== undefined) allowedData.description = description;
+    if (price !== undefined) allowedData.price = price;
+    if (currency !== undefined) allowedData.currency = currency;
+    if (active !== undefined) allowedData.active = active;
+    if (intakeFormFields !== undefined) allowedData.intakeFormFields = intakeFormFields;
+
     try {
         const offer = await prisma.offer.updateMany({
             where: { id, coachId },
-            data: req.body,
+            data: allowedData,
         });
 
         if (offer.count === 0) return res.status(404).json({ error: "Offer not found" });

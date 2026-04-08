@@ -6,21 +6,14 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 
-interface Exercise {
+interface UnifiedResult {
     id: string;
     name: string;
     category: string;
     muscles: string[];
-    demoVideoUrl?: string;
-}
-
-interface YMoveExercise {
-    id: string;
-    slug: string;
-    title: string;
-    muscleGroup: string;
-    equipment: string;
     thumbnailUrl?: string;
+    source: "local" | "ymove";
+    ymoveId?: string;
 }
 
 interface PlanExercise {
@@ -49,46 +42,31 @@ export default function PlanBuilder() {
         { id: crypto.randomUUID(), dayNumber: 1, title: "Day 1", exercises: [], isOpen: true }
     ]);
     const [searchTerm, setSearchTerm] = useState("");
-    const [searchResults, setSearchResults] = useState<Exercise[]>([]);
-    const [ymoveResults, setYmoveResults] = useState<YMoveExercise[]>([]);
-    const [searchSource, setSearchSource] = useState<"local" | "ymove">("local");
+    const [unifiedResults, setUnifiedResults] = useState<UnifiedResult[]>([]);
     const [activeDayIdx, setActiveDayIdx] = useState<number | null>(0);
     const [isSaving, setIsSaving] = useState(false);
 
     useEffect(() => {
         if (searchTerm.length < 3) {
-            setSearchResults([]);
-            setYmoveResults([]);
+            setUnifiedResults([]);
             return;
         }
 
         const controller = new AbortController();
         const token = localStorage.getItem("token");
 
-        if (searchSource === "local") {
-            fetch(`${process.env.NEXT_PUBLIC_API_URL}/exercises?search=${encodeURIComponent(searchTerm)}`, {
-                headers: { Authorization: `Bearer ${token}` },
-                signal: controller.signal,
-            })
-                .then((res) => res.ok ? res.json() : [])
-                .then((data: Exercise[]) => setSearchResults(data))
-                .catch((err) => {
-                    if (err.name !== "AbortError") setSearchResults([]);
-                });
-        } else {
-            fetch(`${process.env.NEXT_PUBLIC_API_URL}/exercises/ymove-search?search=${encodeURIComponent(searchTerm)}`, {
-                headers: { Authorization: `Bearer ${token}` },
-                signal: controller.signal,
-            })
-                .then((res) => res.ok ? res.json() : [])
-                .then((data: YMoveExercise[]) => setYmoveResults(data))
-                .catch((err) => {
-                    if (err.name !== "AbortError") setYmoveResults([]);
-                });
-        }
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/exercises/unified-search?q=${encodeURIComponent(searchTerm)}`, {
+            headers: { Authorization: `Bearer ${token}` },
+            signal: controller.signal,
+        })
+            .then((res) => res.ok ? res.json() : { results: [] })
+            .then((data: { results: UnifiedResult[] }) => setUnifiedResults(data.results))
+            .catch((err) => {
+                if (err.name !== "AbortError") setUnifiedResults([]);
+            });
 
         return () => controller.abort();
-    }, [searchTerm, searchSource]);
+    }, [searchTerm]);
 
     const addDay = () => {
         setDays([...days, {
@@ -100,23 +78,29 @@ export default function PlanBuilder() {
         }]);
     };
 
-    const addExerciseToDay = (dayIdx: number, ex: Exercise) => {
+    const addExerciseToDay = (dayIdx: number, exerciseId: string, name: string, thumbnailUrl?: string) => {
         const newDays = [...days];
         newDays[dayIdx].exercises.push({
             id: crypto.randomUUID(),
-            exerciseId: ex.id,
-            name: ex.name,
+            exerciseId,
+            name,
             sets: 3,
             reps: "10-12",
             rest: "60s",
             notes: "",
-            demoVideoUrl: ex.demoVideoUrl,
+            demoVideoUrl: thumbnailUrl,
         });
         setDays(newDays);
         setSearchTerm("");
     };
 
-    const importAndAddYmoveExercise = async (dayIdx: number, ymEx: YMoveExercise) => {
+    const handleResultClick = async (dayIdx: number, result: UnifiedResult) => {
+        if (result.source === "local") {
+            addExerciseToDay(dayIdx, result.id, result.name, result.thumbnailUrl);
+            return;
+        }
+
+        // YMove: import first, then add
         const token = localStorage.getItem("token");
         try {
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/exercises/ymove-import`, {
@@ -125,11 +109,11 @@ export default function PlanBuilder() {
                     "Content-Type": "application/json",
                     Authorization: `Bearer ${token}`,
                 },
-                body: JSON.stringify({ ymoveId: ymEx.id }),
+                body: JSON.stringify({ ymoveId: result.ymoveId }),
             });
             if (!res.ok) throw new Error("Import failed");
-            const imported: Exercise = await res.json();
-            addExerciseToDay(dayIdx, { ...imported, demoVideoUrl: ymEx.thumbnailUrl || imported.demoVideoUrl });
+            const imported = await res.json();
+            addExerciseToDay(dayIdx, imported.id, imported.name, result.thumbnailUrl || imported.demoVideoUrl);
         } catch (err) {
             console.error("Failed to import YMove exercise:", err);
         }
@@ -325,26 +309,10 @@ export default function PlanBuilder() {
 
                                     {/* Search / Add Exercise */}
                                     <div className="mt-4 relative">
-                                        {/* Source tabs */}
-                                        <div className="flex gap-1 mb-2">
-                                            <button
-                                                onClick={() => { setSearchSource("local"); setSearchTerm(""); }}
-                                                className={`px-3 py-1 rounded-lg text-[10px] font-mono tracking-wider transition-colors ${searchSource === "local" ? "bg-brand-green-glow text-brand-green border border-brand-green-border" : "text-text-faint hover:text-text-secondary"}`}
-                                            >
-                                                MY EXERCISES
-                                            </button>
-                                            <button
-                                                onClick={() => { setSearchSource("ymove"); setSearchTerm(""); }}
-                                                className={`px-3 py-1 rounded-lg text-[10px] font-mono tracking-wider transition-colors ${searchSource === "ymove" ? "bg-brand-green-glow text-brand-green border border-brand-green-border" : "text-text-faint hover:text-text-secondary"}`}
-                                            >
-                                                YMOVE LIBRARY
-                                            </button>
-                                        </div>
-
                                         <div className="flex items-center gap-2 px-3 py-2.5 bg-bg-secondary/30 rounded-xl border border-dashed border-border hover:border-text-faint transition-colors cursor-text">
                                             <Search size={14} className="text-text-faint" />
                                             <input
-                                                placeholder={searchSource === "local" ? "Search your exercises..." : "Search YMove library..."}
+                                                placeholder="Search exercises..."
                                                 value={activeDayIdx === dayIdx ? searchTerm : ""}
                                                 onFocus={() => setActiveDayIdx(dayIdx)}
                                                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -353,52 +321,28 @@ export default function PlanBuilder() {
                                             />
                                         </div>
 
-                                        {/* Local results */}
-                                        {activeDayIdx === dayIdx && searchSource === "local" && searchResults.length > 0 && (
+                                        {activeDayIdx === dayIdx && unifiedResults.length > 0 && (
                                             <div className="dropdown top-full left-0 right-0 mt-2 animate-scale-in">
-                                                {searchResults.map((ex) => (
+                                                {unifiedResults.map((result) => (
                                                     <div
-                                                        key={ex.id}
-                                                        onClick={() => addExerciseToDay(dayIdx, ex)}
+                                                        key={`${result.source}-${result.id}`}
+                                                        onClick={() => handleResultClick(dayIdx, result)}
                                                         className="dropdown-item flex items-center gap-3"
                                                     >
-                                                        {ex.demoVideoUrl ? (
-                                                            <Image src={ex.demoVideoUrl} alt="" width={32} height={32} className="w-8 h-8 rounded-lg object-cover" />
+                                                        {result.thumbnailUrl ? (
+                                                            <Image src={result.thumbnailUrl} alt="" width={32} height={32} className="w-8 h-8 rounded-lg object-cover" />
                                                         ) : (
-                                                            <div className="w-8 h-8 rounded-lg bg-brand-green-glow border border-brand-green-border flex items-center justify-center text-brand-green text-sm">
-                                                                {"\u{1F3CB}\u{FE0F}"}
+                                                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm ${result.source === "ymove" ? "bg-blue-500/10 border border-blue-500/20 text-blue-400" : "bg-brand-green-glow border border-brand-green-border text-brand-green"}`}>
+                                                                {result.source === "ymove" ? "\u{1F3AC}" : "\u{1F3CB}\u{FE0F}"}
                                                             </div>
                                                         )}
                                                         <div>
-                                                            <p className="text-sm font-medium text-text-primary">{ex.name}</p>
-                                                            <p className="text-xs text-text-faint">{ex.category} · {ex.muscles.join(", ")}</p>
+                                                            <p className="text-sm font-medium text-text-primary">{result.name}</p>
+                                                            <p className="text-xs text-text-faint">{result.category} · {result.muscles.join(", ")}</p>
                                                         </div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
-
-                                        {/* YMove results */}
-                                        {activeDayIdx === dayIdx && searchSource === "ymove" && ymoveResults.length > 0 && (
-                                            <div className="dropdown top-full left-0 right-0 mt-2 animate-scale-in">
-                                                {ymoveResults.map((ymEx) => (
-                                                    <div
-                                                        key={ymEx.id}
-                                                        onClick={() => importAndAddYmoveExercise(dayIdx, ymEx)}
-                                                        className="dropdown-item flex items-center gap-3"
-                                                    >
-                                                        {ymEx.thumbnailUrl ? (
-                                                            <Image src={ymEx.thumbnailUrl} alt="" width={32} height={32} className="w-8 h-8 rounded-lg object-cover" />
-                                                        ) : (
-                                                            <div className="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 text-sm">
-                                                                {"\u{1F3AC}"}
-                                                            </div>
+                                                        {result.source === "ymove" && (
+                                                            <span className="ml-auto badge badge-blue text-[9px]">YMOVE</span>
                                                         )}
-                                                        <div>
-                                                            <p className="text-sm font-medium text-text-primary">{ymEx.title}</p>
-                                                            <p className="text-xs text-text-faint">{ymEx.muscleGroup} · {ymEx.equipment}</p>
-                                                        </div>
-                                                        <span className="ml-auto badge badge-blue text-[9px]">YMOVE</span>
                                                     </div>
                                                 ))}
                                             </div>

@@ -78,11 +78,18 @@ export const startEngagementScheduler = () => {
                 const tenDaysAgo = subDays(now, 10);
                 const fiveDaysAgo = subDays(now, 5);
 
-                // Count scheduled days in the last 7 days
-                const scheduledDaysLast7 = assignment.scheduleDays.filter(d => {
-                    const daysBack = (today - d + 7) % 7;
-                    return daysBack > 0 && daysBack <= 7;
-                }).length;
+                // Count scheduled days in the last 7 days.
+                // The original modulo approach ((today - d + 7) % 7) produces values 0–6,
+                // making the `<= 7` upper bound meaningless and never counting "7 days ago"
+                // correctly. Use actual calendar dates instead.
+                let scheduledDaysLast7 = 0;
+                for (let offset = 1; offset <= 7; offset++) {
+                    const checkDate = subDays(now, offset);
+                    const checkDayOfWeek = checkDate.getDay(); // 0=Sun, 6=Sat
+                    if (assignment.scheduleDays.includes(checkDayOfWeek)) {
+                        scheduledDaysLast7++;
+                    }
+                }
 
                 // Count actual workout logs in the last 7 days
                 const logsLast7 = await prisma.workoutLog.count({

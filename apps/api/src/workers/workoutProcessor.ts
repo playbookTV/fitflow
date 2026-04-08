@@ -293,9 +293,12 @@ renewalWorker.on("completed", (job) => console.log(`[Renewal Worker] Job ${job.i
  * Worker to process incoming messages (Conversational Logging).
  * Handles "DONE" keyword from WhatsApp text messages.
  * Telegram uses inline keyboard callbacks handled in the Telegram webhook route.
+ *
+ * Uses its own dedicated "message-processing" queue so BullMQ never dispatches
+ * a WORKOUT_DELIVERY job to this worker (or vice versa).
  */
 export const messageWorker = new Worker(
-    "workout-delivery", // Shared queue
+    "message-processing", // Dedicated queue — previously incorrectly shared "workout-delivery"
     async (job: Job) => {
         if (job.name !== "process-message") return;
 
@@ -304,54 +307,64 @@ export const messageWorker = new Worker(
 
         console.log(`[Message Worker] Processing message from ${clientId}: ${body}`);
 
-        if (normalizedBody === "DONE") {
-            const assignment = await prisma.planAssignment.findFirst({
-                where: { clientId, isActive: true },
-                include: { client: { include: { coach: true } } },
-            });
+        if (normalizedBody !== "DONE") return;
 
-            if (!assignment) {
-                console.log(`[Message Worker] No active assignment for client ${clientId}`);
-                return;
-            }
+        const assignment = await prisma.planAssignment.findFirst({
+            where: { clientId, isActive: true },
+            include: { client: { include: { coach: true } } },
+        });
 
-            const dayNumber = differenceInDays(new Date(), assignment.startDate) + 1;
+        if (!assignment) {
+            console.log(`[Message Worker] No active assignment for client ${clientId}`);
+            return;
+        }
 
-            await prisma.workoutLog.create({
+        const dayNumber = differenceInDays(new Date(), assignment.startDate) + 1;
+
+        // Wrap log creation and compliance update in a transaction to prevent
+        // the TOCTOU race condition that occurs when two "DONE" messages arrive
+        // concurrently — without this, both can create a WorkoutLog and then
+        // each counts/updates compliance independently, doubling the effect.
+        const { newCompliance } = await prisma.$transaction(async (tx) => {
+            await tx.workoutLog.create({
                 data: {
                     clientId,
                     assignmentId: assignment.id,
                     dayNumber,
                     status: "COMPLETED",
-                    notes: `Logged via message 'DONE'`,
+                    notes: "Logged via message 'DONE'",
                 },
             });
 
-            const logCount = await prisma.workoutLog.count({ where: { assignmentId: assignment.id } });
-            const newCompliance = Math.min(100, logCount * 10);
+            const count = await tx.workoutLog.count({ where: { assignmentId: assignment.id } });
+            const compliance = Math.min(100, Math.round((count / Math.max(dayNumber, 1)) * 100));
 
-            await prisma.planAssignment.update({
+            await tx.planAssignment.update({
                 where: { id: assignment.id },
-                data: { compliance: newCompliance },
+                data: { compliance },
             });
 
-            const { client } = assignment;
-            const channel = await getChannel(client.preferredChannel, client.coachId);
-            const recipientId = getRecipientId(client);
+            return { newCompliance: compliance };
+        });
 
-            await channel.sendTemplate(recipientId, TemplateId.WORKOUT_LOGGED_CONFIRMATION, {
-                client_first_name: client.name.split(" ")[0],
-                workout_day_number: dayNumber,
-                compliance: newCompliance,
-            });
+        const { client } = assignment;
+        const channel = await getChannel(client.preferredChannel, client.coachId);
+        const recipientId = getRecipientId(client);
 
-            await logEvent(EventType.WORKOUT_COMPLETED, {
-                coachId: client.coachId,
-                clientId: client.id,
-                channel: client.preferredChannel,
-                metadata: { dayNumber, compliance: newCompliance },
-            });
-        }
+        await channel.sendTemplate(recipientId, TemplateId.WORKOUT_LOGGED_CONFIRMATION, {
+            client_first_name: client.name.split(" ")[0],
+            workout_day_number: dayNumber,
+            compliance: newCompliance,
+        });
+
+        await logEvent(EventType.WORKOUT_COMPLETED, {
+            coachId: client.coachId,
+            clientId: client.id,
+            channel: client.preferredChannel,
+            metadata: { dayNumber, compliance: newCompliance },
+        });
+
+        console.log(`[Message Worker] Workout logged for client ${clientId}, day ${dayNumber}, compliance ${newCompliance}%`);
     },
     { connection }
 );

@@ -20,6 +20,14 @@ router.post("/:id/assignments", authenticate, async (req: AuthRequest, res: Resp
 
         if (!client) return res.status(404).json({ error: "Client not found" });
 
+        // Verify plan belongs to coach — without this check a coach could assign
+        // another coach's proprietary plan to their client.
+        const plan = await prisma.workoutPlan.findFirst({
+            where: { id: planId as string, coachId },
+        });
+
+        if (!plan) return res.status(404).json({ error: "Plan not found" });
+
         // Create assignment
         const assignment = await prisma.planAssignment.create({
             data: {

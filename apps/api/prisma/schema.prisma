@@ -279,6 +279,7 @@ model BotRegistry {
   botToken      String   @map("bot_token")
   botUsername   String   @map("bot_username")
   webhookUrl    String   @map("webhook_url")
+  webhookSecret String?  @map("webhook_secret") // Used to verify X-Telegram-Bot-Api-Secret-Token
   provisionedAt DateTime @default(now()) @map("provisioned_at")
 
   @@map("bot_registry")
