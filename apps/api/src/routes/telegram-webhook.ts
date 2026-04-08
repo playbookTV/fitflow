@@ -47,6 +47,10 @@ router.post("/:coachId", async (req, res) => {
         // Handle callback queries (inline keyboard button presses)
         if (update.callback_query) {
             const callbackQuery = update.callback_query;
+            if (!callbackQuery.message?.chat?.id) {
+                console.log(`[TG Webhook] Callback query missing message/chat`);
+                return;
+            }
             const chatId = String(callbackQuery.message.chat.id);
             const data = callbackQuery.callback_data || "";
 

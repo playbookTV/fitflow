@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { Request, Response, NextFunction } from "express";
+import { prisma } from "../lib/prisma";
 
 const supabase = createClient(
     process.env.SUPABASE_URL!,
@@ -40,6 +41,13 @@ export const authenticate = async (
             id: user.id,
             email: user.email,
         };
+
+        // Ensure coach record exists (creates on first authenticated request)
+        await prisma.coach.upsert({
+            where: { id: user.id },
+            update: {},
+            create: { id: user.id, email: user.email! },
+        });
 
         next();
     } catch (error) {

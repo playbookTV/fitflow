@@ -196,10 +196,20 @@ router.post("/", async (req, res) => {
 
                     // Check if this is a Flow response (nfm_reply)
                     if (msg.type === "interactive" && msg.interactive?.type === "nfm_reply") {
-                        const nfmReply = msg.interactive.nfm_reply;
+                        const nfmReply = msg.interactive?.nfm_reply;
+                        if (!nfmReply?.response_json) {
+                            console.error(`[Webhook] Missing nfm_reply or response_json for msg ${msg.id}`);
+                            continue;
+                        }
                         const flowToken = nfmReply.body || "";
 
-                        const responseData: FlowResponse = JSON.parse(nfmReply.response_json);
+                        let responseData: FlowResponse;
+                        try {
+                            responseData = JSON.parse(nfmReply.response_json);
+                        } catch (parseErr) {
+                            console.error(`[Webhook] Invalid JSON in nfm_reply for msg ${msg.id}:`, parseErr);
+                            continue;
+                        }
                         responseData.flow_token = flowToken;
 
                         console.log(`[Webhook] Flow response received:`, responseData);

@@ -39,6 +39,9 @@ router.post("/", authenticate, async (req: AuthRequest, res: Response) => {
     const { title, description, isTemplate, days } = req.body;
 
     if (!coachId) return res.status(401).json({ error: "Unauthorized" });
+    if (!Array.isArray(days) || days.length === 0) {
+        return res.status(400).json({ error: "days array is required" });
+    }
 
     try {
         const plan = await prisma.workoutPlan.create({

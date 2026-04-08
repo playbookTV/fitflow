@@ -35,7 +35,7 @@ export const engagementWorker = new Worker(
             const channel = await getChannel(client.preferredChannel, client.coachId);
             const recipientId = getRecipientId(client);
             const clientFirstName = client.name.split(" ")[0];
-            const coachFirstName = client.coach.name?.split(" ")[0] || "Your coach";
+            const coachFirstName = client.coach?.name?.split(" ")[0] || "Your coach";
 
             switch (job.name) {
                 case JobType.MISSED_WORKOUT_FOLLOWUP: {

@@ -191,7 +191,7 @@ export const onboardingWorker = new Worker(
         const recipientId = getRecipientId(client);
 
         if (job.name === JobType.ONBOARDING_INTAKE) {
-            const offerName = client.goals || `${client.coach.name}'s Coaching`;
+            const offerName = client.goals || `${client.coach?.name ?? "Your coach"}'s Coaching`;
 
             await channel.sendTemplate(recipientId, TemplateId.ONBOARDING_WELCOME, {
                 client_first_name: client.name.split(" ")[0],
@@ -205,8 +205,8 @@ export const onboardingWorker = new Worker(
                 channel: client.preferredChannel,
             });
         } else if (job.name === JobType.PAYMENT_CONFIRMED) {
-            const coachFirstName = client.coach.name?.split(" ")[0] || "Your coach";
-            const offerName = job.data.offerName || client.goals || `${client.coach.name}'s Coaching`;
+            const coachFirstName = client.coach?.name?.split(" ")[0] || "Your coach";
+            const offerName = job.data.offerName || client.goals || `${client.coach?.name ?? "Your coach"}'s Coaching`;
             const programmeStartDate = job.data.programmeStartDate || "soon";
 
             await channel.sendTemplate(recipientId, TemplateId.LEAD_PAYMENT_CONFIRMED, {
@@ -244,7 +244,7 @@ export const renewalWorker = new Worker(
 
         const channel = await getChannel(client.preferredChannel, client.coachId);
         const recipientId = getRecipientId(client);
-        const coachFirstName = client.coach.name?.split(" ")[0] || "Your coach";
+        const coachFirstName = client.coach?.name?.split(" ")[0] || "Your coach";
 
         // Calculate renewal date
         const renewalDate = new Date();
