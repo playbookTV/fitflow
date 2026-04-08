@@ -1,10 +1,9 @@
 import cron from "node-cron";
-import { PrismaClient } from "@prisma/client";
 import { renewalQueue } from "../lib/queue";
 import { JobType } from "../lib/types";
 import { differenceInDays } from "date-fns";
-
-const prisma = new PrismaClient();
+import { prisma } from "../lib/prisma";
+import { formatSchedulerError } from "../lib/background-jobs";
 
 /**
  * Default plan duration in days.
@@ -65,6 +64,13 @@ export const startRenewalScheduler = () => {
 
             console.log(`[RenewalScheduler] Enqueued ${enqueuedCount} renewal reminders.`);
         } catch (error) {
+            const formattedError = formatSchedulerError(error);
+
+            if (formattedError.connectivity) {
+                console.error(`[RenewalScheduler] Skipping run because the database is unavailable: ${formattedError.message}`);
+                return;
+            }
+
             console.error("[RenewalScheduler] Error:", error);
         }
     });

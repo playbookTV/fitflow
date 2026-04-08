@@ -15,6 +15,28 @@ interface FlowResponse {
     [key: string]: any;
 }
 
+const summarizeMetaWebhookEvent = (body: any) => {
+    const value = body?.entry?.[0]?.changes?.[0]?.value;
+    const messages = value?.messages ?? [];
+    const statuses = value?.statuses ?? [];
+
+    return {
+        object: body?.object,
+        phoneNumberId: value?.metadata?.phone_number_id,
+        displayPhoneNumber: value?.metadata?.display_phone_number,
+        messageCount: messages.length,
+        statusCount: statuses.length,
+        messageTypes: messages.map((message: any) => message.type).filter(Boolean),
+        statuses: statuses.map((status: any) => ({
+            id: status.id,
+            status: status.status,
+            recipientId: status.recipient_id,
+            errorCodes: (status.errors ?? []).map((error: any) => error.code),
+            errorTitles: (status.errors ?? []).map((error: any) => error.title),
+        })),
+    };
+};
+
 /**
  * Process a weekly check-in flow response
  */
@@ -114,8 +136,7 @@ router.get("/", (req, res) => {
 router.post("/", async (req, res) => {
     const body = req.body;
 
-    // Log the incoming event for debugging
-    console.log("[Webhook] Received Meta event:", JSON.stringify(body, null, 2));
+    console.log("[Webhook] Received Meta event:", JSON.stringify(summarizeMetaWebhookEvent(body)));
 
     res.sendStatus(200); // Always respond fast to Meta
 

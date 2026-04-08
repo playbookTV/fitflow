@@ -1,3 +1,8 @@
-import "../workers/workoutProcessor";
+import { workersEnabled } from "../lib/background-jobs";
 
-console.log("✅ FitFlow workers started");
+if (workersEnabled()) {
+    require("../workers/workoutProcessor");
+    console.log("✅ FitFlow workers started");
+} else {
+    console.log("[Startup] Worker process started with workers disabled");
+}

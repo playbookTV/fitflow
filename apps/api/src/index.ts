@@ -18,15 +18,26 @@ import telegramWebhookRouter from "./routes/telegram-webhook";
 import offersRouter from "./routes/offers";
 import leadsRouter from "./routes/leads";
 import publicRouter from "./routes/public";
-import "./workers/workoutProcessor"; // Starts the BullMQ worker
 import { startDailyScheduler } from "./jobs/daily-scheduler";
 import { startWeeklyCheckinScheduler } from "./jobs/weekly-checkin";
 import { startRenewalScheduler } from "./jobs/renewal-scheduler";
+import { schedulersEnabled, workersEnabled } from "./lib/background-jobs";
 
-// Start Schedulers
-startDailyScheduler();
-startWeeklyCheckinScheduler();
-startRenewalScheduler();
+if (workersEnabled()) {
+    require("./workers/workoutProcessor");
+    console.log("[Startup] Background workers enabled");
+} else {
+    console.log("[Startup] Background workers disabled");
+}
+
+if (schedulersEnabled()) {
+    startDailyScheduler();
+    startWeeklyCheckinScheduler();
+    startRenewalScheduler();
+    console.log("[Startup] Schedulers enabled");
+} else {
+    console.log("[Startup] Schedulers disabled");
+}
 
 const app: Express = express();
 const PORT = process.env.PORT || 3001;

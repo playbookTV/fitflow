@@ -1,10 +1,9 @@
 import cron from "node-cron";
-import { PrismaClient } from "@prisma/client";
 import { workoutQueue } from "../lib/queue";
 import { getDelayUntil7AM } from "../lib/time";
 import { JobType } from "../lib/types";
-
-const prisma = new PrismaClient();
+import { prisma } from "../lib/prisma";
+import { formatSchedulerError } from "../lib/background-jobs";
 
 /**
  * Daily Scheduler: Runs at 00:01 every day.
@@ -53,6 +52,13 @@ export const startDailyScheduler = () => {
             }
             console.log("[DailyScheduler] Daily enqueuing complete.");
         } catch (error) {
+            const formattedError = formatSchedulerError(error);
+
+            if (formattedError.connectivity) {
+                console.error(`[DailyScheduler] Skipping run because the database is unavailable: ${formattedError.message}`);
+                return;
+            }
+
             console.error("[DailyScheduler] Error running daily scheduler:", error);
         }
     });

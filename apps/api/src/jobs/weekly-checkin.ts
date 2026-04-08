@@ -1,10 +1,9 @@
 import cron from "node-cron";
-import { PrismaClient } from "@prisma/client";
 import { checkinQueue } from "../lib/queue";
 import { getDelayUntilSunday8PM } from "../lib/time";
 import { JobType } from "../lib/types";
-
-const prisma = new PrismaClient();
+import { prisma } from "../lib/prisma";
+import { formatSchedulerError } from "../lib/background-jobs";
 
 /**
  * Weekly Check-in Scheduler: Runs every Sunday morning.
@@ -57,6 +56,13 @@ export const startWeeklyCheckinScheduler = () => {
             }
             console.log("[WeeklyCheckin] Weekly enqueuing complete.");
         } catch (error) {
+            const formattedError = formatSchedulerError(error);
+
+            if (formattedError.connectivity) {
+                console.error(`[WeeklyCheckin] Skipping run because the database is unavailable: ${formattedError.message}`);
+                return;
+            }
+
             console.error("[WeeklyCheckin] Error running weekly checkin scheduler:", error);
         }
     });
