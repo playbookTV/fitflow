@@ -72,6 +72,26 @@ export async function provisionBot(
 }
 
 /**
+ * Auto-provision the default coach's bot on startup if env vars are set
+ * and no bot_registry entry exists yet (e.g. after a DB reset).
+ */
+export async function ensureDefaultBot(): Promise<void> {
+    const coachId = process.env.DEFAULT_COACH_ID;
+    const botToken = process.env.DEFAULT_TG_BOT_TOKEN;
+    if (!coachId || !botToken) return;
+
+    const existing = await prisma.botRegistry.findUnique({ where: { coachId } });
+    if (existing) return;
+
+    try {
+        const result = await provisionBot(coachId, botToken);
+        console.log(`[BotProvisioner] Auto-provisioned @${result.botUsername} for default coach`);
+    } catch (error) {
+        console.error("[BotProvisioner] Auto-provision failed:", error);
+    }
+}
+
+/**
  * Remove a coach's Telegram bot provisioning.
  */
 export async function deprovisionBot(coachId: string): Promise<void> {
