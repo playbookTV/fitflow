@@ -7,6 +7,7 @@ import { DashboardLayout } from "@/components/DashboardLayout";
 import { Search, Filter, RefreshCcw, MessageSquare, Plus, Send, UserPlus } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { getAuthHeaders } from "@/lib/auth";
 
 interface Stats {
     totalClients: number;
@@ -46,13 +47,13 @@ export default function DashboardPage() {
     const fetchData = async () => {
         setLoading(true);
         try {
-            const token = localStorage.getItem("token");
+            const headers = await getAuthHeaders();
             const [statsRes, clientsRes] = await Promise.all([
                 fetch(`${process.env.NEXT_PUBLIC_API_URL}/analytics/summary`, {
-                    headers: { Authorization: `Bearer ${token}` },
+                    headers,
                 }),
                 fetch(`${process.env.NEXT_PUBLIC_API_URL}/clients`, {
-                    headers: { Authorization: `Bearer ${token}` },
+                    headers,
                 }),
             ]);
 

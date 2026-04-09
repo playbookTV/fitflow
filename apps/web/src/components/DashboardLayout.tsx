@@ -4,7 +4,6 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
-import { syncAuthToken } from "@/lib/auth";
 import { Logo } from "@/components/ui";
 import {
     LayoutDashboard,
@@ -66,12 +65,12 @@ export function DashboardLayout({
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
     useEffect(() => {
-        syncAuthToken();
-
         const {
             data: { subscription },
-        } = supabase.auth.onAuthStateChange(() => {
-            void syncAuthToken();
+        } = supabase.auth.onAuthStateChange((event) => {
+            if (event === "SIGNED_OUT") {
+                window.location.href = "/login";
+            }
         });
 
         return () => {
@@ -81,7 +80,6 @@ export function DashboardLayout({
 
     const handleLogout = async () => {
         await supabase.auth.signOut();
-        localStorage.removeItem("token");
         window.location.href = "/login";
     };
 

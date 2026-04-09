@@ -15,6 +15,7 @@ import {
     Edit3,
 } from "lucide-react";
 import { formatDate } from "@/lib/utils";
+import { getAuthHeaders } from "@/lib/auth";
 
 interface WorkoutPlan {
     id: string;
@@ -36,9 +37,8 @@ export default function PlansPage() {
     useEffect(() => {
         const fetchPlans = async () => {
             try {
-                const token = localStorage.getItem("token");
                 const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/plans`, {
-                    headers: { Authorization: `Bearer ${token}` },
+                    headers: await getAuthHeaders(),
                 });
                 if (response.ok) {
                     setPlans(await response.json());
@@ -58,12 +58,11 @@ export default function PlansPage() {
 
     const handleDuplicate = async (planId: string) => {
         try {
-            const token = localStorage.getItem("token");
             const response = await fetch(
                 `${process.env.NEXT_PUBLIC_API_URL}/plans/${planId}/duplicate`,
                 {
                     method: "POST",
-                    headers: { Authorization: `Bearer ${token}` },
+                    headers: await getAuthHeaders(),
                 }
             );
             if (response.ok) {
@@ -80,12 +79,11 @@ export default function PlansPage() {
         if (!confirm("Are you sure you want to delete this plan?")) return;
 
         try {
-            const token = localStorage.getItem("token");
             const response = await fetch(
                 `${process.env.NEXT_PUBLIC_API_URL}/plans/${planId}`,
                 {
                     method: "DELETE",
-                    headers: { Authorization: `Bearer ${token}` },
+                    headers: await getAuthHeaders(),
                 }
             );
             if (response.ok) {

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { DashboardLayout } from "@/components/DashboardLayout";
+import { getAuthHeaders } from "@/lib/auth";
 import {
     Activity,
     UserPlus,
@@ -59,10 +60,9 @@ export default function ActivityPage() {
     const fetchEvents = async () => {
         setLoading(true);
         try {
-            const token = localStorage.getItem("token");
             const res = await fetch(
                 `${process.env.NEXT_PUBLIC_API_URL}/analytics/events?limit=100`,
-                { headers: { Authorization: `Bearer ${token}` } }
+                { headers: await getAuthHeaders() }
             );
             if (res.ok) setEvents(await res.json());
         } catch (error) {

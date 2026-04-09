@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import { StatusBadge } from "@/components/ui";
+import { getAuthHeaders } from "@/lib/auth";
 import { DashboardLayout } from "@/components/DashboardLayout";
 
 interface CheckIn {
@@ -80,10 +81,10 @@ function AssignPlanModal({
     const [error, setError] = useState("");
 
     useEffect(() => {
-        const token = localStorage.getItem("token");
+        getAuthHeaders().then((headers) =>
         fetch(`${process.env.NEXT_PUBLIC_API_URL}/plans`, {
-            headers: { Authorization: `Bearer ${token}` },
-        })
+            headers,
+        }))
             .then((res) => res.json())
             .then((data) => {
                 setPlans(data);
@@ -105,14 +106,13 @@ function AssignPlanModal({
         setError("");
 
         try {
-            const token = localStorage.getItem("token");
             const res = await fetch(
                 `${process.env.NEXT_PUBLIC_API_URL}/clients/${clientId}/assignments`,
                 {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
-                        Authorization: `Bearer ${token}`,
+                        ...(await getAuthHeaders()),
                     },
                     body: JSON.stringify({
                         planId: selectedPlanId,
@@ -349,9 +349,8 @@ export default function ClientProfilePage() {
     useEffect(() => {
         const fetchClient = async () => {
             try {
-                const token = localStorage.getItem("token");
                 const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/clients/${id}`, {
-                    headers: { Authorization: `Bearer ${token}` },
+                    headers: await getAuthHeaders(),
                 });
                 if (res.ok) {
                     setClient(await res.json());
@@ -373,14 +372,13 @@ export default function ClientProfilePage() {
             setSaveStatus("saving");
 
             try {
-                const token = localStorage.getItem("token");
                 const res = await fetch(
                     `${process.env.NEXT_PUBLIC_API_URL}/clients/${client.id}`,
                     {
                         method: "PATCH",
                         headers: {
                             "Content-Type": "application/json",
-                            Authorization: `Bearer ${token}`,
+                            ...(await getAuthHeaders()),
                         },
                         body: JSON.stringify({ [field]: value || null }),
                     }

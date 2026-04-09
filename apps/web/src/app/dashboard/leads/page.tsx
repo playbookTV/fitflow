@@ -11,6 +11,7 @@ import {
     ClipboardList,
 } from "lucide-react";
 import { cn, formatRelative } from "@/lib/utils";
+import { getAuthHeaders } from "@/lib/auth";
 
 interface IntakeData {
     step?: string;
@@ -88,12 +89,11 @@ export default function LeadsPage() {
 
     const fetchLeads = useCallback(async () => {
         try {
-            const token = localStorage.getItem("token");
             const url = statusFilter === "ALL"
                 ? `${process.env.NEXT_PUBLIC_API_URL}/leads`
                 : `${process.env.NEXT_PUBLIC_API_URL}/leads?status=${statusFilter}`;
             const res = await fetch(url, {
-                headers: { Authorization: `Bearer ${token}` },
+                headers: await getAuthHeaders(),
             });
             if (res.ok) setLeads(await res.json());
         } catch (error) {
@@ -108,10 +108,9 @@ export default function LeadsPage() {
     const fetchMessages = useCallback(async (leadId: string) => {
         setLoadingMessages(true);
         try {
-            const token = localStorage.getItem("token");
             const res = await fetch(
                 `${process.env.NEXT_PUBLIC_API_URL}/leads/${leadId}/messages`,
-                { headers: { Authorization: `Bearer ${token}` } }
+                { headers: await getAuthHeaders() }
             );
             if (res.ok) setMessages(await res.json());
         } catch (error) {
@@ -131,13 +130,12 @@ export default function LeadsPage() {
         if (!newMessage.trim() || !selectedLead || sending) return;
         setSending(true);
         try {
-            const token = localStorage.getItem("token");
             const res = await fetch(
                 `${process.env.NEXT_PUBLIC_API_URL}/leads/${selectedLead.id}/messages`,
                 {
                     method: "POST",
                     headers: {
-                        Authorization: `Bearer ${token}`,
+                        ...(await getAuthHeaders()),
                         "Content-Type": "application/json",
                     },
                     body: JSON.stringify({ content: newMessage }),
@@ -158,12 +156,11 @@ export default function LeadsPage() {
     const handleConvert = async (leadId: string) => {
         setConverting(leadId);
         try {
-            const token = localStorage.getItem("token");
             const res = await fetch(
                 `${process.env.NEXT_PUBLIC_API_URL}/leads/${leadId}/convert`,
                 {
                     method: "POST",
-                    headers: { Authorization: `Bearer ${token}` },
+                    headers: await getAuthHeaders(),
                 }
             );
             if (res.ok) {
@@ -183,12 +180,11 @@ export default function LeadsPage() {
     const handleStartIntake = async (leadId: string) => {
         setStartingIntake(leadId);
         try {
-            const token = localStorage.getItem("token");
             const res = await fetch(
                 `${process.env.NEXT_PUBLIC_API_URL}/leads/${leadId}/start-intake`,
                 {
                     method: "POST",
-                    headers: { Authorization: `Bearer ${token}` },
+                    headers: await getAuthHeaders(),
                 }
             );
             if (res.ok) fetchLeads();

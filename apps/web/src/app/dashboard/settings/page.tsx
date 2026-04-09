@@ -130,11 +130,10 @@ function SettingsContent() {
     useEffect(() => {
         const fetchProfile = async () => {
             try {
-                const token = localStorage.getItem("token");
                 const response = await fetch(
                     `${process.env.NEXT_PUBLIC_API_URL}/coaches/me`,
                     {
-                        headers: { Authorization: `Bearer ${token}` },
+                        headers: await getAuthHeaders(),
                     }
                 );
                 if (response.ok) {
@@ -153,14 +152,13 @@ function SettingsContent() {
     const handleSave = async () => {
         setSaving(true);
         try {
-            const token = localStorage.getItem("token");
             const response = await fetch(
                 `${process.env.NEXT_PUBLIC_API_URL}/coaches/me`,
                 {
                     method: "PATCH",
                     headers: {
                         "Content-Type": "application/json",
-                        Authorization: `Bearer ${token}`,
+                        ...(await getAuthHeaders()),
                     },
                     body: JSON.stringify({
                         name: profile.name,

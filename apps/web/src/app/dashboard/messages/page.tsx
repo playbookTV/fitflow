@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { DashboardLayout } from "@/components/DashboardLayout";
+import { getAuthHeaders } from "@/lib/auth";
 import {
     Search,
     Send,
@@ -101,10 +102,9 @@ export default function MessagesPage() {
     useEffect(() => {
         const fetchConversations = async () => {
             try {
-                const token = localStorage.getItem("token");
                 const response = await fetch(
                     `${process.env.NEXT_PUBLIC_API_URL}/messages/conversations`,
-                    { headers: { Authorization: `Bearer ${token}` } }
+                    { headers: await getAuthHeaders() }
                 );
                 if (response.ok) {
                     setConversations(await response.json());

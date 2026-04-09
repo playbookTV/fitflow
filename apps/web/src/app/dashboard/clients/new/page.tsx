@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { ArrowLeft, User, Phone, Mail, Target, FileText, Send } from "lucide-react";
+import { getAuthHeaders } from "@/lib/auth";
 
 type ClientStatus = "PENDING_PAYMENT" | "INTAKE_SENT" | "ACTIVE";
 
@@ -48,12 +49,11 @@ export default function NewClientPage() {
         setError(null);
 
         try {
-            const token = localStorage.getItem("token");
             const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/clients`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
+                    ...(await getAuthHeaders()),
                 },
                 body: JSON.stringify({
                     name: formData.name,
@@ -75,7 +75,7 @@ export default function NewClientPage() {
             if (formData.sendIntake && formData.status === "INTAKE_SENT") {
                 await fetch(`${process.env.NEXT_PUBLIC_API_URL}/clients/${client.id}/send-intake`, {
                     method: "POST",
-                    headers: { Authorization: `Bearer ${token}` },
+                    headers: await getAuthHeaders(),
                 });
             }
 

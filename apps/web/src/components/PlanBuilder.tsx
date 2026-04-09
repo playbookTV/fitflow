@@ -5,6 +5,7 @@ import {
     Plus, Search, GripVertical, Save, Trash2, ChevronDown, ChevronRight
 } from "lucide-react";
 import Image from "next/image";
+import { getAuthHeaders } from "@/lib/auth";
 
 interface UnifiedResult {
     id: string;
@@ -55,10 +56,10 @@ export default function PlanBuilder({ planId }: PlanBuilderProps) {
     useEffect(() => {
         if (!planId) return;
 
-        const token = localStorage.getItem("token");
+        getAuthHeaders().then((headers) =>
         fetch(`${process.env.NEXT_PUBLIC_API_URL}/plans/${planId}`, {
-            headers: { Authorization: `Bearer ${token}` },
-        })
+            headers,
+        }))
             .then((res) => {
                 if (!res.ok) throw new Error("Plan not found");
                 return res.json();
@@ -96,12 +97,12 @@ export default function PlanBuilder({ planId }: PlanBuilderProps) {
         }
 
         const controller = new AbortController();
-        const token = localStorage.getItem("token");
 
+        getAuthHeaders().then((headers) =>
         fetch(`${process.env.NEXT_PUBLIC_API_URL}/exercises/unified-search?q=${encodeURIComponent(searchTerm)}`, {
-            headers: { Authorization: `Bearer ${token}` },
+            headers,
             signal: controller.signal,
-        })
+        }))
             .then((res) => res.ok ? res.json() : { results: [] })
             .then((data: { results: UnifiedResult[] }) => setUnifiedResults(data.results))
             .catch((err) => {
@@ -144,13 +145,12 @@ export default function PlanBuilder({ planId }: PlanBuilderProps) {
         }
 
         // YMove: import first, then add
-        const token = localStorage.getItem("token");
         try {
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/exercises/ymove-import`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
+                    ...(await getAuthHeaders()),
                 },
                 body: JSON.stringify({ ymoveId: result.ymoveId }),
             });
@@ -177,7 +177,6 @@ export default function PlanBuilder({ planId }: PlanBuilderProps) {
     const savePlan = async () => {
         setIsSaving(true);
         try {
-            const token = localStorage.getItem("token");
             const url = planId
                 ? `${process.env.NEXT_PUBLIC_API_URL}/plans/${planId}`
                 : `${process.env.NEXT_PUBLIC_API_URL}/plans`;
@@ -185,7 +184,7 @@ export default function PlanBuilder({ planId }: PlanBuilderProps) {
                 method: planId ? "PUT" : "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
+                    ...(await getAuthHeaders()),
                 },
                 body: JSON.stringify({
                     title,

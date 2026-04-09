@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Plus, Link2, Users, Trash2, Copy } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { getAuthHeaders } from "@/lib/auth";
 
 interface Offer {
     id: string;
@@ -26,9 +27,8 @@ export default function OffersPage() {
 
     const fetchOffers = async () => {
         try {
-            const token = localStorage.getItem("token");
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/offers`, {
-                headers: { Authorization: `Bearer ${token}` },
+                headers: await getAuthHeaders(),
             });
             if (res.ok) setOffers(await res.json());
         } catch (error) {
@@ -44,12 +44,11 @@ export default function OffersPage() {
         if (!newOffer.name || !newOffer.slug) return;
         setCreating(true);
         try {
-            const token = localStorage.getItem("token");
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/offers`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
+                    ...(await getAuthHeaders()),
                 },
                 body: JSON.stringify(newOffer),
             });
@@ -66,10 +65,9 @@ export default function OffersPage() {
     };
 
     const handleDelete = async (id: string) => {
-        const token = localStorage.getItem("token");
         await fetch(`${process.env.NEXT_PUBLIC_API_URL}/offers/${id}`, {
             method: "DELETE",
-            headers: { Authorization: `Bearer ${token}` },
+            headers: await getAuthHeaders(),
         });
         fetchOffers();
     };

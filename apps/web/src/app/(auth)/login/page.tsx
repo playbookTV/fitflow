@@ -4,7 +4,6 @@ import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { syncAuthToken } from "@/lib/auth";
 import { Logo } from "@/components/ui";
 import { CheckCircle2 } from "lucide-react";
 
@@ -31,7 +30,6 @@ function LoginContent() {
             setError(error.message);
             setLoading(false);
         } else {
-            await syncAuthToken();
             window.location.href = "/dashboard";
         }
     };

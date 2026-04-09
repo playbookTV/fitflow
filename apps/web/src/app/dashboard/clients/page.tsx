@@ -6,6 +6,7 @@ import { cn, formatRelative, complianceColor } from "@/lib/utils";
 import { Plus, Search, ArrowUpRight, MessageSquare, Send } from "lucide-react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { StatusBadge } from "@/components/ui";
+import { getAuthHeaders } from "@/lib/auth";
 
 interface Client {
     id: string;
@@ -37,9 +38,8 @@ export default function ClientsPage() {
     useEffect(() => {
         const fetchClients = async () => {
             try {
-                const token = localStorage.getItem("token");
                 const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/clients`, {
-                    headers: { Authorization: `Bearer ${token}` },
+                    headers: await getAuthHeaders(),
                 });
                 if (res.ok) {
                     setClients(await res.json());
