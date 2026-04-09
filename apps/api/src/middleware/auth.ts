@@ -45,36 +45,33 @@ export const authenticate = async (
         // Ensure coach record exists (creates on first authenticated request)
         try {
             if (user.email) {
-                const existing = await prisma.coach.findUnique({ where: { id: user.id } });
-                if (!existing) {
-                    const fullName = user.user_metadata?.full_name as string | undefined;
+                const fullName = user.user_metadata?.full_name as string | undefined;
+                const baseSlug = (fullName || user.email!.split("@")[0])
+                    .toLowerCase()
+                    .replace(/[^a-z0-9]+/g, "-")
+                    .replace(/^-|-$/g, "");
 
-                    // Generate slug from coach name (e.g. "Leslie Fitness" → "leslie-fitness")
-                    // Falls back to email prefix if name not set
-                    const baseSlug = (fullName || user.email!.split("@")[0])
-                        .toLowerCase()
-                        .replace(/[^a-z0-9]+/g, "-")
-                        .replace(/^-|-$/g, "");
-
-                    // Ensure uniqueness by appending random suffix if taken
-                    let slug = baseSlug;
-                    const taken = await prisma.coach.findUnique({ where: { slug } });
-                    if (taken) {
-                        slug = `${baseSlug}-${Math.random().toString(36).slice(2, 6)}`;
-                    }
-
-                    await prisma.coach.create({
-                        data: {
-                            id: user.id,
-                            email: user.email,
-                            name: fullName || null,
-                            slug,
-                        },
-                    });
+                let slug = baseSlug;
+                const taken = await prisma.coach.findFirst({
+                    where: { slug, id: { not: user.id } },
+                });
+                if (taken) {
+                    slug = `${baseSlug}-${Math.random().toString(36).slice(2, 6)}`;
                 }
+
+                await prisma.coach.upsert({
+                    where: { id: user.id },
+                    update: {},
+                    create: {
+                        id: user.id,
+                        email: user.email,
+                        name: fullName || null,
+                        slug,
+                    },
+                });
             }
         } catch (upsertErr) {
-            // Don't block auth if coach creation fails (e.g. already exists from race)
+            // Don't block auth if coach creation fails
             console.error("[Auth] Coach ensure failed:", upsertErr);
         }
 
