@@ -67,12 +67,12 @@ export default function PlanBuilder({ planId }: PlanBuilderProps) {
                 setTitle(plan.title);
                 setDescription(plan.description || "");
                 setDays(
-                    plan.days.map((day: any) => ({
+                    plan.days.map((day: { id: string; dayNumber: number; title: string; exercises: { id: string; exerciseId: string; exercise?: { name?: string; demoVideoUrl?: string }; sets: number; reps: string; rest: string; notes?: string }[] }) => ({
                         id: day.id,
                         dayNumber: day.dayNumber,
                         title: day.title,
                         isOpen: true,
-                        exercises: day.exercises.map((we: any) => ({
+                        exercises: day.exercises.map((we: { id: string; exerciseId: string; exercise?: { name?: string; demoVideoUrl?: string }; sets: number; reps: string; rest: string; notes?: string }) => ({
                             id: we.id,
                             exerciseId: we.exerciseId,
                             name: we.exercise?.name || "Unknown",
