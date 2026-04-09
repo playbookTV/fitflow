@@ -44,6 +44,7 @@ export const authenticate = async (
 
         // Ensure coach record exists (creates on first authenticated request)
         try {
+            console.log(`[Auth] Ensuring coach for ${user.id}, email=${user.email}, name=${user.user_metadata?.full_name}`);
             if (user.email) {
                 const fullName = user.user_metadata?.full_name as string | undefined;
                 const baseSlug = (fullName || user.email!.split("@")[0])
