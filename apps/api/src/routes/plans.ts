@@ -76,6 +76,89 @@ router.post("/", authenticate, async (req: AuthRequest, res: Response) => {
     }
 });
 
+// GET /plans/:id - Get a single plan with full details
+router.get("/:id", authenticate, async (req: AuthRequest, res: Response) => {
+    const coachId = req.user?.id as string;
+    const { id } = req.params;
+
+    if (!coachId) return res.status(401).json({ error: "Unauthorized" });
+
+    try {
+        const plan = await prisma.workoutPlan.findFirst({
+            where: { id: id as string, coachId },
+            include: {
+                days: {
+                    include: { exercises: { include: { exercise: true }, orderBy: { order: "asc" } } },
+                    orderBy: { dayNumber: "asc" },
+                },
+                _count: { select: { assignments: true } },
+            },
+        });
+
+        if (!plan) return res.status(404).json({ error: "Plan not found" });
+
+        res.json({ ...plan, daysPerWeek: plan.days.length });
+    } catch (error) {
+        console.error(`[GET /plans/${id}]`, error);
+        res.status(500).json({ error: "Failed to fetch plan" });
+    }
+});
+
+// PUT /plans/:id - Update an existing plan
+router.put("/:id", authenticate, async (req: AuthRequest, res: Response) => {
+    const coachId = req.user?.id as string;
+    const { id } = req.params;
+    const { title, description, days } = req.body;
+
+    if (!coachId) return res.status(401).json({ error: "Unauthorized" });
+
+    try {
+        const existing = await prisma.workoutPlan.findFirst({
+            where: { id: id as string, coachId },
+        });
+        if (!existing) return res.status(404).json({ error: "Plan not found" });
+
+        const plan = await prisma.$transaction(async (tx) => {
+            // Delete old days (cascades to exercises via Prisma)
+            await tx.workoutDay.deleteMany({ where: { planId: id as string } });
+
+            // Update plan with new days
+            return tx.workoutPlan.update({
+                where: { id: id as string },
+                data: {
+                    title,
+                    description,
+                    days: {
+                        create: days.map((day: any) => ({
+                            dayNumber: day.dayNumber,
+                            title: day.title,
+                            exercises: {
+                                create: day.exercises.map((ex: any, idx: number) => ({
+                                    exerciseId: ex.exerciseId,
+                                    order: idx,
+                                    sets: Number(ex.sets) || 3,
+                                    reps: ex.reps || "10-12",
+                                    rest: ex.rest || "60s",
+                                    notes: ex.notes,
+                                })),
+                            },
+                        })),
+                    },
+                },
+                include: {
+                    days: { include: { exercises: { include: { exercise: true } } } },
+                    _count: { select: { assignments: true } },
+                },
+            });
+        });
+
+        res.json({ ...plan, daysPerWeek: plan.days.length });
+    } catch (error) {
+        console.error(`[PUT /plans/${id}]`, error);
+        res.status(500).json({ error: "Failed to update plan" });
+    }
+});
+
 // POST /plans/:id/duplicate - Duplicate an existing workout plan
 router.post("/:id/duplicate", authenticate, async (req: AuthRequest, res: Response) => {
     const coachId = req.user?.id as string;

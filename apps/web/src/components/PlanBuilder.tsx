@@ -35,7 +35,11 @@ interface PlanDay {
     isOpen: boolean;
 }
 
-export default function PlanBuilder() {
+interface PlanBuilderProps {
+    planId?: string;
+}
+
+export default function PlanBuilder({ planId }: PlanBuilderProps) {
     const [title, setTitle] = useState("New Workout Plan");
     const [description, setDescription] = useState("");
     const [days, setDays] = useState<PlanDay[]>([
@@ -45,6 +49,45 @@ export default function PlanBuilder() {
     const [unifiedResults, setUnifiedResults] = useState<UnifiedResult[]>([]);
     const [activeDayIdx, setActiveDayIdx] = useState<number | null>(0);
     const [isSaving, setIsSaving] = useState(false);
+    const [loading, setLoading] = useState(!!planId);
+
+    // Load existing plan data when editing
+    useEffect(() => {
+        if (!planId) return;
+
+        const token = localStorage.getItem("token");
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/plans/${planId}`, {
+            headers: { Authorization: `Bearer ${token}` },
+        })
+            .then((res) => {
+                if (!res.ok) throw new Error("Plan not found");
+                return res.json();
+            })
+            .then((plan) => {
+                setTitle(plan.title);
+                setDescription(plan.description || "");
+                setDays(
+                    plan.days.map((day: any) => ({
+                        id: day.id,
+                        dayNumber: day.dayNumber,
+                        title: day.title,
+                        isOpen: true,
+                        exercises: day.exercises.map((we: any) => ({
+                            id: we.id,
+                            exerciseId: we.exerciseId,
+                            name: we.exercise?.name || "Unknown",
+                            sets: we.sets,
+                            reps: we.reps,
+                            rest: we.rest,
+                            notes: we.notes || "",
+                            demoVideoUrl: we.exercise?.demoVideoUrl,
+                        })),
+                    }))
+                );
+            })
+            .catch((err) => console.error("Failed to load plan:", err))
+            .finally(() => setLoading(false));
+    }, [planId]);
 
     useEffect(() => {
         if (searchTerm.length < 3) {
@@ -135,8 +178,11 @@ export default function PlanBuilder() {
         setIsSaving(true);
         try {
             const token = localStorage.getItem("token");
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/plans`, {
-                method: "POST",
+            const url = planId
+                ? `${process.env.NEXT_PUBLIC_API_URL}/plans/${planId}`
+                : `${process.env.NEXT_PUBLIC_API_URL}/plans`;
+            const response = await fetch(url, {
+                method: planId ? "PUT" : "POST",
                 headers: {
                     "Content-Type": "application/json",
                     Authorization: `Bearer ${token}`,
@@ -168,6 +214,14 @@ export default function PlanBuilder() {
         }
     };
 
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-mesh-gradient flex items-center justify-center">
+                <div className="skeleton h-96 w-full max-w-4xl rounded-2xl" />
+            </div>
+        );
+    }
+
     return (
         <div className="min-h-screen bg-mesh-gradient">
             <div className="max-w-4xl mx-auto px-6 py-10 animate-fade-in">
@@ -195,7 +249,7 @@ export default function PlanBuilder() {
                         className="btn-primary disabled:opacity-50"
                     >
                         <Save size={14} />
-                        {isSaving ? "SAVING..." : "SAVE PLAN"}
+                        {isSaving ? "SAVING..." : planId ? "UPDATE PLAN" : "SAVE PLAN"}
                     </button>
                 </div>
 
