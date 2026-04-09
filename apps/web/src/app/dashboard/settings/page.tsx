@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import { DashboardLayout } from "@/components/DashboardLayout";
+import { getAuthHeaders } from "@/lib/auth";
 import {
     User,
     Building2,
@@ -80,6 +82,50 @@ export default function SettingsPage() {
         telegramDeepLink: null,
     });
     const [linkCopied, setLinkCopied] = useState(false);
+    const [stripeLoading, setStripeLoading] = useState(false);
+    const searchParams = useSearchParams();
+
+    const handleStripeConnect = useCallback(async () => {
+        setStripeLoading(true);
+        try {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/coaches/stripe/connect`, {
+                method: "POST",
+                headers: await getAuthHeaders(),
+            });
+            if (res.ok) {
+                const { url } = await res.json();
+                window.location.href = url;
+            }
+        } catch (error) {
+            console.error("Failed to initiate Stripe Connect:", error);
+        } finally {
+            setStripeLoading(false);
+        }
+    }, []);
+
+    const handleStripeDashboard = useCallback(async () => {
+        try {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/coaches/stripe/dashboard`, {
+                headers: await getAuthHeaders(),
+            });
+            if (res.ok) {
+                const { url } = await res.json();
+                window.open(url, "_blank");
+            }
+        } catch (error) {
+            console.error("Failed to open Stripe dashboard:", error);
+        }
+    }, []);
+
+    // Handle Stripe onboarding return
+    useEffect(() => {
+        const stripeParam = searchParams.get("stripe");
+        if (stripeParam === "refresh") {
+            handleStripeConnect();
+        } else if (stripeParam === "success") {
+            setActiveTab("integrations");
+        }
+    }, [searchParams, handleStripeConnect]);
 
     useEffect(() => {
         const fetchProfile = async () => {
@@ -526,13 +572,15 @@ export default function SettingsPage() {
                                                 </div>
                                             </div>
                                             <button
+                                                onClick={profile.stripeConnected ? handleStripeDashboard : handleStripeConnect}
+                                                disabled={stripeLoading}
                                                 className={cn(
                                                     profile.stripeConnected
                                                         ? "btn-secondary"
                                                         : "btn-primary"
                                                 )}
                                             >
-                                                {profile.stripeConnected ? "Dashboard" : "Connect"}
+                                                {stripeLoading ? "Connecting..." : profile.stripeConnected ? "Dashboard" : "Connect"}
                                                 <ExternalLink className="w-3.5 h-3.5" />
                                             </button>
                                         </div>

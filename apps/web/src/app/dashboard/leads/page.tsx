@@ -11,6 +11,16 @@ import {
 } from "lucide-react";
 import { cn, formatRelative } from "@/lib/utils";
 
+interface IntakeData {
+    step?: string;
+    name?: string;
+    age?: number;
+    gender?: string;
+    goal?: string;
+    weight?: string;
+    agreedToTerms?: boolean;
+}
+
 interface Lead {
     id: string;
     name: string;
@@ -20,6 +30,7 @@ interface Lead {
     source: string | null;
     status: "NEW" | "INTAKE_COMPLETE" | "PAYMENT_PENDING" | "CONVERTED" | "REJECTED";
     offer: { name: string; slug: string } | null;
+    intakeData: IntakeData | null;
     unreadCount: number;
     createdAt: string;
 }
@@ -311,6 +322,16 @@ export default function LeadsPage() {
                                             {selectedLead.source && `via ${selectedLead.source}`}
                                             {selectedLead.offer && ` · ${selectedLead.offer.name}`}
                                         </p>
+                                        {selectedLead.intakeData?.step === "complete" && (
+                                            <p className="text-[10px] text-text-faint">
+                                                {[
+                                                    selectedLead.intakeData.goal,
+                                                    selectedLead.intakeData.age && `${selectedLead.intakeData.age}y`,
+                                                    selectedLead.intakeData.gender,
+                                                    selectedLead.intakeData.weight,
+                                                ].filter(Boolean).join(" · ")}
+                                            </p>
+                                        )}
                                     </div>
                                 </div>
                                 {selectedLead.status !== "CONVERTED" && selectedLead.status !== "REJECTED" && (

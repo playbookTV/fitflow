@@ -39,6 +39,35 @@ export const createCheckoutSession = async (
     });
 };
 
+export const createConnectAccount = async (coachId: string, email: string) => {
+    return await stripe.accounts.create({
+        type: "express",
+        email,
+        metadata: { coachId },
+        capabilities: {
+            card_payments: { requested: true },
+            transfers: { requested: true },
+        },
+    });
+};
+
+export const createAccountLink = async (
+    accountId: string,
+    refreshUrl: string,
+    returnUrl: string
+) => {
+    return await stripe.accountLinks.create({
+        account: accountId,
+        refresh_url: refreshUrl,
+        return_url: returnUrl,
+        type: "account_onboarding",
+    });
+};
+
+export const createLoginLink = async (accountId: string) => {
+    return await stripe.accounts.createLoginLink(accountId);
+};
+
 export const verifyWebhook = (payload: string | Buffer, signature: string) => {
     return stripe.webhooks.constructEvent(
         payload,

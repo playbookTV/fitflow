@@ -5,6 +5,7 @@ import "./workout";
 import "./checkin";
 import "./at-risk";
 import "./milestones";
+import "./payments";
 import "./renewals";
 import "./system";
 import "./exercise";

@@ -18,6 +18,8 @@ import {
     Send,
     Landmark,
     Loader2,
+    ClipboardCopy,
+    Check,
 } from "lucide-react";
 import { cn, formatDate } from "@/lib/utils";
 
@@ -36,6 +38,7 @@ interface Payment {
 interface BillingStats {
     totalRevenue: number;
     monthlyRevenue: number;
+    previousMonthRevenue: number;
     pendingPayments: number;
     activeSubscriptions: number;
 }
@@ -60,6 +63,7 @@ export default function BillingPage() {
     const [stats, setStats] = useState<BillingStats>({
         totalRevenue: 0,
         monthlyRevenue: 0,
+        previousMonthRevenue: 0,
         pendingPayments: 0,
         activeSubscriptions: 0,
     });
@@ -70,21 +74,34 @@ export default function BillingPage() {
     const [bankTransferForm, setBankTransferForm] = useState({ clientId: "", amount: "" });
     const [confirmingTransfer, setConfirmingTransfer] = useState(false);
     const [clients, setClients] = useState<Array<{ id: string; name: string }>>([]);
+    const [stripeConnected, setStripeConnected] = useState(false);
+    const [showCreateInvoice, setShowCreateInvoice] = useState(false);
+    const [invoiceClientId, setInvoiceClientId] = useState("");
+    const [invoiceLoading, setInvoiceLoading] = useState(false);
+    const [generatedUrl, setGeneratedUrl] = useState<string | null>(null);
+    const [linkCopied, setLinkCopied] = useState(false);
+    const [sendingReminderId, setSendingReminderId] = useState<string | null>(null);
+    const [reminderSentId, setReminderSentId] = useState<string | null>(null);
 
     useEffect(() => {
-        // Fetch clients for the bank transfer dropdown
-        const fetchClients = async () => {
+        const fetchInitialData = async () => {
             try {
-                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/clients`, {
-                    headers: await getAuthHeaders(),
-                });
-                if (res.ok) {
-                    const data = await res.json();
+                const headers = await getAuthHeaders();
+                const [clientsRes, coachRes] = await Promise.all([
+                    fetch(`${process.env.NEXT_PUBLIC_API_URL}/clients`, { headers }),
+                    fetch(`${process.env.NEXT_PUBLIC_API_URL}/coaches/me`, { headers }),
+                ]);
+                if (clientsRes.ok) {
+                    const data = await clientsRes.json();
                     setClients(data.map((c: { id: string; name: string }) => ({ id: c.id, name: c.name })));
+                }
+                if (coachRes.ok) {
+                    const data = await coachRes.json();
+                    setStripeConnected(data.stripeConnected);
                 }
             } catch {}
         };
-        fetchClients();
+        fetchInitialData();
     }, []);
 
     useEffect(() => {
@@ -110,11 +127,25 @@ export default function BillingPage() {
                         })
                         .reduce((sum, payment) => sum + payment.amount, 0);
 
+                    const prevMonth = now.getUTCMonth() === 0 ? 11 : now.getUTCMonth() - 1;
+                    const prevYear = now.getUTCMonth() === 0 ? now.getUTCFullYear() - 1 : now.getUTCFullYear();
+                    const previousMonthRevenue = paymentHistory
+                        .filter((payment) => {
+                            const createdAt = new Date(payment.createdAt);
+                            return (
+                                payment.status === "succeeded" &&
+                                createdAt.getUTCFullYear() === prevYear &&
+                                createdAt.getUTCMonth() === prevMonth
+                            );
+                        })
+                        .reduce((sum, payment) => sum + payment.amount, 0);
+
                     setStats({
                         totalRevenue: paymentHistory
                             .filter((payment) => payment.status === "succeeded")
                             .reduce((sum, payment) => sum + payment.amount, 0),
                         monthlyRevenue: currentMonthRevenue,
+                        previousMonthRevenue,
                         pendingPayments: paymentHistory.filter((payment) => payment.status === "pending").length,
                         activeSubscriptions: new Set(
                             paymentHistory
@@ -139,7 +170,35 @@ export default function BillingPage() {
         : payments;
 
     const handleSendReminder = async (paymentId: string) => {
-        console.log("Sending reminder for payment:", paymentId);
+        setSendingReminderId(paymentId);
+        try {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/payments/${paymentId}/remind`, {
+                method: "POST",
+                headers: await getAuthHeaders(),
+            });
+            if (res.ok) {
+                setReminderSentId(paymentId);
+                setTimeout(() => setReminderSentId(null), 3000);
+            }
+        } catch (error) {
+            console.error("Failed to send reminder:", error);
+        } finally {
+            setSendingReminderId(null);
+        }
+    };
+
+    const handleDownloadReceipt = async (paymentId: string) => {
+        try {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/payments/${paymentId}/receipt`, {
+                headers: await getAuthHeaders(),
+            });
+            if (res.ok) {
+                const { receiptUrl } = await res.json();
+                window.open(receiptUrl, "_blank");
+            }
+        } catch (error) {
+            console.error("Failed to fetch receipt:", error);
+        }
     };
 
     const handleConfirmBankTransfer = async () => {
@@ -183,7 +242,7 @@ export default function BillingPage() {
                         <Landmark className="w-4 h-4" />
                         <span className="hidden sm:inline">BANK TRANSFER</span>
                     </button>
-                    <button className="btn-primary">
+                    <button className="btn-primary" onClick={() => { setGeneratedUrl(null); setInvoiceClientId(""); setShowCreateInvoice(true); }}>
                         <CreditCard className="w-4 h-4" />
                         <span className="hidden sm:inline">CREATE INVOICE</span>
                     </button>
@@ -250,6 +309,108 @@ export default function BillingPage() {
                 </div>
             )}
 
+            {/* Create Invoice Modal */}
+            {showCreateInvoice && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowCreateInvoice(false)} />
+                    <div className="relative w-full max-w-lg card-elevated p-6 animate-scale-in">
+                        <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                            <CreditCard className="w-5 h-5 text-brand-green" />
+                            Create Payment Link
+                        </h3>
+                        {generatedUrl ? (
+                            <div className="space-y-4">
+                                <p className="text-sm text-text-secondary">
+                                    Share this link with your client to collect payment:
+                                </p>
+                                <div className="flex gap-3">
+                                    <input
+                                        type="text"
+                                        value={generatedUrl}
+                                        readOnly
+                                        className="input flex-1 text-xs"
+                                    />
+                                    <button
+                                        className="btn-primary"
+                                        onClick={() => {
+                                            navigator.clipboard.writeText(generatedUrl);
+                                            setLinkCopied(true);
+                                            setTimeout(() => setLinkCopied(false), 2000);
+                                        }}
+                                    >
+                                        {linkCopied ? (
+                                            <><Check className="w-4 h-4" /> Copied</>
+                                        ) : (
+                                            <><ClipboardCopy className="w-4 h-4" /> Copy</>
+                                        )}
+                                    </button>
+                                </div>
+                                <div className="flex justify-end">
+                                    <button onClick={() => setShowCreateInvoice(false)} className="btn-ghost">
+                                        Close
+                                    </button>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="space-y-4">
+                                <div className="form-field">
+                                    <label className="label">Client</label>
+                                    <select
+                                        value={invoiceClientId}
+                                        onChange={(e) => setInvoiceClientId(e.target.value)}
+                                        className="select"
+                                    >
+                                        <option value="">Select a client...</option>
+                                        {clients.map((c) => (
+                                            <option key={c.id} value={c.id}>{c.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div className="flex gap-3 justify-end">
+                                    <button onClick={() => setShowCreateInvoice(false)} className="btn-ghost">
+                                        Cancel
+                                    </button>
+                                    <button
+                                        disabled={invoiceLoading || !invoiceClientId}
+                                        className="btn-primary"
+                                        onClick={async () => {
+                                            setInvoiceLoading(true);
+                                            try {
+                                                const res = await fetch(
+                                                    `${process.env.NEXT_PUBLIC_API_URL}/payments/checkout`,
+                                                    {
+                                                        method: "POST",
+                                                        headers: {
+                                                            "Content-Type": "application/json",
+                                                            ...(await getAuthHeaders()),
+                                                        },
+                                                        body: JSON.stringify({ clientId: invoiceClientId }),
+                                                    }
+                                                );
+                                                if (res.ok) {
+                                                    const { url } = await res.json();
+                                                    setGeneratedUrl(url);
+                                                }
+                                            } catch (error) {
+                                                console.error("Failed to create payment link:", error);
+                                            } finally {
+                                                setInvoiceLoading(false);
+                                            }
+                                        }}
+                                    >
+                                        {invoiceLoading ? (
+                                            <><Loader2 className="w-4 h-4 animate-spin" /> Generating...</>
+                                        ) : (
+                                            "Generate Payment Link"
+                                        )}
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+
             {/* Stats Cards */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                 <div className="stat-card">
@@ -275,7 +436,16 @@ export default function BillingPage() {
                     <p className="text-2xl font-bold text-white">
                         {formatCurrency(stats.monthlyRevenue)}
                     </p>
-                    <p className="text-xs text-brand-green mt-1">+12% from last month</p>
+                    {stats.previousMonthRevenue > 0 ? (
+                        <p className={cn("text-xs mt-1", stats.monthlyRevenue >= stats.previousMonthRevenue ? "text-brand-green" : "text-brand-red")}>
+                            {stats.monthlyRevenue >= stats.previousMonthRevenue ? "+" : ""}
+                            {((stats.monthlyRevenue - stats.previousMonthRevenue) / stats.previousMonthRevenue * 100).toFixed(0)}% from last month
+                        </p>
+                    ) : stats.monthlyRevenue > 0 ? (
+                        <p className="text-xs text-brand-green mt-1">New revenue</p>
+                    ) : (
+                        <p className="text-xs text-text-faint mt-1">No data yet</p>
+                    )}
                 </div>
 
                 <div className="stat-card">
@@ -399,14 +569,22 @@ export default function BillingPage() {
                                         {payment.status === "pending" && (
                                             <button
                                                 onClick={() => handleSendReminder(payment.id)}
+                                                disabled={sendingReminderId === payment.id}
                                                 className="btn-icon !p-1.5 opacity-0 group-hover:opacity-100 transition-opacity"
                                                 title="Send reminder"
                                             >
-                                                <Send className="w-3.5 h-3.5" />
+                                                {sendingReminderId === payment.id ? (
+                                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                                ) : reminderSentId === payment.id ? (
+                                                    <Check className="w-3.5 h-3.5 text-brand-green" />
+                                                ) : (
+                                                    <Send className="w-3.5 h-3.5" />
+                                                )}
                                             </button>
                                         )}
-                                        {payment.status === "succeeded" && (
+                                        {payment.status === "succeeded" && payment.paymentMethod !== "BANK_TRANSFER" && (
                                             <button
+                                                onClick={() => handleDownloadReceipt(payment.id)}
                                                 className="btn-icon !p-1.5 opacity-0 group-hover:opacity-100 transition-opacity"
                                                 title="Download receipt"
                                             >
@@ -430,14 +608,34 @@ export default function BillingPage() {
                     <div>
                         <h3 className="font-semibold text-white mb-1">Stripe Connect</h3>
                         <p className="text-sm text-text-secondary">
-                            View your full payment dashboard and manage payouts
+                            {stripeConnected
+                                ? "View your full payment dashboard and manage payouts"
+                                : "Connect your Stripe account to receive client payments"}
                         </p>
                     </div>
                 </div>
-                <button className="btn-secondary">
-                    Open Dashboard
-                    <ExternalLink className="w-3.5 h-3.5" />
-                </button>
+                {stripeConnected ? (
+                    <button
+                        className="btn-secondary"
+                        onClick={async () => {
+                            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/coaches/stripe/dashboard`, {
+                                headers: await getAuthHeaders(),
+                            });
+                            if (res.ok) {
+                                const { url } = await res.json();
+                                window.open(url, "_blank");
+                            }
+                        }}
+                    >
+                        Open Dashboard
+                        <ExternalLink className="w-3.5 h-3.5" />
+                    </button>
+                ) : (
+                    <Link href="/dashboard/settings?tab=integrations" className="btn-primary">
+                        Connect Stripe
+                        <ExternalLink className="w-3.5 h-3.5" />
+                    </Link>
+                )}
             </div>
         </DashboardLayout>
     );

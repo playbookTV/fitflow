@@ -4,6 +4,12 @@ import { prisma } from "../lib/prisma";
 import { answerCallbackQuery, sendTelegramMessage } from "../lib/telegram";
 import { messageQueue } from "../lib/queue";
 import { getSharedBotToken } from "../lib/bot-provisioner";
+import {
+    startIntakeFlow,
+    handleIntakeMessage,
+    handleIntakeCallback,
+    resumeIntakeFlow,
+} from "../lib/telegram-intake";
 
 const router: Router = Router();
 
@@ -57,6 +63,21 @@ router.post("/", async (req, res) => {
             });
 
             if (!client) {
+                // Check if this is a lead going through intake
+                const lead = await prisma.lead.findFirst({
+                    where: { telegramChatId: chatId },
+                });
+                if (lead) {
+                    const coach = await prisma.coach.findUnique({ where: { id: lead.coachId } });
+                    const consumed = await handleIntakeCallback(
+                        lead,
+                        data,
+                        chatId,
+                        botToken,
+                        coach?.name || "Your coach"
+                    );
+                    if (consumed) return;
+                }
                 console.log(`[TG Webhook] Unknown Telegram user: ${chatId}`);
                 return;
             }
@@ -135,6 +156,17 @@ router.post("/", async (req, res) => {
                             status: "received",
                         },
                     });
+
+                    // Check if intake flow should handle this message
+                    const coach = await prisma.coach.findUnique({ where: { id: lead.coachId } });
+                    const consumed = await handleIntakeMessage(
+                        lead,
+                        text,
+                        botToken,
+                        coach?.name || "Your coach"
+                    );
+                    if (consumed) return;
+
                     console.log(`[TG Webhook] Message stored for lead ${lead.id}`);
                     return;
                 }
@@ -226,34 +258,28 @@ async function handleStartCommand(botToken: string, chatId: string, text: string
         where: { coachId: coach.id, telegramChatId: chatId },
     });
 
+    const coachName = coach.name || "Your coach";
+
     if (existingLead) {
-        const coachName = coach.name || "Your coach";
-        await sendTelegramMessage(
-            botToken,
-            chatId,
-            `\u{1F44B} You're already connected with ${coachName}. They'll be in touch soon!`
-        );
+        // Resume intake if incomplete, otherwise welcome back
+        await resumeIntakeFlow(existingLead, botToken, coachName);
         return;
     }
 
     // Create a new lead for this coach
     const telegramUser = `tg_${chatId}`;
-    await prisma.lead.create({
+    const newLead = await prisma.lead.create({
         data: {
             coachId: coach.id,
-            name: telegramUser, // Will be updated when coach converts to client
+            name: telegramUser,
             source: "telegram",
             telegramChatId: chatId,
             channelTag: MessageChannel.TELEGRAM,
         },
     });
 
-    const coachName = coach.name || "Your coach";
-    await sendTelegramMessage(
-        botToken,
-        chatId,
-        `\u{1F44B} Hey! Welcome to ${coachName}'s coaching programme.\n\n${coachName} has been notified and will get you set up shortly. Stay tuned! \u{1F680}`
-    );
+    // Start the intake questionnaire flow
+    await startIntakeFlow(newLead, botToken, coachName);
 
     console.log(`[TG Webhook] New lead created for coach ${coach.id} from Telegram user ${chatId}`);
 }

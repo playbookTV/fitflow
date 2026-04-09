@@ -2,6 +2,7 @@ import { Router, Response } from "express";
 import { authenticate, AuthRequest } from "../middleware/auth";
 import { prisma } from "../lib/prisma";
 import { getSharedBotUsername } from "../lib/bot-provisioner";
+import { createConnectAccount, createAccountLink, createLoginLink } from "../lib/stripe";
 
 const router: Router = Router();
 
@@ -96,6 +97,63 @@ router.get("/channels", authenticate, async (req: AuthRequest, res: Response) =>
     } catch (error) {
         console.error("[GET /coaches/channels]", error);
         res.status(500).json({ error: "Failed to fetch channels" });
+    }
+});
+
+// POST /coaches/stripe/connect - Create or resume Stripe Express onboarding
+router.post("/stripe/connect", authenticate, async (req: AuthRequest, res: Response) => {
+    const coachId = req.user?.id as string;
+    if (!coachId) return res.status(401).json({ error: "Unauthorized" });
+
+    try {
+        const coach = await prisma.coach.findUnique({ where: { id: coachId } });
+        if (!coach) return res.status(404).json({ error: "Coach not found" });
+
+        let accountId = coach.stripeAccountId;
+
+        if (!accountId) {
+            const account = await createConnectAccount(coachId, coach.email);
+            accountId = account.id;
+            await prisma.coach.update({
+                where: { id: coachId },
+                data: { stripeAccountId: accountId },
+            });
+        }
+
+        const webUrl = process.env.WEB_URL || "http://localhost:3000";
+        const accountLink = await createAccountLink(
+            accountId,
+            `${webUrl}/dashboard/settings?stripe=refresh`,
+            `${webUrl}/dashboard/settings?stripe=success`
+        );
+
+        res.json({ url: accountLink.url });
+    } catch (error) {
+        console.error("[POST /coaches/stripe/connect]", error);
+        res.status(500).json({ error: "Failed to initiate Stripe Connect" });
+    }
+});
+
+// GET /coaches/stripe/dashboard - Get Stripe Express dashboard login link
+router.get("/stripe/dashboard", authenticate, async (req: AuthRequest, res: Response) => {
+    const coachId = req.user?.id as string;
+    if (!coachId) return res.status(401).json({ error: "Unauthorized" });
+
+    try {
+        const coach = await prisma.coach.findUnique({
+            where: { id: coachId },
+            select: { stripeAccountId: true },
+        });
+
+        if (!coach?.stripeAccountId) {
+            return res.status(400).json({ error: "Stripe account not connected" });
+        }
+
+        const loginLink = await createLoginLink(coach.stripeAccountId);
+        res.json({ url: loginLink.url });
+    } catch (error) {
+        console.error("[GET /coaches/stripe/dashboard]", error);
+        res.status(500).json({ error: "Failed to generate dashboard link" });
     }
 });
 

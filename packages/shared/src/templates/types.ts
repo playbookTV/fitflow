@@ -33,6 +33,9 @@ export enum TemplateId {
     MILESTONE_HALFWAY = "milestone.halfway",
     MILESTONE_COMPLETION = "milestone.completion",
 
+    // Payments
+    PAYMENT_REMINDER = "payment.reminder",
+
     // Renewals
     RENEWAL_7DAY = "renewal.7day",
     RENEWAL_2DAY = "renewal.2day",
@@ -180,6 +183,13 @@ export interface MilestoneCompletionContext {
     coach_first_name: string;
     offer_name: string;
     total_weeks: number;
+}
+
+export interface PaymentReminderContext {
+    client_first_name: string;
+    coach_first_name: string;
+    amount: string;
+    payment_link: string;
 }
 
 export interface Renewal7DayContext {

@@ -5,6 +5,7 @@ import { prisma } from "../lib/prisma";
 import { logEvent, EventType } from "../lib/event-logger";
 import { sendTelegramMessage } from "../lib/telegram";
 import { getSharedBotToken } from "../lib/bot-provisioner";
+import { convertLeadToClient } from "../lib/telegram-intake";
 
 const router: Router = Router();
 
@@ -111,33 +112,7 @@ router.post("/:id/convert", authenticate, async (req: AuthRequest, res: Response
             return res.status(400).json({ error: "Lead already converted" });
         }
 
-        // Create client, transfer messages, and mark lead converted atomically
-        const client = await prisma.$transaction(async (tx) => {
-            const newClient = await tx.client.create({
-                data: {
-                    coachId,
-                    name: lead.name,
-                    phone: lead.phone,
-                    email: lead.email,
-                    telegramChatId: lead.telegramChatId,
-                    preferredChannel: lead.channelTag,
-                    status: "PENDING_PAYMENT",
-                },
-            });
-
-            // Transfer lead messages to the new client
-            await tx.message.updateMany({
-                where: { leadId: id },
-                data: { clientId: newClient.id, leadId: null },
-            });
-
-            await tx.lead.update({
-                where: { id },
-                data: { status: "CONVERTED" },
-            });
-
-            return newClient;
-        });
+        const client = await convertLeadToClient(id, coachId);
 
         await logEvent(EventType.LEAD_CONVERTED, {
             coachId,

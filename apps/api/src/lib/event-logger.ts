@@ -47,6 +47,7 @@ export const EventType = {
     MISSED_CHECKIN_NUDGE_SENT: "engagement.missed_checkin_sent",
     MILESTONE_SENT: "engagement.milestone_sent",
     WEEK_SUMMARY_SENT: "engagement.week_summary_sent",
+    PAYMENT_REMINDER_SENT: "payment.reminder_sent",
     RENEWAL_REMINDER_SENT: "renewal.reminder_sent",
     PAYMENT_CONFIRMED_SENT: "payment.confirmed_sent",
 

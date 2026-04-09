@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -8,7 +8,8 @@ import {
 } from "recharts";
 import {
     ArrowLeft, Mail, Phone, MessageSquare, Calendar, Dumbbell,
-    TrendingUp, Target, Info, ChevronRight
+    TrendingUp, Target, Info, ChevronRight, Edit3, Check, X,
+    Loader2
 } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import { StatusBadge } from "@/components/ui";
@@ -43,10 +44,298 @@ interface ClientData {
     status: string;
     goals?: string;
     notes?: string;
+    preferredChannel?: string;
+    timezone?: string;
     createdAt: string;
     checkIns: CheckIn[];
     assignments: Assignment[];
     workoutLogs: Array<{ id: string }>;
+}
+
+interface WorkoutPlan {
+    id: string;
+    title: string;
+    daysPerWeek: number;
+}
+
+const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+function AssignPlanModal({
+    clientId,
+    onClose,
+    onAssigned,
+}: {
+    clientId: string;
+    onClose: () => void;
+    onAssigned: (assignment: Assignment) => void;
+}) {
+    const [plans, setPlans] = useState<WorkoutPlan[]>([]);
+    const [selectedPlanId, setSelectedPlanId] = useState("");
+    const [startDate, setStartDate] = useState(
+        new Date().toISOString().split("T")[0]
+    );
+    const [scheduleDays, setScheduleDays] = useState<number[]>([1, 3, 5]);
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+    const [error, setError] = useState("");
+
+    useEffect(() => {
+        const token = localStorage.getItem("token");
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/plans`, {
+            headers: { Authorization: `Bearer ${token}` },
+        })
+            .then((res) => res.json())
+            .then((data) => {
+                setPlans(data);
+                if (data.length > 0) setSelectedPlanId(data[0].id);
+            })
+            .catch(() => setError("Failed to load plans"))
+            .finally(() => setLoading(false));
+    }, []);
+
+    const toggleDay = (day: number) => {
+        setScheduleDays((prev) =>
+            prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day].sort()
+        );
+    };
+
+    const handleAssign = async () => {
+        if (!selectedPlanId || scheduleDays.length === 0) return;
+        setSaving(true);
+        setError("");
+
+        try {
+            const token = localStorage.getItem("token");
+            const res = await fetch(
+                `${process.env.NEXT_PUBLIC_API_URL}/clients/${clientId}/assignments`,
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`,
+                    },
+                    body: JSON.stringify({
+                        planId: selectedPlanId,
+                        startDate,
+                        scheduleDays,
+                    }),
+                }
+            );
+
+            if (!res.ok) {
+                const data = await res.json();
+                throw new Error(data.error || "Failed to assign plan");
+            }
+
+            const assignment = await res.json();
+            const plan = plans.find((p) => p.id === selectedPlanId);
+            onAssigned({
+                ...assignment,
+                plan: { id: selectedPlanId, title: plan?.title || "" },
+            });
+        } catch (err) {
+            setError(err instanceof Error ? err.message : "Something went wrong");
+            setSaving(false);
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+            <div className="relative w-full max-w-lg card-elevated p-6 animate-scale-in">
+                <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                        <Dumbbell className="w-5 h-5 text-brand-green" />
+                        Assign Workout Plan
+                    </h2>
+                    <button onClick={onClose} className="btn-icon !p-1.5">
+                        <X className="w-4 h-4" />
+                    </button>
+                </div>
+
+                {loading ? (
+                    <div className="flex justify-center py-12">
+                        <Loader2 className="w-6 h-6 text-text-faint animate-spin" />
+                    </div>
+                ) : plans.length === 0 ? (
+                    <div className="text-center py-8">
+                        <p className="text-text-secondary mb-4">No workout plans created yet.</p>
+                        <Link href="/dashboard/plans/new" className="btn-primary">
+                            Create a Plan
+                        </Link>
+                    </div>
+                ) : (
+                    <div className="space-y-5">
+                        {/* Plan select */}
+                        <div className="form-field">
+                            <label className="label-mono">Workout Plan</label>
+                            <select
+                                value={selectedPlanId}
+                                onChange={(e) => setSelectedPlanId(e.target.value)}
+                                className="select w-full"
+                            >
+                                {plans.map((plan) => (
+                                    <option key={plan.id} value={plan.id}>
+                                        {plan.title} ({plan.daysPerWeek} days/week)
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {/* Start date */}
+                        <div className="form-field">
+                            <label className="label-mono">Start Date</label>
+                            <input
+                                type="date"
+                                value={startDate}
+                                onChange={(e) => setStartDate(e.target.value)}
+                                className="input w-full"
+                            />
+                        </div>
+
+                        {/* Schedule days */}
+                        <div className="form-field">
+                            <label className="label-mono">Training Days</label>
+                            <div className="flex gap-2 mt-1">
+                                {DAY_LABELS.map((label, idx) => {
+                                    const dayNum = idx + 1;
+                                    const isSelected = scheduleDays.includes(dayNum);
+                                    return (
+                                        <button
+                                            key={dayNum}
+                                            type="button"
+                                            onClick={() => toggleDay(dayNum)}
+                                            className={`w-10 h-10 rounded-lg text-xs font-semibold transition-all ${
+                                                isSelected
+                                                    ? "bg-brand-green text-black"
+                                                    : "bg-bg-secondary border border-border text-text-faint hover:border-text-faint"
+                                            }`}
+                                        >
+                                            {label}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        {error && <p className="text-sm text-brand-red">{error}</p>}
+
+                        <div className="flex justify-end gap-3 pt-2">
+                            <button onClick={onClose} className="btn-secondary">
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleAssign}
+                                disabled={saving || scheduleDays.length === 0}
+                                className="btn-primary disabled:opacity-50"
+                            >
+                                {saving ? (
+                                    <>
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                        Assigning...
+                                    </>
+                                ) : (
+                                    "Assign Plan"
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}
+
+function EditableField({
+    value,
+    onSave,
+    label,
+    multiline,
+    type = "text",
+    placeholder,
+}: {
+    value: string;
+    onSave: (val: string) => void;
+    label: string;
+    multiline?: boolean;
+    type?: string;
+    placeholder?: string;
+}) {
+    const [editing, setEditing] = useState(false);
+    const [draft, setDraft] = useState(value);
+
+    const handleSave = () => {
+        if (draft !== value) onSave(draft);
+        setEditing(false);
+    };
+
+    const handleCancel = () => {
+        setDraft(value);
+        setEditing(false);
+    };
+
+    if (!editing) {
+        return (
+            <div
+                className="group cursor-pointer"
+                onClick={() => {
+                    setDraft(value);
+                    setEditing(true);
+                }}
+            >
+                {multiline ? (
+                    <p className="text-text-secondary text-xs leading-relaxed italic">
+                        {value ? `\u201C${value}\u201D` : placeholder || `No ${label.toLowerCase()} yet.`}
+                    </p>
+                ) : (
+                    <p className="text-white text-sm leading-relaxed">
+                        {value || placeholder || `No ${label.toLowerCase()} defined.`}
+                    </p>
+                )}
+                <span className="inline-flex items-center gap-1 text-[10px] text-text-muted mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Edit3 className="w-2.5 h-2.5" /> Click to edit
+                </span>
+            </div>
+        );
+    }
+
+    const inputClass = "input w-full text-sm";
+
+    return (
+        <div className="space-y-2">
+            {multiline ? (
+                <textarea
+                    autoFocus
+                    value={draft}
+                    onChange={(e) => setDraft(e.target.value)}
+                    className="textarea w-full text-sm"
+                    rows={3}
+                    placeholder={placeholder}
+                />
+            ) : (
+                <input
+                    autoFocus
+                    type={type}
+                    value={draft}
+                    onChange={(e) => setDraft(e.target.value)}
+                    className={inputClass}
+                    placeholder={placeholder}
+                    onKeyDown={(e) => {
+                        if (e.key === "Enter") handleSave();
+                        if (e.key === "Escape") handleCancel();
+                    }}
+                />
+            )}
+            <div className="flex gap-2">
+                <button onClick={handleSave} className="btn-primary !py-1 !px-3 !text-xs">
+                    <Check className="w-3 h-3" /> Save
+                </button>
+                <button onClick={handleCancel} className="btn-secondary !py-1 !px-3 !text-xs">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    );
 }
 
 export default function ClientProfilePage() {
@@ -54,6 +343,8 @@ export default function ClientProfilePage() {
     const router = useRouter();
     const [client, setClient] = useState<ClientData | null>(null);
     const [loading, setLoading] = useState(true);
+    const [showAssignModal, setShowAssignModal] = useState(false);
+    const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
 
     useEffect(() => {
         const fetchClient = async () => {
@@ -75,6 +366,39 @@ export default function ClientProfilePage() {
         };
         fetchClient();
     }, [id, router]);
+
+    const updateField = useCallback(
+        async (field: string, value: string) => {
+            if (!client) return;
+            setSaveStatus("saving");
+
+            try {
+                const token = localStorage.getItem("token");
+                const res = await fetch(
+                    `${process.env.NEXT_PUBLIC_API_URL}/clients/${client.id}`,
+                    {
+                        method: "PATCH",
+                        headers: {
+                            "Content-Type": "application/json",
+                            Authorization: `Bearer ${token}`,
+                        },
+                        body: JSON.stringify({ [field]: value || null }),
+                    }
+                );
+
+                if (res.ok) {
+                    const updated = await res.json();
+                    setClient((prev) => (prev ? { ...prev, ...updated } : prev));
+                    setSaveStatus("saved");
+                    setTimeout(() => setSaveStatus("idle"), 2000);
+                }
+            } catch (error) {
+                console.error("Failed to update client:", error);
+                setSaveStatus("idle");
+            }
+        },
+        [client]
+    );
 
     if (loading) {
         return (
@@ -107,8 +431,22 @@ export default function ClientProfilePage() {
             title={client.name}
             subtitle="Client Profile"
             actions={
-                <div className="flex gap-3">
-                    <button className="btn-primary">
+                <div className="flex items-center gap-3">
+                    {saveStatus === "saving" && (
+                        <span className="flex items-center gap-1.5 text-xs text-text-faint">
+                            <Loader2 className="w-3 h-3 animate-spin" /> Saving...
+                        </span>
+                    )}
+                    {saveStatus === "saved" && (
+                        <span className="flex items-center gap-1.5 text-xs text-brand-green">
+                            <Check className="w-3 h-3" /> Saved
+                        </span>
+                    )}
+                    <button
+                        className="btn-primary"
+                        onClick={() => setShowAssignModal(true)}
+                    >
+                        <Dumbbell className="w-4 h-4" />
                         Assign Plan
                     </button>
                     <button className="btn-icon">
@@ -253,7 +591,12 @@ export default function ClientProfilePage() {
                                 <p className="text-text-secondary text-sm mb-6">
                                     This client hasn&apos;t been assigned a workout plan yet.
                                 </p>
-                                <button className="btn-secondary">Select Plan</button>
+                                <button
+                                    className="btn-secondary"
+                                    onClick={() => setShowAssignModal(true)}
+                                >
+                                    Select Plan
+                                </button>
                             </div>
                         )}
 
@@ -297,24 +640,61 @@ export default function ClientProfilePage() {
 
                     {/* Sidebar */}
                     <div className="space-y-6">
+                        {/* Editable Details */}
+                        <div className="card-elevated p-6 space-y-6">
+                            <div>
+                                <h4 className="label-mono mb-3 flex items-center gap-2">
+                                    <Mail className="w-3 h-3" /> Email
+                                </h4>
+                                <EditableField
+                                    value={client.email || ""}
+                                    onSave={(val) => updateField("email", val)}
+                                    label="Email"
+                                    type="email"
+                                    placeholder="Add email address..."
+                                />
+                            </div>
+                            <div className="divider !my-4" />
+                            <div>
+                                <h4 className="label-mono mb-3 flex items-center gap-2">
+                                    <Phone className="w-3 h-3" /> Phone
+                                </h4>
+                                <EditableField
+                                    value={client.phone || ""}
+                                    onSave={(val) => updateField("phone", val)}
+                                    label="Phone"
+                                    type="tel"
+                                    placeholder="Add phone number..."
+                                />
+                            </div>
+                        </div>
+
                         {/* Goals & Notes */}
                         <div className="card-elevated p-6 space-y-6">
                             <div>
                                 <h4 className="label-mono mb-3 flex items-center gap-2">
                                     <Target className="w-3 h-3" /> Client Goals
                                 </h4>
-                                <p className="text-white text-sm leading-relaxed">
-                                    {client.goals || "No goals defined."}
-                                </p>
+                                <EditableField
+                                    value={client.goals || ""}
+                                    onSave={(val) => updateField("goals", val)}
+                                    label="Goals"
+                                    multiline
+                                    placeholder="Add client goals..."
+                                />
                             </div>
                             <div className="divider !my-4" />
                             <div>
                                 <h4 className="label-mono mb-3 flex items-center gap-2">
                                     <Info className="w-3 h-3" /> Coach Notes
                                 </h4>
-                                <p className="text-text-secondary text-xs leading-relaxed italic">
-                                    &ldquo;{client.notes || "No notes yet."}&rdquo;
-                                </p>
+                                <EditableField
+                                    value={client.notes || ""}
+                                    onSave={(val) => updateField("notes", val)}
+                                    label="Notes"
+                                    multiline
+                                    placeholder="Add private notes..."
+                                />
                             </div>
                         </div>
 
@@ -337,6 +717,26 @@ export default function ClientProfilePage() {
                         </div>
                     </div>
                 </div>
+
+            {/* Assign Plan Modal */}
+            {showAssignModal && (
+                <AssignPlanModal
+                    clientId={client.id}
+                    onClose={() => setShowAssignModal(false)}
+                    onAssigned={(assignment) => {
+                        setClient((prev) =>
+                            prev
+                                ? {
+                                      ...prev,
+                                      assignments: [assignment, ...prev.assignments],
+                                      status: "PLAN_ASSIGNED",
+                                  }
+                                : prev
+                        );
+                        setShowAssignModal(false);
+                    }}
+                />
+            )}
         </DashboardLayout>
     );
 }
