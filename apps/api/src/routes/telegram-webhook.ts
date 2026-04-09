@@ -119,6 +119,27 @@ router.post("/", async (req, res) => {
             });
 
             if (!client) {
+                // Fall back to Lead lookup — store message against the lead
+                const lead = await prisma.lead.findFirst({
+                    where: { telegramChatId: chatId },
+                });
+
+                if (lead) {
+                    await prisma.message.create({
+                        data: {
+                            leadId: lead.id,
+                            channel: MessageChannel.TELEGRAM,
+                            direction: MessageDirection.INBOUND,
+                            content: text,
+                            metaMessageId: `tg_${messageId}`,
+                            status: "received",
+                        },
+                    });
+                    console.log(`[TG Webhook] Message stored for lead ${lead.id}`);
+                    return;
+                }
+
+                // Neither client nor lead found
                 await sendTelegramMessage(
                     botToken,
                     chatId,

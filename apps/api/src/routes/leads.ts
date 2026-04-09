@@ -1,7 +1,10 @@
 import { Router, Response } from "express";
+import { MessageChannel, MessageDirection } from "@prisma/client";
 import { authenticate, AuthRequest } from "../middleware/auth";
 import { prisma } from "../lib/prisma";
 import { logEvent, EventType } from "../lib/event-logger";
+import { sendTelegramMessage } from "../lib/telegram";
+import { getSharedBotToken } from "../lib/bot-provisioner";
 
 const router: Router = Router();
 
@@ -20,12 +23,26 @@ router.get("/", authenticate, async (req: AuthRequest, res: Response) => {
                 coachId,
                 ...(status ? { status: status as any } : {}),
             },
-            include: { offer: { select: { name: true, slug: true } } },
+            include: {
+                offer: { select: { name: true, slug: true } },
+                _count: {
+                    select: {
+                        messages: {
+                            where: { direction: MessageDirection.INBOUND, status: { not: "read" } },
+                        },
+                    },
+                },
+            },
             orderBy: { createdAt: "desc" },
             take,
             skip,
         });
-        res.json(leads);
+
+        const result = leads.map(({ _count, ...lead }) => ({
+            ...lead,
+            unreadCount: _count.messages,
+        }));
+        res.json(result);
     } catch (error) {
         console.error("[GET /leads]", error);
         res.status(500).json({ error: "Failed to fetch leads" });
@@ -94,23 +111,32 @@ router.post("/:id/convert", authenticate, async (req: AuthRequest, res: Response
             return res.status(400).json({ error: "Lead already converted" });
         }
 
-        // Create client from lead
-        const client = await prisma.client.create({
-            data: {
-                coachId,
-                name: lead.name,
-                phone: lead.phone,
-                email: lead.email,
-                telegramChatId: lead.telegramChatId,
-                preferredChannel: lead.channelTag,
-                status: "PENDING_PAYMENT",
-            },
-        });
+        // Create client, transfer messages, and mark lead converted atomically
+        const client = await prisma.$transaction(async (tx) => {
+            const newClient = await tx.client.create({
+                data: {
+                    coachId,
+                    name: lead.name,
+                    phone: lead.phone,
+                    email: lead.email,
+                    telegramChatId: lead.telegramChatId,
+                    preferredChannel: lead.channelTag,
+                    status: "PENDING_PAYMENT",
+                },
+            });
 
-        // Mark lead as converted
-        await prisma.lead.update({
-            where: { id },
-            data: { status: "CONVERTED" },
+            // Transfer lead messages to the new client
+            await tx.message.updateMany({
+                where: { leadId: id },
+                data: { clientId: newClient.id, leadId: null },
+            });
+
+            await tx.lead.update({
+                where: { id },
+                data: { status: "CONVERTED" },
+            });
+
+            return newClient;
         });
 
         await logEvent(EventType.LEAD_CONVERTED, {
@@ -124,6 +150,70 @@ router.post("/:id/convert", authenticate, async (req: AuthRequest, res: Response
     } catch (error) {
         console.error(`[POST /leads/${id}/convert]`, error);
         res.status(500).json({ error: "Failed to convert lead" });
+    }
+});
+
+// GET /leads/:id/messages - Fetch messages for a lead
+router.get("/:id/messages", authenticate, async (req: AuthRequest, res: Response) => {
+    const coachId = req.user?.id as string;
+    const leadId = req.params.id as string;
+    if (!coachId) return res.status(401).json({ error: "Unauthorized" });
+
+    const take = Math.min(Number(req.query.limit) || 50, 200);
+    const skip = Number(req.query.offset) || 0;
+
+    try {
+        const lead = await prisma.lead.findFirst({ where: { id: leadId, coachId } });
+        if (!lead) return res.status(404).json({ error: "Lead not found" });
+
+        const messages = await prisma.message.findMany({
+            where: { leadId },
+            orderBy: { createdAt: "asc" },
+            take,
+            skip,
+        });
+
+        res.json(messages);
+    } catch (error) {
+        console.error(`[GET /leads/${leadId}/messages]`, error);
+        res.status(500).json({ error: "Failed to fetch messages" });
+    }
+});
+
+// POST /leads/:id/messages - Send a message to a lead
+router.post("/:id/messages", authenticate, async (req: AuthRequest, res: Response) => {
+    const coachId = req.user?.id as string;
+    const leadId = req.params.id as string;
+    if (!coachId) return res.status(401).json({ error: "Unauthorized" });
+
+    const { content } = req.body;
+    if (!content?.trim()) return res.status(400).json({ error: "Content required" });
+
+    try {
+        const lead = await prisma.lead.findFirst({ where: { id: leadId, coachId } });
+        if (!lead) return res.status(404).json({ error: "Lead not found" });
+        if (!lead.telegramChatId) return res.status(400).json({ error: "Lead has no Telegram chat" });
+
+        const botToken = getSharedBotToken();
+        if (!botToken) return res.status(500).json({ error: "Bot not configured" });
+
+        const result = await sendTelegramMessage(botToken, lead.telegramChatId, content);
+
+        const message = await prisma.message.create({
+            data: {
+                leadId,
+                channel: MessageChannel.TELEGRAM,
+                direction: MessageDirection.OUTBOUND,
+                content,
+                metaMessageId: `tg_${result.message_id}`,
+                status: "sent",
+            },
+        });
+
+        res.status(201).json(message);
+    } catch (error) {
+        console.error(`[POST /leads/${leadId}/messages]`, error);
+        res.status(500).json({ error: "Failed to send message" });
     }
 });
 

@@ -207,8 +207,10 @@ enum PaymentMethod {
 
 model Message {
   id                String    @id @default(uuid())
-  clientId          String    @map("client_id")
-  client            Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  clientId          String?   @map("client_id")
+  client            Client?   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  leadId            String?   @map("lead_id")
+  lead              Lead?     @relation(fields: [leadId], references: [id], onDelete: Cascade)
   channel           MessageChannel
   direction         MessageDirection
   content           String
@@ -258,6 +260,7 @@ model Lead {
   source          String?
   intakeData      Json?           @map("intake_data")
   status          LeadStatus      @default(NEW)
+  messages        Message[]
   createdAt       DateTime        @default(now()) @map("created_at")
   updatedAt       DateTime        @updatedAt @map("updated_at")
 
