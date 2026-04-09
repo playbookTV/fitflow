@@ -3,37 +3,32 @@ import { MessageChannel, MessageDirection } from "@prisma/client";
 import { prisma } from "../lib/prisma";
 import { answerCallbackQuery, sendTelegramMessage } from "../lib/telegram";
 import { messageQueue } from "../lib/queue";
-
-import { routeCoachCommand } from "../handlers/coachCommandRouter";
+import { getSharedBotToken } from "../lib/bot-provisioner";
 
 const router: Router = Router();
 
 /**
- * POST /telegram/webhook/:coachId
+ * POST /telegram/webhook
  *
- * Per-coach Telegram webhook endpoint.
- * Each coach's bot has its own webhook pointing here with their coachId.
- * Handles incoming messages and callback queries (inline keyboard presses).
+ * Single shared-bot webhook endpoint.
+ * Coach context is resolved from the client's record (via telegramChatId),
+ * or established via deep link (/start COACH_SLUG).
  */
-router.post("/:coachId", async (req, res) => {
-    const { coachId } = req.params;
+router.post("/", async (req, res) => {
     const update = req.body;
+    const botToken = getSharedBotToken();
 
-    // Look up the bot registry BEFORE responding so we can verify the secret token.
-    const botRegistry = await prisma.botRegistry.findUnique({ where: { coachId } });
-    if (!botRegistry) {
-        // Respond 200 to avoid Telegram retrying, but do nothing.
-        console.log(`[TG Webhook] No bot registered for coach ${coachId}`);
+    if (!botToken) {
         res.sendStatus(200);
         return;
     }
 
-    // Validate X-Telegram-Bot-Api-Secret-Token to prevent forged updates.
-    // Only enforced for bots provisioned after this change (webhookSecret present).
-    if (botRegistry.webhookSecret) {
+    // Validate webhook secret
+    const expectedSecret = process.env.TG_WEBHOOK_SECRET;
+    if (expectedSecret) {
         const incomingSecret = req.headers["x-telegram-bot-api-secret-token"];
-        if (incomingSecret !== botRegistry.webhookSecret) {
-            console.warn(`[TG Webhook] Invalid secret token for coach ${coachId} — rejecting.`);
+        if (incomingSecret !== expectedSecret) {
+            console.warn("[TG Webhook] Invalid secret token — rejecting.");
             res.sendStatus(401);
             return;
         }
@@ -43,19 +38,18 @@ router.post("/:coachId", async (req, res) => {
     res.sendStatus(200);
 
     try {
-
         // Handle callback queries (inline keyboard button presses)
         if (update.callback_query) {
             const callbackQuery = update.callback_query;
             if (!callbackQuery.message?.chat?.id) {
-                console.log(`[TG Webhook] Callback query missing message/chat`);
+                console.log("[TG Webhook] Callback query missing message/chat");
                 return;
             }
             const chatId = String(callbackQuery.message.chat.id);
             const data = callbackQuery.callback_data || "";
 
             // Acknowledge the button press
-            await answerCallbackQuery(botRegistry.botToken, callbackQuery.id);
+            await answerCallbackQuery(botToken, callbackQuery.id);
 
             // Find client by telegram chat ID
             const client = await prisma.client.findUnique({
@@ -77,7 +71,6 @@ router.post("/:coachId", async (req, res) => {
                     channel: MessageChannel.TELEGRAM,
                 });
             } else if (data.startsWith("workout_skip_")) {
-                // Handle skip — create a SKIPPED workout log
                 const assignment = await prisma.planAssignment.findFirst({
                     where: { clientId: client.id, isActive: true },
                 });
@@ -97,12 +90,10 @@ router.post("/:coachId", async (req, res) => {
                     });
                 }
             } else if (data.startsWith("checkin_start_")) {
-                // For now, direct to web form. Future: multi-step inline keyboard flow.
-                const { sendTelegramMessage } = await import("../lib/telegram");
                 await sendTelegramMessage(
-                    botRegistry.botToken,
+                    botToken,
                     chatId,
-                    `📊 Great! Please complete your check-in here:\n${process.env.WEB_URL}/dashboard/checkin`
+                    `\u{1F4CA} Great! Please complete your check-in here:\n${process.env.WEB_URL}/dashboard/checkin`
                 );
             }
 
@@ -115,31 +106,24 @@ router.post("/:coachId", async (req, res) => {
             const text = update.message.text;
             const messageId = update.message.message_id;
 
+            // Handle /start deep link — maps client to coach
+            if (text.startsWith("/start")) {
+                await handleStartCommand(botToken, chatId, text);
+                return;
+            }
+
             // Find client by telegram chat ID
             const client = await prisma.client.findUnique({
                 where: { telegramChatId: chatId },
+                include: { coach: true },
             });
 
             if (!client) {
-                // Check if this is a coach sending exercise commands
-                if (/^\/(?:exercise|ex|send|workout)\b/i.test(text)) {
-                    const response = await routeCoachCommand(coachId, text);
-                    if (response) {
-                        await sendTelegramMessage(botRegistry.botToken, chatId, response);
-                    }
-                    return;
-                }
-
-                console.log(`[TG Webhook] Unknown Telegram sender: ${chatId}`);
-
-                // Handle /start command for new users
-                if (text === "/start") {
-                    await sendTelegramMessage(
-                        botRegistry.botToken,
-                        chatId,
-                        "\u{1F44B} Welcome! Your coach will set you up on FitFlow. Please share this chat ID with your coach for onboarding."
-                    );
-                }
+                await sendTelegramMessage(
+                    botToken,
+                    chatId,
+                    "\u{1F44B} Welcome! Please use your coach's invite link to get started."
+                );
                 return;
             }
 
@@ -165,8 +149,92 @@ router.post("/:coachId", async (req, res) => {
             });
         }
     } catch (error) {
-        console.error(`[TG Webhook] Error processing update for coach ${coachId}:`, error);
+        console.error("[TG Webhook] Error processing update:", error);
     }
 });
+
+/**
+ * Handle /start deep link.
+ * Format: /start COACH_SLUG
+ *
+ * If a coach slug is provided, creates a Lead record for the Telegram user
+ * mapped to that coach. If the user is already a client, updates their chat ID.
+ */
+async function handleStartCommand(botToken: string, chatId: string, text: string): Promise<void> {
+    const parts = text.split(" ");
+    const slug = parts[1]?.trim();
+
+    if (!slug) {
+        await sendTelegramMessage(
+            botToken,
+            chatId,
+            "\u{1F44B} Welcome to FitFlow! Please use your coach's invite link to get started."
+        );
+        return;
+    }
+
+    // Resolve coach by slug
+    const coach = await prisma.coach.findUnique({ where: { slug } });
+    if (!coach) {
+        await sendTelegramMessage(
+            botToken,
+            chatId,
+            "\u{274C} Sorry, we couldn't find that coach. Please check your invite link and try again."
+        );
+        return;
+    }
+
+    // Check if this Telegram user is already a client
+    const existingClient = await prisma.client.findUnique({
+        where: { telegramChatId: chatId },
+    });
+
+    if (existingClient) {
+        // Already linked — send welcome back
+        const coachName = coach.name || "Your coach";
+        await sendTelegramMessage(
+            botToken,
+            chatId,
+            `\u{1F44B} Welcome back! You're connected with ${coachName}.`
+        );
+        return;
+    }
+
+    // Check if there's an existing lead for this coach with this chat ID
+    const existingLead = await prisma.lead.findFirst({
+        where: { coachId: coach.id, telegramChatId: chatId },
+    });
+
+    if (existingLead) {
+        const coachName = coach.name || "Your coach";
+        await sendTelegramMessage(
+            botToken,
+            chatId,
+            `\u{1F44B} You're already connected with ${coachName}. They'll be in touch soon!`
+        );
+        return;
+    }
+
+    // Create a new lead for this coach
+    const telegramUser = `tg_${chatId}`;
+    await prisma.lead.create({
+        data: {
+            coachId: coach.id,
+            name: telegramUser, // Will be updated when coach converts to client
+            source: "telegram",
+            telegramChatId: chatId,
+            channelTag: MessageChannel.TELEGRAM,
+        },
+    });
+
+    const coachName = coach.name || "Your coach";
+    await sendTelegramMessage(
+        botToken,
+        chatId,
+        `\u{1F44B} Hey! Welcome to ${coachName}'s coaching programme.\n\n${coachName} has been notified and will get you set up shortly. Stay tuned! \u{1F680}`
+    );
+
+    console.log(`[TG Webhook] New lead created for coach ${coach.id} from Telegram user ${chatId}`);
+}
 
 export default router;

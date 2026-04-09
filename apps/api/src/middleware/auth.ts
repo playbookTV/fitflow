@@ -1,7 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { Request, Response, NextFunction } from "express";
 import { prisma } from "../lib/prisma";
-import { provisionBot } from "../lib/bot-provisioner";
 
 const supabase = createClient(
     process.env.SUPABASE_URL!,
@@ -51,14 +50,6 @@ export const authenticate = async (
                     await prisma.coach.create({
                         data: { id: user.id, email: user.email },
                     });
-
-                    // Auto-provision Telegram bot for new coaches (fire-and-forget)
-                    const botToken = process.env.DEFAULT_TG_BOT_TOKEN;
-                    if (botToken) {
-                        provisionBot(user.id, botToken).catch((err) => {
-                            console.error("[Auth] Auto-provision bot failed:", err);
-                        });
-                    }
                 }
             }
         } catch (upsertErr) {

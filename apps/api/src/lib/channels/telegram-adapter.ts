@@ -13,14 +13,30 @@ import { escapeMarkdownV2 } from "../templates/escape";
 
 /**
  * Telegram adapter implementing the DeliveryChannel interface.
- * Uses per-coach Telegram bots to deliver messages.
+ * Uses a shared bot token with optional per-coach branding.
  */
 export class TelegramAdapter implements DeliveryChannel {
-    constructor(private botToken: string) {}
+    constructor(
+        private botToken: string,
+        private coachName?: string,
+    ) {}
+
+    /**
+     * Prepend coach name as a header to message text.
+     * Handles MarkdownV2 escaping when parseMode requires it.
+     */
+    private brandText(text: string, parseMode?: string): string {
+        if (!this.coachName) return text;
+
+        if (parseMode === "MarkdownV2") {
+            return `*${escapeMarkdownV2(this.coachName)}*\n\n${text}`;
+        }
+        return `${this.coachName}\n\n${text}`;
+    }
 
     async sendMessage(recipientId: string, content: string, clientId?: string): Promise<SendResult> {
         try {
-            const result = await sendTelegramMessage(this.botToken, recipientId, content);
+            const result = await sendTelegramMessage(this.botToken, recipientId, this.brandText(content));
             return {
                 success: true,
                 messageId: String(result.message_id),
@@ -36,13 +52,14 @@ export class TelegramAdapter implements DeliveryChannel {
     async sendTemplate(recipientId: string, templateId: TemplateId, context: Record<string, any>, clientId?: string): Promise<SendResult> {
         try {
             const rendered = renderTemplate(templateId, "telegram", context);
+            const brandedText = this.brandText(rendered.text, rendered.parseMode);
 
             let result;
             if (rendered.buttons && rendered.buttons.length > 0) {
                 result = await sendTelegramInlineKeyboard(
                     this.botToken,
                     recipientId,
-                    rendered.text,
+                    brandedText,
                     rendered.buttons,
                     rendered.parseMode
                 );
@@ -50,7 +67,7 @@ export class TelegramAdapter implements DeliveryChannel {
                 result = await sendTelegramMessage(
                     this.botToken,
                     recipientId,
-                    rendered.text,
+                    brandedText,
                     rendered.parseMode
                 );
             }
@@ -78,7 +95,9 @@ export class TelegramAdapter implements DeliveryChannel {
         ];
 
         try {
-            const result = await sendTelegramInlineKeyboard(this.botToken, recipientId, text, buttons);
+            const result = await sendTelegramInlineKeyboard(
+                this.botToken, recipientId, this.brandText(text, "MarkdownV2"), buttons
+            );
             return { success: true, messageId: String(result.message_id) };
         } catch (error: any) {
             return { success: false, error: error.message || "Failed to send Telegram check-in" };
@@ -95,7 +114,9 @@ export class TelegramAdapter implements DeliveryChannel {
         ];
 
         try {
-            const result = await sendTelegramInlineKeyboard(this.botToken, recipientId, text, buttons);
+            const result = await sendTelegramInlineKeyboard(
+                this.botToken, recipientId, this.brandText(text, "MarkdownV2"), buttons
+            );
             return { success: true, messageId: String(result.message_id) };
         } catch (error: any) {
             return { success: false, error: error.message || "Failed to send Telegram workout" };
@@ -106,7 +127,9 @@ export class TelegramAdapter implements DeliveryChannel {
         const text = `\u{1F44B} *Welcome to FitFlow\\!*\n\nHey ${escapeMarkdownV2(data.clientName)}\\! To get started, fill out your intake form:\n\n${escapeMarkdownV2(data.intakeFormUrl)}\n\nOnce done, your coach will assign your first plan\\! \u{1F680}`;
 
         try {
-            const result = await sendTelegramMessage(this.botToken, recipientId, text, "MarkdownV2");
+            const result = await sendTelegramMessage(
+                this.botToken, recipientId, this.brandText(text, "MarkdownV2"), "MarkdownV2"
+            );
             return { success: true, messageId: String(result.message_id) };
         } catch (error: any) {
             return { success: false, error: error.message || "Failed to send Telegram onboarding" };
@@ -115,11 +138,15 @@ export class TelegramAdapter implements DeliveryChannel {
 
     async sendVideo(recipientId: string, data: VideoPayload): Promise<SendResult> {
         try {
+            const caption = this.coachName
+                ? `${this.coachName}\n\n${data.caption}`
+                : data.caption;
+
             const result = await sendTelegramVideo(
                 this.botToken,
                 recipientId,
                 data.videoUrl,
-                data.caption,
+                caption,
                 "Markdown"
             );
             return { success: true, messageId: String(result.message_id) };

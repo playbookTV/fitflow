@@ -27,7 +27,7 @@ import { startWeeklySummaryScheduler } from "./jobs/weekly-summary-scheduler";
 import { startMissedCheckinScheduler } from "./jobs/missed-checkin-scheduler";
 import { startYMoveUsageScheduler } from "./jobs/ymove-usage-scheduler";
 import { schedulersEnabled, workersEnabled } from "./lib/background-jobs";
-import { ensureDefaultBot } from "./lib/bot-provisioner";
+import { ensureSharedBot } from "./lib/bot-provisioner";
 
 if (workersEnabled()) {
     require("./workers/workoutProcessor");
@@ -102,7 +102,7 @@ app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
 
 app.listen(PORT, async () => {
     console.log(`✅ FitFlow API running on http://localhost:${PORT}`);
-    await ensureDefaultBot();
+    await ensureSharedBot();
 });
 
 export default app;

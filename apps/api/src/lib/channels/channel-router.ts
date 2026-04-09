@@ -3,6 +3,7 @@ import { DeliveryChannel } from "@fitflow/shared";
 import { WhatsAppAdapter } from "./whatsapp-adapter";
 import { TelegramAdapter } from "./telegram-adapter";
 import { prisma } from "../prisma";
+import { getSharedBotToken } from "../bot-provisioner";
 
 // Singleton WhatsApp adapter (all coaches share the same WA Business API)
 const whatsAppAdapter = new WhatsAppAdapter();
@@ -11,7 +12,7 @@ const whatsAppAdapter = new WhatsAppAdapter();
  * Resolves the correct DeliveryChannel adapter based on channel type.
  *
  * For WhatsApp: returns a singleton adapter (shared WA Business API credentials).
- * For Telegram: looks up the coach's bot token from BotRegistry and creates an adapter.
+ * For Telegram: uses the shared bot token with coach-branded messaging.
  */
 export async function getChannel(channel: MessageChannel, coachId: string): Promise<DeliveryChannel> {
     if (channel === MessageChannel.WHATSAPP) {
@@ -19,15 +20,17 @@ export async function getChannel(channel: MessageChannel, coachId: string): Prom
     }
 
     if (channel === MessageChannel.TELEGRAM) {
-        const botRegistry = await prisma.botRegistry.findUnique({
-            where: { coachId },
-        });
-
-        if (!botRegistry) {
-            throw new Error(`No Telegram bot provisioned for coach ${coachId}`);
+        const botToken = getSharedBotToken();
+        if (!botToken) {
+            throw new Error("Telegram bot not configured (missing DEFAULT_TG_BOT_TOKEN)");
         }
 
-        return new TelegramAdapter(botRegistry.botToken);
+        const coach = await prisma.coach.findUnique({
+            where: { id: coachId },
+            select: { name: true },
+        });
+
+        return new TelegramAdapter(botToken, coach?.name ?? undefined);
     }
 
     throw new Error(`Unsupported channel: ${channel}`);

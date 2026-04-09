@@ -14,7 +14,6 @@ import {
     ExternalLink,
     Smartphone,
     Send,
-    Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -23,6 +22,7 @@ interface CoachProfile {
     name: string;
     email: string;
     phone: string;
+    slug: string;
     businessName?: string;
     timezone: string;
     notifications: {
@@ -34,6 +34,7 @@ interface CoachProfile {
     whatsappConnected: boolean;
     telegramConnected: boolean;
     telegramBotUsername: string | null;
+    telegramDeepLink: string | null;
 }
 
 type TabId = "profile" | "notifications" | "integrations" | "billing";
@@ -64,6 +65,7 @@ export default function SettingsPage() {
         name: "",
         email: "",
         phone: "",
+        slug: "",
         businessName: "",
         timezone: "Africa/Lagos",
         notifications: {
@@ -75,9 +77,9 @@ export default function SettingsPage() {
         whatsappConnected: false,
         telegramConnected: false,
         telegramBotUsername: null,
+        telegramDeepLink: null,
     });
-    const [botToken, setBotToken] = useState("");
-    const [provisioningBot, setProvisioningBot] = useState(false);
+    const [linkCopied, setLinkCopied] = useState(false);
 
     useEffect(() => {
         const fetchProfile = async () => {
@@ -116,6 +118,7 @@ export default function SettingsPage() {
                     },
                     body: JSON.stringify({
                         name: profile.name,
+                        slug: profile.slug || undefined,
                         phone: profile.phone,
                         businessName: profile.businessName,
                         timezone: profile.timezone,
@@ -138,35 +141,11 @@ export default function SettingsPage() {
         setProfile((prev) => ({ ...prev, ...updates }));
     };
 
-    const handleProvisionTelegram = async () => {
-        if (!botToken.trim()) return;
-        setProvisioningBot(true);
-        try {
-            const token = localStorage.getItem("token");
-            const response = await fetch(
-                `${process.env.NEXT_PUBLIC_API_URL}/coaches/provision-telegram`,
-                {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${token}`,
-                    },
-                    body: JSON.stringify({ botToken: botToken.trim() }),
-                }
-            );
-            if (response.ok) {
-                const data = await response.json();
-                setProfile((prev) => ({
-                    ...prev,
-                    telegramConnected: true,
-                    telegramBotUsername: data.botUsername,
-                }));
-                setBotToken("");
-            }
-        } catch (error) {
-            console.error("Failed to provision Telegram bot:", error);
-        } finally {
-            setProvisioningBot(false);
+    const copyDeepLink = () => {
+        if (profile.telegramDeepLink) {
+            navigator.clipboard.writeText(profile.telegramDeepLink);
+            setLinkCopied(true);
+            setTimeout(() => setLinkCopied(false), 2000);
         }
     };
 
@@ -283,6 +262,21 @@ export default function SettingsPage() {
                                                     className="input"
                                                     placeholder="+234 XXX XXX XXXX"
                                                 />
+                                            </div>
+                                            <div className="form-field">
+                                                <label className="label">Slug</label>
+                                                <input
+                                                    type="text"
+                                                    value={profile.slug}
+                                                    onChange={(e) =>
+                                                        updateProfile({ slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-") })
+                                                    }
+                                                    className="input"
+                                                    placeholder="e.g. leslie-fitness"
+                                                />
+                                                <p className="text-[10px] text-text-faint mt-1">
+                                                    Used for your public profile and Telegram invite link
+                                                </p>
                                             </div>
                                         </div>
                                     </div>
@@ -448,47 +442,56 @@ export default function SettingsPage() {
                                             Telegram Bot
                                         </h3>
                                         {profile.telegramConnected ? (
-                                            <div className="flex items-center justify-between p-4 rounded-xl bg-bg-hover">
-                                                <div className="flex items-center gap-4">
-                                                    <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-brand-blue/10 text-brand-blue">
-                                                        <Send className="w-5 h-5" />
+                                            <div className="space-y-4">
+                                                <div className="flex items-center justify-between p-4 rounded-xl bg-bg-hover">
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-brand-blue/10 text-brand-blue">
+                                                            <Send className="w-5 h-5" />
+                                                        </div>
+                                                        <div>
+                                                            <p className="font-medium text-white">Connected</p>
+                                                            <p className="text-sm text-text-faint">
+                                                                @{profile.telegramBotUsername}
+                                                            </p>
+                                                        </div>
                                                     </div>
-                                                    <div>
-                                                        <p className="font-medium text-white">Connected</p>
-                                                        <p className="text-sm text-text-faint">
-                                                            @{profile.telegramBotUsername}
-                                                        </p>
-                                                    </div>
+                                                    <span className="badge badge-green">Active</span>
                                                 </div>
-                                                <span className="badge badge-green">Active</span>
+                                                {profile.telegramDeepLink && (
+                                                    <div className="space-y-2">
+                                                        <p className="text-sm text-text-secondary">
+                                                            Share this link with your clients to connect them on Telegram:
+                                                        </p>
+                                                        <div className="flex gap-3">
+                                                            <input
+                                                                type="text"
+                                                                value={profile.telegramDeepLink}
+                                                                readOnly
+                                                                className="input flex-1 text-xs"
+                                                            />
+                                                            <button
+                                                                onClick={copyDeepLink}
+                                                                className="btn-primary"
+                                                            >
+                                                                {linkCopied ? (
+                                                                    <><Check className="w-4 h-4" /> Copied</>
+                                                                ) : (
+                                                                    "Copy"
+                                                                )}
+                                                            </button>
+                                                        </div>
+                                                        {!profile.name && (
+                                                            <p className="text-xs text-brand-amber">
+                                                                Set your name above to get a personalised invite link.
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                )}
                                             </div>
                                         ) : (
-                                            <div className="space-y-4">
-                                                <p className="text-sm text-text-secondary">
-                                                    Connect a Telegram bot to deliver workouts and check-ins via Telegram.
-                                                    Create a bot with @BotFather and paste the token below.
-                                                </p>
-                                                <div className="flex gap-3">
-                                                    <input
-                                                        type="text"
-                                                        value={botToken}
-                                                        onChange={(e) => setBotToken(e.target.value)}
-                                                        className="input flex-1"
-                                                        placeholder="Paste bot token here..."
-                                                    />
-                                                    <button
-                                                        onClick={handleProvisionTelegram}
-                                                        disabled={provisioningBot || !botToken.trim()}
-                                                        className="btn-primary"
-                                                    >
-                                                        {provisioningBot ? (
-                                                            <Loader2 className="w-4 h-4 animate-spin" />
-                                                        ) : (
-                                                            "Connect"
-                                                        )}
-                                                    </button>
-                                                </div>
-                                            </div>
+                                            <p className="text-sm text-text-secondary">
+                                                Telegram will be available once the platform bot is configured.
+                                            </p>
                                         )}
                                     </div>
 
