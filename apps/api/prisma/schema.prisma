@@ -13,6 +13,9 @@ model Coach {
   email             String    @unique
   name              String?
   slug              String?   @unique
+  phone             String?
+  businessName      String?   @map("business_name")
+  timezone          String    @default("Africa/Lagos")
   stripeAccountId   String?   @map("stripe_account_id")
   defaultChannel    MessageChannel? @map("default_channel")
   clients           Client[]

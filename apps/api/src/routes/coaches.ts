@@ -27,7 +27,10 @@ router.get("/me", authenticate, async (req: AuthRequest, res: Response) => {
             id: coach.id,
             name: coach.name,
             email: coach.email,
+            phone: coach.phone,
             slug: coach.slug,
+            businessName: coach.businessName,
+            timezone: coach.timezone,
             defaultChannel: coach.defaultChannel,
             stripeConnected: !!coach.stripeAccountId,
             whatsappConnected: true, // Managed at platform level for now
@@ -46,9 +49,7 @@ router.patch("/me", authenticate, async (req: AuthRequest, res: Response) => {
     const coachId = req.user?.id as string;
     if (!coachId) return res.status(401).json({ error: "Unauthorized" });
 
-    // Note: phone, businessName and timezone are not yet columns on the Coach model.
-    // Only persist fields that actually exist in the schema.
-    const { name, slug, defaultChannel } = req.body;
+    const { name, slug, phone, businessName, timezone, defaultChannel } = req.body;
 
     try {
         const coach = await prisma.coach.update({
@@ -56,6 +57,9 @@ router.patch("/me", authenticate, async (req: AuthRequest, res: Response) => {
             data: {
                 ...(name !== undefined && { name }),
                 ...(slug !== undefined && { slug }),
+                ...(phone !== undefined && { phone }),
+                ...(businessName !== undefined && { businessName }),
+                ...(timezone !== undefined && { timezone }),
                 ...(defaultChannel !== undefined && { defaultChannel }),
             },
         });
