@@ -8,6 +8,7 @@ import {
     Send,
     MessageSquare,
     CheckCheck,
+    ClipboardList,
 } from "lucide-react";
 import { cn, formatRelative } from "@/lib/utils";
 
@@ -77,6 +78,7 @@ export default function LeadsPage() {
     const [loading, setLoading] = useState(true);
     const [statusFilter, setStatusFilter] = useState<string>("ALL");
     const [converting, setConverting] = useState<string | null>(null);
+    const [startingIntake, setStartingIntake] = useState<string | null>(null);
 
     const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
     const [messages, setMessages] = useState<LeadMessage[]>([]);
@@ -175,6 +177,25 @@ export default function LeadsPage() {
             console.error("Failed to convert lead:", error);
         } finally {
             setConverting(null);
+        }
+    };
+
+    const handleStartIntake = async (leadId: string) => {
+        setStartingIntake(leadId);
+        try {
+            const token = localStorage.getItem("token");
+            const res = await fetch(
+                `${process.env.NEXT_PUBLIC_API_URL}/leads/${leadId}/start-intake`,
+                {
+                    method: "POST",
+                    headers: { Authorization: `Bearer ${token}` },
+                }
+            );
+            if (res.ok) fetchLeads();
+        } catch (error) {
+            console.error("Failed to start intake:", error);
+        } finally {
+            setStartingIntake(null);
         }
     };
 
@@ -334,16 +355,30 @@ export default function LeadsPage() {
                                         )}
                                     </div>
                                 </div>
-                                {selectedLead.status !== "CONVERTED" && selectedLead.status !== "REJECTED" && (
-                                    <button
-                                        onClick={() => handleConvert(selectedLead.id)}
-                                        disabled={converting === selectedLead.id}
-                                        className="btn-ghost text-brand-green hover:text-brand-green flex items-center gap-1 text-sm"
-                                    >
-                                        Convert
-                                        <ArrowRight className="w-3.5 h-3.5" />
-                                    </button>
-                                )}
+                                <div className="flex items-center gap-2">
+                                    {selectedLead.status !== "CONVERTED" && selectedLead.status !== "REJECTED" &&
+                                        selectedLead.channelTag === "TELEGRAM" &&
+                                        selectedLead.intakeData?.step !== "complete" && (
+                                        <button
+                                            onClick={() => handleStartIntake(selectedLead.id)}
+                                            disabled={startingIntake === selectedLead.id}
+                                            className="btn-ghost text-brand-blue hover:text-brand-blue flex items-center gap-1 text-sm"
+                                        >
+                                            <ClipboardList className="w-3.5 h-3.5" />
+                                            Start Intake
+                                        </button>
+                                    )}
+                                    {selectedLead.status !== "CONVERTED" && selectedLead.status !== "REJECTED" && (
+                                        <button
+                                            onClick={() => handleConvert(selectedLead.id)}
+                                            disabled={converting === selectedLead.id}
+                                            className="btn-ghost text-brand-green hover:text-brand-green flex items-center gap-1 text-sm"
+                                        >
+                                            Convert
+                                            <ArrowRight className="w-3.5 h-3.5" />
+                                        </button>
+                                    )}
+                                </div>
                             </div>
 
                             {/* Messages */}

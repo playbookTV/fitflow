@@ -5,7 +5,7 @@ import { prisma } from "../lib/prisma";
 import { logEvent, EventType } from "../lib/event-logger";
 import { sendTelegramMessage } from "../lib/telegram";
 import { getSharedBotToken } from "../lib/bot-provisioner";
-import { convertLeadToClient } from "../lib/telegram-intake";
+import { convertLeadToClient, startIntakeFlow } from "../lib/telegram-intake";
 
 const router: Router = Router();
 
@@ -125,6 +125,41 @@ router.post("/:id/convert", authenticate, async (req: AuthRequest, res: Response
     } catch (error) {
         console.error(`[POST /leads/${id}/convert]`, error);
         res.status(500).json({ error: "Failed to convert lead" });
+    }
+});
+
+// POST /leads/:id/start-intake - Coach triggers the intake questionnaire for a lead
+router.post("/:id/start-intake", authenticate, async (req: AuthRequest, res: Response) => {
+    const coachId = req.user?.id as string;
+    const id = req.params.id as string;
+    if (!coachId) return res.status(401).json({ error: "Unauthorized" });
+
+    try {
+        const lead = await prisma.lead.findFirst({
+            where: { id, coachId },
+        });
+
+        if (!lead) return res.status(404).json({ error: "Lead not found" });
+        if (!lead.telegramChatId) return res.status(400).json({ error: "Lead has no Telegram chat" });
+        if (lead.status === "CONVERTED") return res.status(400).json({ error: "Lead already converted" });
+
+        const intake = lead.intakeData as any;
+        if (intake?.step === "complete") {
+            return res.status(400).json({ error: "Intake already completed" });
+        }
+
+        const botToken = getSharedBotToken();
+        if (!botToken) return res.status(500).json({ error: "Bot not configured" });
+
+        const coach = await prisma.coach.findUnique({ where: { id: coachId } });
+        const coachName = coach?.name || "Your coach";
+
+        await startIntakeFlow(lead, botToken, coachName);
+
+        res.json({ success: true });
+    } catch (error) {
+        console.error(`[POST /leads/${id}/start-intake]`, error);
+        res.status(500).json({ error: "Failed to start intake" });
     }
 });
 
