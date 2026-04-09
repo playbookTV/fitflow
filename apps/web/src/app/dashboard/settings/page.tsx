@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { Suspense, useEffect, useState, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { getAuthHeaders } from "@/lib/auth";
@@ -57,7 +57,7 @@ const timezones = [
     { value: "Asia/Dubai", label: "Dubai (GST)" },
 ];
 
-export default function SettingsPage() {
+function SettingsContent() {
     const [activeTab, setActiveTab] = useState<TabId>("profile");
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -652,5 +652,13 @@ export default function SettingsPage() {
                 </div>
             </div>
         </DashboardLayout>
+    );
+}
+
+export default function SettingsPage() {
+    return (
+        <Suspense>
+            <SettingsContent />
+        </Suspense>
     );
 }
