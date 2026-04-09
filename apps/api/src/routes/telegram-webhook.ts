@@ -52,7 +52,7 @@ router.post("/", async (req, res) => {
                 return;
             }
             const chatId = String(callbackQuery.message.chat.id);
-            const data = callbackQuery.callback_data || "";
+            const data = callbackQuery.data || "";
 
             // Acknowledge the button press
             await answerCallbackQuery(botToken, callbackQuery.id);
