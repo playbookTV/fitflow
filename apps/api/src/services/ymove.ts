@@ -57,5 +57,15 @@ export async function fetchUsage(): Promise<{
     monthlyVideoMinutesUsed: number;
     monthlyVideoMinuteLimit: number;
 }> {
-    return ymoveGet("/usage");
+    const data = await ymoveGet<Record<string, unknown>>("/usage");
+    const used = Number(data.monthlyVideoMinutesUsed);
+    const limit = Number(data.monthlyVideoMinuteLimit);
+
+    if (!Number.isFinite(used) || !Number.isFinite(limit) || limit <= 0) {
+        throw new Error(
+            `[YMove] Invalid usage response: used=${data.monthlyVideoMinutesUsed}, limit=${data.monthlyVideoMinuteLimit}`
+        );
+    }
+
+    return { monthlyVideoMinutesUsed: used, monthlyVideoMinuteLimit: limit };
 }

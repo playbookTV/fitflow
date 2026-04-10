@@ -132,8 +132,16 @@ router.post("/stripe/connect", authenticate, async (req: AuthRequest, res: Respo
         );
 
         res.json({ url: accountLink.url });
-    } catch (error) {
+    } catch (error: any) {
         console.error("[POST /coaches/stripe/connect]", error);
+
+        if (error?.type === "StripeInvalidRequestError" && error?.message?.includes("signed up for Connect")) {
+            return res.status(503).json({
+                error: "Stripe Connect is not enabled on this platform account. Please contact support.",
+                code: "STRIPE_CONNECT_NOT_ENABLED",
+            });
+        }
+
         res.status(500).json({ error: "Failed to initiate Stripe Connect" });
     }
 });

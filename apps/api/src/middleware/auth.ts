@@ -46,33 +46,29 @@ export const authenticate = async (
         try {
             console.log(`[Auth] Ensuring coach for ${user.id}, email=${user.email}, name=${user.user_metadata?.full_name}`);
             if (user.email) {
-                const fullName = user.user_metadata?.full_name as string | undefined;
-                const baseSlug = (fullName || user.email!.split("@")[0])
-                    .toLowerCase()
-                    .replace(/[^a-z0-9]+/g, "-")
-                    .replace(/^-|-$/g, "");
+                const existing = await prisma.coach.findUnique({ where: { id: user.id } });
+                if (!existing) {
+                    const fullName = user.user_metadata?.full_name as string | undefined;
+                    const baseSlug = (fullName || user.email!.split("@")[0])
+                        .toLowerCase()
+                        .replace(/[^a-z0-9]+/g, "-")
+                        .replace(/^-|-$/g, "");
 
-                let slug = baseSlug;
-                const taken = await prisma.coach.findFirst({
-                    where: { slug, id: { not: user.id } },
-                });
-                if (taken) {
-                    slug = `${baseSlug}-${Math.random().toString(36).slice(2, 6)}`;
+                    // Append random suffix to guarantee uniqueness
+                    const slug = `${baseSlug}-${Math.random().toString(36).slice(2, 6)}`;
+
+                    await prisma.coach.create({
+                        data: {
+                            id: user.id,
+                            email: user.email,
+                            name: fullName || null,
+                            slug,
+                        },
+                    });
                 }
-
-                await prisma.coach.upsert({
-                    where: { id: user.id },
-                    update: {},
-                    create: {
-                        id: user.id,
-                        email: user.email,
-                        name: fullName || null,
-                        slug,
-                    },
-                });
             }
         } catch (upsertErr: any) {
-            // P2002 = unique constraint race condition — another request already created the coach
+            // P2002 = unique constraint race — another concurrent request already created the coach
             if (upsertErr?.code !== "P2002") {
                 console.error("[Auth] Coach ensure failed:", upsertErr);
             }
