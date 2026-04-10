@@ -71,9 +71,11 @@ export const authenticate = async (
                     },
                 });
             }
-        } catch (upsertErr) {
-            // Don't block auth if coach creation fails
-            console.error("[Auth] Coach ensure failed:", upsertErr);
+        } catch (upsertErr: any) {
+            // P2002 = unique constraint race condition — another request already created the coach
+            if (upsertErr?.code !== "P2002") {
+                console.error("[Auth] Coach ensure failed:", upsertErr);
+            }
         }
 
         next();
