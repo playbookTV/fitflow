@@ -8,6 +8,7 @@ import {
     TemplateId,
 } from "@fitflow/shared";
 import { sendWhatsAppMessage, sendWhatsAppVideo } from "../meta";
+import { buildSendPayload } from "../templates/meta-templates";
 
 /**
  * WhatsApp adapter implementing the DeliveryChannel interface.
@@ -30,9 +31,19 @@ export class WhatsAppAdapter implements DeliveryChannel {
     }
 
     async sendTemplate(recipientId: string, templateId: TemplateId, context: Record<string, any>, clientId?: string): Promise<SendResult> {
-        // WhatsApp templates require Meta pre-approval. Stub until WA Business API is activated.
-        console.log(`[WA Stub] Template ${templateId} would be sent to ${recipientId}`);
-        return { success: true, messageId: "wa-stub" };
+        try {
+            const templatePayload = buildSendPayload(templateId, context);
+            const result = await sendWhatsAppMessage(recipientId, templatePayload, clientId);
+            return {
+                success: true,
+                messageId: result.messages?.[0]?.id,
+            };
+        } catch (error: any) {
+            return {
+                success: false,
+                error: error.message || `Failed to send WhatsApp template ${templateId}`,
+            };
+        }
     }
 
     async sendStructuredCheckIn(recipientId: string, data: CheckInPrompt): Promise<SendResult> {

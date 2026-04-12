@@ -45,25 +45,27 @@ export async function searchExercises(params: {
             .filter(([, v]) => v != null)
             .map(([k, v]) => [k, String(v)])
     );
-    const data = await ymoveGet<{ exercises: YMoveExercise[] }>(`/exercises?${q}`);
-    return data.exercises ?? [];
+    const resp = await ymoveGet<{ data: YMoveExercise[] }>(`/exercises?${q}`);
+    return resp.data ?? [];
 }
 
 export async function fetchExercise(idOrSlug: string): Promise<YMoveExercise> {
-    return ymoveGet<YMoveExercise>(`/exercises/${idOrSlug}`);
+    const resp = await ymoveGet<{ data: YMoveExercise }>(`/exercises/${idOrSlug}`);
+    return resp.data;
 }
 
 export async function fetchUsage(): Promise<{
     monthlyVideoMinutesUsed: number;
     monthlyVideoMinuteLimit: number;
 }> {
-    const data = await ymoveGet<Record<string, unknown>>("/usage");
-    const used = Number(data.monthlyVideoMinutesUsed);
-    const limit = Number(data.monthlyVideoMinuteLimit);
+    const resp = await ymoveGet<{ data: Record<string, unknown> }>("/usage");
+    const data = resp.data;
+    const used = Number(data.minutesUsed);
+    const limit = Number(data.minutesLimit);
 
     if (!Number.isFinite(used) || !Number.isFinite(limit) || limit <= 0) {
         throw new Error(
-            `[YMove] Invalid usage response: used=${data.monthlyVideoMinutesUsed}, limit=${data.monthlyVideoMinuteLimit}`
+            `[YMove] Invalid usage response: used=${data.minutesUsed}, limit=${data.minutesLimit}`
         );
     }
 

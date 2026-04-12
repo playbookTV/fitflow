@@ -19,6 +19,7 @@ import offersRouter from "./routes/offers";
 import leadsRouter from "./routes/leads";
 import publicRouter from "./routes/public";
 import coachExercisesRouter from "./routes/coach-exercises";
+import metaTemplatesRouter from "./routes/meta-templates";
 import { startDailyScheduler } from "./jobs/daily-scheduler";
 import { startWeeklyCheckinScheduler } from "./jobs/weekly-checkin";
 import { startRenewalScheduler } from "./jobs/renewal-scheduler";
@@ -88,6 +89,7 @@ app.use("/offers", offersRouter);
 app.use("/leads", leadsRouter);
 app.use("/p", publicRouter);
 app.use("/coach-exercises", coachExercisesRouter);
+app.use("/meta-templates", metaTemplatesRouter);
 
 // 404
 app.use((_req: Request, res: Response) => {
