@@ -7,8 +7,9 @@
  *   - bodyText: template body with {{1}}, {{2}}… numbered placeholders
  *   - paramKeys: ordered context keys that fill those placeholders
  *
- * When CREATING a template with Meta, bodyText is submitted as the BODY component.
- * When SENDING a template, paramKeys extract values from the render context.
+ * IMPORTANT: bodyText must match exactly what was submitted to Meta.
+ * Meta rejects templates where variables appear at the start or end of the body,
+ * so sign-offs use "Best, {{N}} — your coach" instead of bare "{{N}}".
  */
 
 import { TemplateId } from "@fitflow/shared";
@@ -35,7 +36,7 @@ export const META_TEMPLATES: Record<TemplateId, MetaTemplateDefinition> = {
             "Thanks for reaching out about {{2}}. I'd love to get you started.\n\n" +
             "Here's your intake link — takes about 3 minutes to complete:\n{{3}}\n\n" +
             "Once I've reviewed your details, I'll be in touch to confirm your spot.\n\n" +
-            "— {{4}}",
+            "Best, {{4}} — your coach",
         paramKeys: ["client_first_name", "offer_name", "intake_link", "coach_first_name"],
     },
     [TemplateId.LEAD_PAYMENT_REQUEST]: {
@@ -48,7 +49,7 @@ export const META_TEMPLATES: Record<TemplateId, MetaTemplateDefinition> = {
             "To secure your spot, complete your payment here:\n{{3}}\n\n" +
             "Once payment is confirmed, I'll activate your programme and send over everything you need to get started.\n\n" +
             "Any questions before you go ahead, just ask.\n\n" +
-            "{{4}}",
+            "Best, {{4}} — your coach",
         paramKeys: ["client_first_name", "offer_name", "payment_link", "coach_first_name"],
     },
     [TemplateId.LEAD_PAYMENT_CONFIRMED]: {
@@ -56,17 +57,17 @@ export const META_TEMPLATES: Record<TemplateId, MetaTemplateDefinition> = {
         category: "UTILITY",
         language: "en",
         bodyText:
-            "{{1}}, you're in! 🎉\n\n" +
+            "Hey {{1}}, you're in! 🎉\n\n" +
             "Payment confirmed. Your {{2}} programme starts {{3}}.\n\n" +
             "Your onboarding will arrive shortly — please complete it before we kick off so I can personalise your plan.\n\n" +
             "Let's get to work.\n\n" +
-            "{{4}}",
+            "Best, {{4}} — your coach",
         paramKeys: ["client_first_name", "offer_name", "programme_start_date", "coach_first_name"],
     },
 
     // ── Onboarding ───────────────────────────────────────────────
     [TemplateId.ONBOARDING_WELCOME]: {
-        metaName: "fitflow_onboarding_welcome",
+        metaName: "fitflow_onboarding_welcome_v2",
         category: "UTILITY",
         language: "en",
         bodyText:
@@ -87,13 +88,13 @@ export const META_TEMPLATES: Record<TemplateId, MetaTemplateDefinition> = {
             "• Weekly check-in every {{3}}\n" +
             "• Message me anytime if something comes up\n\n" +
             "See you on {{2}} 💪\n\n" +
-            "{{4}}",
+            "Best, {{4}} — your coach",
         paramKeys: ["client_first_name", "programme_start_date", "next_checkin_day", "coach_first_name"],
     },
 
     // ── Workout Delivery ─────────────────────────────────────────
     [TemplateId.WORKOUT_DAILY]: {
-        metaName: "fitflow_workout_daily",
+        metaName: "fitflow_workout_daily_v2",
         category: "UTILITY",
         language: "en",
         bodyText:
@@ -109,7 +110,7 @@ export const META_TEMPLATES: Record<TemplateId, MetaTemplateDefinition> = {
         bodyText:
             "Rest day today, {{1}} 🛌\n\n" +
             "Recovery is part of the programme — take it seriously. Stay hydrated, move gently if you can, and I'll see you tomorrow.\n\n" +
-            "{{2}}",
+            "Best, {{2}} — your coach",
         paramKeys: ["client_first_name", "coach_first_name"],
     },
     [TemplateId.WORKOUT_WEEK_SUMMARY]: {
@@ -121,11 +122,11 @@ export const META_TEMPLATES: Record<TemplateId, MetaTemplateDefinition> = {
             "Here's how you did this week:\n\n" +
             "{{3}}\n\n" +
             "Your check-in is due tomorrow. I'll send it first thing. Keep the momentum going.\n\n" +
-            "{{4}}",
+            "Best, {{4}} — your coach",
         paramKeys: ["programme_week", "total_weeks", "weekly_summary", "coach_first_name"],
     },
     [TemplateId.WORKOUT_LOGGED_CONFIRMATION]: {
-        metaName: "fitflow_workout_logged_confirmation",
+        metaName: "fitflow_workout_logged_confirm_v2",
         category: "UTILITY",
         language: "en",
         bodyText:
@@ -136,7 +137,7 @@ export const META_TEMPLATES: Record<TemplateId, MetaTemplateDefinition> = {
 
     // ── Check-ins ────────────────────────────────────────────────
     [TemplateId.CHECKIN_WEEKLY_PROMPT]: {
-        metaName: "fitflow_checkin_weekly_prompt",
+        metaName: "fitflow_checkin_weekly_prompt_v2",
         category: "UTILITY",
         language: "en",
         bodyText:
@@ -151,11 +152,11 @@ export const META_TEMPLATES: Record<TemplateId, MetaTemplateDefinition> = {
         bodyText:
             "Got your check-in, {{1}} — thanks for being consistent with this 🙏\n\n" +
             "I'll review it today and adjust anything that needs tweaking. Keep doing what you're doing.\n\n" +
-            "{{2}}",
+            "Best, {{2}} — your coach",
         paramKeys: ["client_first_name", "coach_first_name"],
     },
     [TemplateId.CHECKIN_MISSED_NUDGE]: {
-        metaName: "fitflow_checkin_missed_nudge",
+        metaName: "fitflow_checkin_missed_nudge_v2",
         category: "UTILITY",
         language: "en",
         bodyText:
@@ -172,7 +173,7 @@ export const META_TEMPLATES: Record<TemplateId, MetaTemplateDefinition> = {
         bodyText:
             "No worries on today's session, {{1}} — life happens.\n\n" +
             "If something's come up or you need to adjust the schedule, just let me know. I'd rather know than have you fall off quietly.\n\n" +
-            "{{2}}",
+            "Best, {{2}} — your coach",
         paramKeys: ["client_first_name", "coach_first_name"],
     },
     [TemplateId.ATRISK_THREE_PLUS]: {
@@ -180,10 +181,10 @@ export const META_TEMPLATES: Record<TemplateId, MetaTemplateDefinition> = {
         category: "MARKETING",
         language: "en",
         bodyText:
-            "{{1}}, I've noticed you've been quiet for a few days and a few sessions have slipped.\n\n" +
+            "Hey {{1}}, I've noticed you've been quiet for a few days and a few sessions have slipped.\n\n" +
             "I'm not here to lecture — I just want to check in as your coach. Is everything okay? Has something changed that we should adjust for?\n\n" +
             "Even a quick reply helps me understand where you're at.\n\n" +
-            "{{2}}",
+            "Best, {{2}} — your coach",
         paramKeys: ["client_first_name", "coach_first_name"],
     },
     [TemplateId.ATRISK_LAPSED]: {
@@ -195,7 +196,7 @@ export const META_TEMPLATES: Record<TemplateId, MetaTemplateDefinition> = {
             "It's been a while and I don't want to just quietly let your programme expire without reaching out properly.\n\n" +
             "If things have gotten in the way, that's completely understandable. If you want to pause, restart, or just have a conversation about what's realistic right now — I'm here for that.\n\n" +
             "No pressure either way, but the door's open.\n\n" +
-            "{{2}}",
+            "Best, {{2}} — your coach",
         paramKeys: ["client_first_name", "coach_first_name"],
     },
 
@@ -208,7 +209,7 @@ export const META_TEMPLATES: Record<TemplateId, MetaTemplateDefinition> = {
             "Halfway there, {{1}} 🏁\n\n" +
             "Week {{2}} of {{3}} complete. That's no small thing — a lot of people don't make it this far.\n\n" +
             "Take a moment to recognise what you've put in. The second half is where the real results compound.\n\n" +
-            "{{4}}",
+            "Best, {{4}} — your coach",
         paramKeys: ["client_first_name", "programme_week", "total_weeks", "coach_first_name"],
     },
     [TemplateId.MILESTONE_COMPLETION]: {
@@ -216,11 +217,11 @@ export const META_TEMPLATES: Record<TemplateId, MetaTemplateDefinition> = {
         category: "MARKETING",
         language: "en",
         bodyText:
-            "{{1}} — complete. 🎉\n\n" +
+            "Programme complete — {{1}} 🎉\n\n" +
             "{{2}}, you did it. {{3}} weeks in and you showed up when it counted.\n\n" +
             "I'll be sending over a short final check-in to wrap up properly. Then we can talk about what comes next — whether that's a new programme, maintenance, or just celebrating what you've built.\n\n" +
             "Genuinely proud of the work you've put in.\n\n" +
-            "{{4}}",
+            "Best, {{4}} — your coach",
         paramKeys: ["offer_name", "client_first_name", "total_weeks", "coach_first_name"],
     },
 
@@ -234,7 +235,7 @@ export const META_TEMPLATES: Record<TemplateId, MetaTemplateDefinition> = {
             "Just a friendly reminder about your outstanding payment of {{2}}.\n\n" +
             "You can pay here when you're ready:\n{{3}}\n\n" +
             "Let me know if you have any questions.\n\n" +
-            "{{4}}",
+            "Best, {{4}} — your coach",
         paramKeys: ["client_first_name", "amount", "payment_link", "coach_first_name"],
     },
 
@@ -248,7 +249,7 @@ export const META_TEMPLATES: Record<TemplateId, MetaTemplateDefinition> = {
             "Your current programme expires on {{2}} — that's 7 days away.\n\n" +
             "If you'd like to continue, here's your renewal link:\n{{3}}\n\n" +
             "Renewing keeps your history, your plan, and your momentum intact. Happy to chat through what the next phase looks like if you're unsure.\n\n" +
-            "{{4}}",
+            "Best, {{4}} — your coach",
         paramKeys: ["client_first_name", "renewal_date", "payment_link", "coach_first_name"],
     },
     [TemplateId.RENEWAL_2DAY]: {
@@ -256,10 +257,10 @@ export const META_TEMPLATES: Record<TemplateId, MetaTemplateDefinition> = {
         category: "MARKETING",
         language: "en",
         bodyText:
-            "{{1}} — quick heads up, your programme ends in 2 days on {{2}}.\n\n" +
+            "Hey {{1}} — quick heads up, your programme ends in 2 days on {{2}}.\n\n" +
             "If you're continuing, now's the time to sort it so there's no break in your delivery:\n{{3}}\n\n" +
             "If you're taking a break, no problem — just let me know so I can pause things cleanly.\n\n" +
-            "{{4}}",
+            "Best, {{4}} — your coach",
         paramKeys: ["client_first_name", "renewal_date", "payment_link", "coach_first_name"],
     },
     [TemplateId.RENEWAL_POST_EXPIRY]: {
@@ -271,7 +272,7 @@ export const META_TEMPLATES: Record<TemplateId, MetaTemplateDefinition> = {
             "Your programme ended on {{2}} and I haven't heard from you — wanted to reach out before too much time passes.\n\n" +
             "If you're ready to jump back in, I can get you reactivated quickly:\n{{3}}\n\n" +
             "If the timing isn't right, that's okay too. Just let me know either way.\n\n" +
-            "{{4}}",
+            "Best, {{4}} — your coach",
         paramKeys: ["client_first_name", "renewal_date", "payment_link", "coach_first_name"],
     },
 
@@ -280,7 +281,10 @@ export const META_TEMPLATES: Record<TemplateId, MetaTemplateDefinition> = {
         metaName: "fitflow_exercise_video",
         category: "UTILITY",
         language: "en",
-        bodyText: "{{1}}\n\n{{2}}",
+        bodyText:
+            "Exercise demo: {{1}}\n\n" +
+            "{{2}}\n\n" +
+            "Watch the video above and follow the form cues. Reach out if anything is unclear.",
         paramKeys: ["exercise_name", "_exercise_details"],
     },
 
@@ -294,7 +298,7 @@ export const META_TEMPLATES: Record<TemplateId, MetaTemplateDefinition> = {
             "Here are the bank transfer details for {{2}}:\n\n" +
             "{{3}}\n\n" +
             "Please use your name as the reference. Once I've received payment I'll confirm and get your programme set up straight away.\n\n" +
-            "{{4}}",
+            "Best, {{4}} — your coach",
         paramKeys: ["client_first_name", "offer_name", "bank_transfer_details", "coach_first_name"],
     },
     [TemplateId.SYSTEM_BANK_CONFIRMED]: {
@@ -304,7 +308,7 @@ export const META_TEMPLATES: Record<TemplateId, MetaTemplateDefinition> = {
         bodyText:
             "Payment received, {{1}} — thank you 🙏\n\n" +
             "I'm activating your programme now. Your onboarding will arrive shortly.\n\n" +
-            "{{2}}",
+            "Best, {{2}} — your coach",
         paramKeys: ["client_first_name", "coach_first_name"],
     },
     [TemplateId.SYSTEM_BROADCAST]: {
@@ -314,7 +318,8 @@ export const META_TEMPLATES: Record<TemplateId, MetaTemplateDefinition> = {
         bodyText:
             "Hey {{1}},\n\n" +
             "{{2}}\n\n" +
-            "{{3}}",
+            "If you have any questions, just reply to this message.\n\n" +
+            "Best, {{3}} — your coach",
         paramKeys: ["client_first_name", "broadcast_message", "coach_first_name"],
     },
 };
