@@ -1,11 +1,12 @@
 import { Router, Response } from "express";
 import { authenticate, AuthRequest } from "../middleware/auth";
+import { requireTier } from "../middleware/subscription";
 import { prisma } from "../lib/prisma";
 
 const router: Router = Router();
 
 // GET /analytics/summary - High-level stats for the coach dashboard
-router.get("/summary", authenticate, async (req: AuthRequest, res: Response) => {
+router.get("/summary", authenticate, requireTier("PRO", "STUDIO"), async (req: AuthRequest, res: Response) => {
     const coachId = req.user?.id as string;
     if (!coachId) return res.status(401).json({ error: "Unauthorized" });
 

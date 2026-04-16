@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import { Router } from "express";
 import { MessageChannel, MessageDirection } from "@prisma/client";
 import { messageQueue } from "../lib/queue";
@@ -6,6 +7,21 @@ import { routeCoachCommand } from "../handlers/coachCommandRouter";
 import { sendWhatsAppMessage } from "../lib/meta";
 
 const router: Router = Router();
+
+/**
+ * Verify Meta webhook signature using X-Hub-Signature-256 header.
+ * Returns true if the signature is valid.
+ */
+function verifyMetaSignature(rawBody: Buffer, signature: string, appSecret: string): boolean {
+    const hmac = crypto.createHmac("sha256", appSecret);
+    hmac.update(rawBody);
+    const expected = `sha256=${hmac.digest("hex")}`;
+    try {
+        return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(signature));
+    } catch {
+        return false;
+    }
+}
 
 // ═══════════════════════════════════════════════════════════════
 // FLOW RESPONSE HANDLERS
@@ -154,6 +170,15 @@ router.get("/", (req, res) => {
 
 // POST /webhooks - Receive Meta Webhook Events (WhatsApp)
 router.post("/", async (req, res) => {
+    // Verify Meta webhook signature before processing
+    const appSecret = process.env.META_APP_SECRET;
+    const signature = req.headers["x-hub-signature-256"];
+    if (!appSecret || typeof signature !== "string" || !verifyMetaSignature((req as any).rawBody, signature, appSecret)) {
+        console.warn("[Webhook] Invalid or missing Meta signature — rejecting.");
+        res.sendStatus(403);
+        return;
+    }
+
     const body = req.body;
 
     console.log("[Webhook] Received Meta event:", JSON.stringify(summarizeMetaWebhookEvent(body)));
@@ -212,7 +237,7 @@ router.post("/", async (req, res) => {
                         }
                         responseData.flow_token = flowToken;
 
-                        console.log(`[Webhook] Flow response received:`, responseData);
+                        console.log(`[Webhook] Flow response received: flow_token=${flowToken}, keys=${Object.keys(responseData).join(",")}`);
 
                         await prisma.message.create({
                             data: {

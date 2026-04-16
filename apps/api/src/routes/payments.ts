@@ -1,5 +1,6 @@
 import { Router, Response } from "express";
 import { authenticate, AuthRequest } from "../middleware/auth";
+import { requireTier } from "../middleware/subscription";
 import stripe, { createCheckoutSession } from "../lib/stripe";
 import { prisma } from "../lib/prisma";
 import { onboardingQueue } from "../lib/queue";
@@ -11,7 +12,7 @@ import { TemplateId } from "@fitflow/shared";
 const router: Router = Router();
 
 // POST /payments/checkout - Create a Stripe checkout session for a client
-router.post("/checkout", authenticate, async (req: AuthRequest, res: Response) => {
+router.post("/checkout", authenticate, requireTier("PRO", "STUDIO"), async (req: AuthRequest, res: Response) => {
     const coachId = req.user?.id as string;
     const { clientId } = req.body;
 

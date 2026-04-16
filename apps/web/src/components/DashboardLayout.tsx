@@ -20,6 +20,7 @@ import {
     UserPlus,
     Activity,
     UtensilsCrossed,
+    Crown,
 } from "lucide-react";
 import { useEffect, useState, useRef, useCallback } from "react";
 import { getAuthHeaders } from "@/lib/auth";
@@ -40,6 +41,7 @@ const mainNavItems: NavItem[] = [
     { href: "/dashboard/meal-plans", label: "Meals", icon: UtensilsCrossed },
     { href: "/dashboard/messages", label: "Messages", icon: MessageSquare },
     { href: "/dashboard/billing", label: "Billing", icon: CreditCard },
+    { href: "/dashboard/subscription", label: "Subscription", icon: Crown },
     { href: "/dashboard/activity", label: "Activity", icon: Activity },
 ];
 

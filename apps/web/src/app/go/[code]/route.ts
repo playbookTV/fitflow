@@ -20,6 +20,16 @@ export async function GET(
             return NextResponse.redirect(new URL("/", request.url));
         }
 
+        // Defense-in-depth: only redirect to http(s) URLs
+        try {
+            const parsed = new URL(data.targetUrl);
+            if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
+                return NextResponse.redirect(new URL("/", request.url));
+            }
+        } catch {
+            return NextResponse.redirect(new URL("/", request.url));
+        }
+
         return NextResponse.redirect(data.targetUrl);
     } catch {
         return NextResponse.redirect(new URL("/", request.url));

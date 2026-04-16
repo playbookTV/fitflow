@@ -60,6 +60,15 @@ export const EventType = {
     EXERCISE_VIDEO_SENT: "exercise.video_sent",
     EXERCISE_VIDEO_FAILED: "exercise.video_failed",
     EXERCISE_COMMAND_PARSED: "exercise.command_parsed",
+
+    // Coach subscription
+    SUBSCRIPTION_CREATED: "subscription.created",
+    SUBSCRIPTION_UPGRADED: "subscription.upgraded",
+    SUBSCRIPTION_DOWNGRADED: "subscription.downgraded",
+    SUBSCRIPTION_CANCELED: "subscription.canceled",
+    SUBSCRIPTION_RENEWED: "subscription.renewed",
+    SUBSCRIPTION_PAYMENT_FAILED: "subscription.payment_failed",
+    SUBSCRIPTION_TRIAL_ENDING: "subscription.trial_ending",
 } as const;
 
 export type EventTypeValue = typeof EventType[keyof typeof EventType];

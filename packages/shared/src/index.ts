@@ -10,3 +10,4 @@ export {
 } from "./channels/types";
 
 export * from "./templates";
+export * from "./subscription";

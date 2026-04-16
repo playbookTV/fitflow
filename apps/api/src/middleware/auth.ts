@@ -44,7 +44,7 @@ export const authenticate = async (
 
         // Ensure coach record exists (creates on first authenticated request)
         try {
-            console.log(`[Auth] Ensuring coach for ${user.id}, email=${user.email}, name=${user.user_metadata?.full_name}`);
+            console.log(`[Auth] Ensuring coach for ${user.id}`);
             if (user.email) {
                 const existing = await prisma.coach.findUnique({ where: { id: user.id } });
                 if (!existing) {
@@ -57,12 +57,17 @@ export const authenticate = async (
                     // Append random suffix to guarantee uniqueness
                     const slug = `${baseSlug}-${Math.random().toString(36).slice(2, 6)}`;
 
+                    // Detect billing currency from Accept-Language header
+                    const acceptLang = req.headers["accept-language"] || "";
+                    const billingCurrency = /en-GB|en-NG/i.test(acceptLang) ? "gbp" : "usd";
+
                     await prisma.coach.create({
                         data: {
                             id: user.id,
                             email: user.email,
                             name: fullName || null,
                             slug,
+                            billingCurrency,
                         },
                     });
                 }

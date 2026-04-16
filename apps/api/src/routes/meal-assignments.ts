@@ -23,21 +23,23 @@ router.post("/:id/meal-assignments", authenticate, async (req: AuthRequest, res:
         const plan = await prisma.mealPlan.findFirst({ where: { id: planId, coachId } });
         if (!plan) return res.status(404).json({ error: "Meal plan not found" });
 
-        // Deactivate any existing active meal assignment
-        await prisma.mealAssignment.updateMany({
-            where: { clientId, isActive: true },
-            data: { isActive: false },
-        });
+        // Deactivate existing and create new assignment atomically
+        const assignment = await prisma.$transaction(async (tx) => {
+            await tx.mealAssignment.updateMany({
+                where: { clientId, isActive: true },
+                data: { isActive: false },
+            });
 
-        const assignment = await prisma.mealAssignment.create({
-            data: {
-                clientId,
-                planId,
-                startDate: new Date(startDate),
-                scheduleDays,
-                isActive: true,
-            },
-            include: { plan: true },
+            return tx.mealAssignment.create({
+                data: {
+                    clientId,
+                    planId,
+                    startDate: new Date(startDate),
+                    scheduleDays,
+                    isActive: true,
+                },
+                include: { plan: true },
+            });
         });
 
         await logEvent(EventType.MEAL_PLAN_ASSIGNED, {
@@ -93,12 +95,19 @@ router.patch("/:id/meal-assignments/:assignmentId", authenticate, async (req: Au
         const client = await prisma.client.findFirst({ where: { id: clientId, coachId } });
         if (!client) return res.status(404).json({ error: "Client not found" });
 
-        const assignment = await prisma.mealAssignment.update({
-            where: { id: assignmentId },
+        // Scope the update to the verified client to prevent cross-tenant writes
+        const result = await prisma.mealAssignment.updateMany({
+            where: { id: assignmentId, clientId },
             data: {
                 ...(isActive !== undefined && { isActive }),
                 ...(scheduleDays !== undefined && { scheduleDays }),
             },
+        });
+
+        if (result.count === 0) return res.status(404).json({ error: "Assignment not found" });
+
+        const assignment = await prisma.mealAssignment.findFirst({
+            where: { id: assignmentId, clientId },
             include: { plan: true },
         });
 

@@ -76,4 +76,61 @@ export const verifyWebhook = (payload: string | Buffer, signature: string) => {
     );
 };
 
+// ═══════════════════════════════════════════════════════════════
+// COACH SUBSCRIPTION BILLING (SaaS — coaches pay FitFlow)
+// ═══════════════════════════════════════════════════════════════
+
+export const createStripeCustomer = async (
+    coachId: string,
+    email: string,
+    currency: string = "usd"
+) => {
+    return await stripe.customers.create({
+        email,
+        metadata: { coachId, billingCurrency: currency },
+    });
+};
+
+export const createSubscriptionCheckout = async (
+    customerId: string,
+    priceId: string,
+    trialDays: number,
+    successUrl: string,
+    cancelUrl: string
+) => {
+    return await stripe.checkout.sessions.create({
+        customer: customerId,
+        payment_method_types: ["card"],
+        line_items: [{ price: priceId, quantity: 1 }],
+        mode: "subscription",
+        subscription_data: {
+            trial_period_days: trialDays,
+        },
+        allow_promotion_codes: true,
+        success_url: successUrl,
+        cancel_url: cancelUrl,
+    });
+};
+
+export const createCustomerPortalSession = async (
+    customerId: string,
+    returnUrl: string
+) => {
+    return await stripe.billingPortal.sessions.create({
+        customer: customerId,
+        return_url: returnUrl,
+    });
+};
+
+export const verifySubscriptionWebhook = (
+    payload: string | Buffer,
+    signature: string
+) => {
+    return stripe.webhooks.constructEvent(
+        payload,
+        signature,
+        process.env.STRIPE_SUBSCRIPTION_WEBHOOK_SECRET || ""
+    );
+};
+
 export default stripe;

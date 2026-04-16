@@ -1,5 +1,7 @@
+import crypto from "node:crypto";
 import { Router, Response } from "express";
 import { authenticate, AuthRequest } from "../middleware/auth";
+import { enforceLimit } from "../middleware/subscription";
 import { prisma } from "../lib/prisma";
 import { onboardingQueue } from "../lib/queue";
 import { JobType } from "../lib/types";
@@ -28,7 +30,7 @@ router.get("/", authenticate, async (req: AuthRequest, res: Response) => {
 });
 
 // POST /clients - Create a new client
-router.post("/", authenticate, async (req: AuthRequest, res: Response) => {
+router.post("/", authenticate, enforceLimit("clients"), async (req: AuthRequest, res: Response) => {
     const coachId = req.user?.id as string;
     const { name, phone, email, goals, notes, status, preferredChannel } = req.body;
 
@@ -144,14 +146,16 @@ router.post("/:id/send-intake", authenticate, async (req: AuthRequest, res: Resp
 
         if (!client) return res.status(404).json({ error: "Client not found" });
 
+        const intakeToken = crypto.randomUUID();
         await prisma.client.update({
             where: { id: client.id },
-            data: { status: "INTAKE_SENT" },
+            data: { status: "INTAKE_SENT", intakeToken },
         });
 
         await onboardingQueue.add(JobType.ONBOARDING_INTAKE, {
             clientId: client.id,
             coachId,
+            intakeToken,
         });
 
         res.json({ success: true });

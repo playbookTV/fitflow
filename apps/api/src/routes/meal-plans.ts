@@ -1,5 +1,6 @@
 import { Router, Response } from "express";
 import { authenticate, AuthRequest } from "../middleware/auth";
+import { enforceLimit } from "../middleware/subscription";
 import { prisma } from "../lib/prisma";
 
 const router: Router = Router();
@@ -29,7 +30,7 @@ router.get("/", authenticate, async (req: AuthRequest, res: Response) => {
 });
 
 // POST /meal-plans — create a new meal plan
-router.post("/", authenticate, async (req: AuthRequest, res: Response) => {
+router.post("/", authenticate, enforceLimit("mealPlans"), async (req: AuthRequest, res: Response) => {
     const coachId = req.user?.id as string;
     const { title, description, isTemplate, days } = req.body;
 

@@ -2,6 +2,7 @@ import "dotenv/config";
 import express, { Express, Request, Response, NextFunction } from "express";
 import cors from "cors";
 import helmet from "helmet";
+import rateLimit from "express-rate-limit";
 import clientsRouter from "./routes/clients";
 import exercisesRouter from "./routes/exercises";
 import plansRouter from "./routes/plans";
@@ -25,6 +26,8 @@ import mealsRouter from "./routes/meals";
 import mealPlansRouter from "./routes/meal-plans";
 import mealAssignmentsRouter from "./routes/meal-assignments";
 import shortLinksRouter from "./routes/short-links";
+import subscriptionsRouter from "./routes/subscriptions";
+import subscriptionWebhookRouter from "./routes/subscription-webhook";
 import { prisma } from "./lib/prisma";
 import { startDailyScheduler } from "./jobs/daily-scheduler";
 import { startWeeklyCheckinScheduler } from "./jobs/weekly-checkin";
@@ -73,8 +76,25 @@ app.use(cors({
     credentials: true
 }));
 app.use("/payments", paymentWebhookRouter);
-app.use(express.json());
+app.use("/subscriptions", subscriptionWebhookRouter);
+app.use(express.json({
+    verify: (req: any, _res, buf) => {
+        // Store raw body for webhook signature verification (e.g. Meta WhatsApp)
+        req.rawBody = buf;
+    },
+}));
 app.use(express.urlencoded({ extended: true }));
+
+// Rate limiting
+const generalLimiter = rateLimit({ windowMs: 60_000, max: 100, standardHeaders: true, legacyHeaders: false });
+const strictLimiter = rateLimit({ windowMs: 60_000, max: 10, standardHeaders: true, legacyHeaders: false });
+const webhookLimiter = rateLimit({ windowMs: 60_000, max: 200, standardHeaders: true, legacyHeaders: false });
+
+app.use(generalLimiter);
+app.use("/intake", strictLimiter);
+app.use("/p", strictLimiter);
+app.use("/webhooks", webhookLimiter);
+app.use("/telegram/webhook", webhookLimiter);
 
 // Health check
 app.get("/health", (_req: Request, res: Response) => {
@@ -104,6 +124,7 @@ app.use("/meals", mealsRouter);
 app.use("/meal-plans", mealPlansRouter);
 app.use("/clients", mealAssignmentsRouter);
 app.use("/short-links", shortLinksRouter);
+app.use("/subscriptions", subscriptionsRouter);
 
 // GET /go/:code — Short link resolve (returns JSON for web app redirect)
 app.get("/go/:code", async (req: Request, res: Response) => {

@@ -28,21 +28,29 @@ router.post("/:id/assignments", authenticate, async (req: AuthRequest, res: Resp
 
         if (!plan) return res.status(404).json({ error: "Plan not found" });
 
-        // Create assignment
-        const assignment = await prisma.planAssignment.create({
-            data: {
-                clientId: id as string,
-                planId: planId as string,
-                startDate: new Date(startDate),
-                scheduleDays,
-                isActive: true,
-            },
-        });
+        // Deactivate existing assignments and create new one atomically
+        const assignment = await prisma.$transaction(async (tx) => {
+            await tx.planAssignment.updateMany({
+                where: { clientId: id as string, isActive: true },
+                data: { isActive: false },
+            });
 
-        // Update client status
-        await prisma.client.update({
-            where: { id: id as string },
-            data: { status: "PLAN_ASSIGNED" },
+            const created = await tx.planAssignment.create({
+                data: {
+                    clientId: id as string,
+                    planId: planId as string,
+                    startDate: new Date(startDate),
+                    scheduleDays,
+                    isActive: true,
+                },
+            });
+
+            await tx.client.update({
+                where: { id: id as string },
+                data: { status: "PLAN_ASSIGNED" },
+            });
+
+            return created;
         });
 
         res.status(201).json(assignment);

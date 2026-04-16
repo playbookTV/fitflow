@@ -40,6 +40,16 @@ router.post("/", authenticate, async (req: AuthRequest, res: Response) => {
         return res.status(400).json({ error: "code and targetUrl are required" });
     }
 
+    // Only allow http(s) URLs to prevent open redirects to dangerous schemes
+    try {
+        const parsed = new URL(targetUrl);
+        if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
+            return res.status(400).json({ error: "targetUrl must use https or http" });
+        }
+    } catch {
+        return res.status(400).json({ error: "targetUrl must be a valid URL" });
+    }
+
     // Sanitize code: lowercase, alphanumeric + hyphens only
     const cleanCode = code.toLowerCase().replaceAll(/[^a-z0-9-]/g, "");
     if (cleanCode.length < 2) {

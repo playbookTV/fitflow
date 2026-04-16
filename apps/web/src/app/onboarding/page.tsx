@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 function OnboardingContent() {
     const searchParams = useSearchParams();
     const clientId = searchParams.get("id");
+    const token = searchParams.get("token");
 
     const [step, setStep] = useState(1);
     const [loading, setLoading] = useState(false);
@@ -23,15 +24,15 @@ function OnboardingContent() {
     });
 
     useEffect(() => {
-        if (clientId) {
-            fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/intake/${clientId}`)
+        if (clientId && token) {
+            fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/intake/${clientId}?token=${encodeURIComponent(token)}`)
                 .then(res => res.json())
                 .then(data => {
                     if (data.name) setClientName(data.name);
                 })
                 .catch(err => console.error("Error fetching client info", err));
         }
-    }, [clientId]);
+    }, [clientId, token]);
 
     const handleNext = () => setStep(s => s + 1);
     const handleBack = () => setStep(s => s - 1);
@@ -42,7 +43,7 @@ function OnboardingContent() {
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/intake`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ clientId, ...formData })
+                body: JSON.stringify({ clientId, token, ...formData })
             });
             if (res.ok) {
                 setSubmitted(true);
@@ -54,7 +55,7 @@ function OnboardingContent() {
         }
     };
 
-    if (!clientId) {
+    if (!clientId || !token) {
         return (
             <div className="min-h-screen bg-black text-white flex items-center justify-center p-4">
                 <div className="card max-w-md w-full p-8 border-border bg-bg-card/50">

@@ -17,8 +17,11 @@ model Coach {
   businessName      String?   @map("business_name")
   timezone          String    @default("Africa/Lagos")
   stripeAccountId   String?   @map("stripe_account_id")
+  stripeCustomerId  String?   @unique @map("stripe_customer_id")
+  billingCurrency   String    @default("usd") @map("billing_currency")
   defaultChannel    MessageChannel? @map("default_channel")
   clients           Client[]
+  subscription      Subscription?
   plans             WorkoutPlan[]
   templates         WorkoutPlan[] @relation("CoachTemplates")
   mealPlans         MealPlan[]
@@ -44,6 +47,7 @@ model Client {
   goals             String?
   notes             String?
   status            ClientStatus @default(PENDING_PAYMENT)
+  intakeToken       String?   @unique @map("intake_token")
   timezone          String    @default("Europe/London")
   preferredChannel  MessageChannel @default(WHATSAPP) @map("preferred_channel")
 
@@ -405,6 +409,49 @@ model ShortLink {
   createdAt DateTime @default(now()) @map("created_at")
 
   @@map("short_links")
+}
+
+// ═══════════════════════════════════════════════════════════════
+// COACH SUBSCRIPTIONS (SaaS billing)
+// ═══════════════════════════════════════════════════════════════
+
+model Subscription {
+  id                   String             @id @default(uuid())
+  coachId              String             @unique @map("coach_id")
+  coach                Coach              @relation(fields: [coachId], references: [id], onDelete: Cascade)
+  stripeSubscriptionId String             @unique @map("stripe_subscription_id")
+  stripePriceId        String             @map("stripe_price_id")
+  tier                 SubscriptionTier   @default(STARTER)
+  billingInterval      BillingInterval    @default(MONTHLY)
+  status               SubscriptionStatus @default(TRIALING)
+  currentPeriodStart   DateTime           @map("current_period_start")
+  currentPeriodEnd     DateTime           @map("current_period_end")
+  cancelAtPeriodEnd    Boolean            @default(false) @map("cancel_at_period_end")
+  trialEnd             DateTime?          @map("trial_end")
+  createdAt            DateTime           @default(now()) @map("created_at")
+  updatedAt            DateTime           @updatedAt @map("updated_at")
+
+  @@map("subscriptions")
+}
+
+enum SubscriptionTier {
+  STARTER
+  PRO
+  STUDIO
+}
+
+enum SubscriptionStatus {
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  UNPAID
+  INCOMPLETE
+}
+
+enum BillingInterval {
+  MONTHLY
+  ANNUAL
 }
 
 model EventLog {

@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import express, { Router, Request, Response } from "express";
 import { verifyWebhook } from "../lib/stripe";
 import { prisma } from "../lib/prisma";
@@ -20,43 +21,44 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req: R
             const amount = session.amount_total ?? 0;
             const currency = session.currency ?? "gbp";
 
-            // Upsert is idempotent; check whether this is a new payment record to guard
-            // against Stripe retries double-enqueuing onboarding jobs.
-            const existingPayment = await prisma.payment.findUnique({
-                where: { stripeSessionId: session.id },
+            // Atomically check-and-upsert inside a transaction to prevent concurrent
+            // Stripe retries from double-enqueuing onboarding jobs.
+            const isNew = await prisma.$transaction(async (tx) => {
+                const existing = await tx.payment.findUnique({
+                    where: { stripeSessionId: session.id },
+                });
+
+                await tx.payment.upsert({
+                    where: { stripeSessionId: session.id },
+                    update: {
+                        amount,
+                        currency,
+                        status: "SUCCEEDED",
+                    },
+                    create: {
+                        clientId,
+                        stripeSessionId: session.id,
+                        amount,
+                        currency,
+                        status: "SUCCEEDED",
+                    },
+                });
+
+                return !existing;
             });
 
-            await prisma.payment.upsert({
-                where: { stripeSessionId: session.id },
-                update: {
-                    amount,
-                    currency,
-                    status: "SUCCEEDED",
-                },
-                create: {
-                    clientId,
-                    stripeSessionId: session.id,
-                    amount,
-                    currency,
-                    status: "SUCCEEDED",
-                },
-            });
-
-            // Only transition status and enqueue onboarding jobs on the *first* successful event.
-            // Stripe may retry the webhook; without this guard the client can be sent duplicate
-            // intake messages and have their status regressed if they have already progressed.
-            if (existingPayment) {
-                console.log(`[Stripe Webhook] Duplicate event for session ${session.id} — skipping onboarding enqueue.`);
-            } else {
+            if (isNew) {
                 // Transition state: PENDING_PAYMENT -> INTAKE_SENT
+                const intakeToken = crypto.randomUUID();
                 const client = await prisma.client.update({
                     where: { id: clientId, status: "PENDING_PAYMENT" },
-                    data: { status: "INTAKE_SENT" },
+                    data: { status: "INTAKE_SENT", intakeToken },
                 });
 
                 await onboardingQueue.add(JobType.ONBOARDING_INTAKE, {
                     clientId: client.id,
                     coachId: client.coachId,
+                    intakeToken,
                 });
 
                 await onboardingQueue.add(JobType.PAYMENT_CONFIRMED, {
@@ -71,6 +73,8 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req: R
                 });
 
                 console.log(`[Stripe Webhook] Client ${clientId} transitions to INTAKE_SENT. Onboarding enqueued.`);
+            } else {
+                console.log(`[Stripe Webhook] Duplicate event for session ${session.id} — skipping onboarding enqueue.`);
             }
         }
 
