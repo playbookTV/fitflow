@@ -9,7 +9,7 @@ import {
 import {
     ArrowLeft, Mail, Phone, MessageSquare, Calendar, Dumbbell,
     TrendingUp, Target, Info, ChevronRight, Edit3, Check, X,
-    Loader2
+    Loader2, UtensilsCrossed
 } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import { StatusBadge } from "@/components/ui";
@@ -53,7 +53,25 @@ interface ClientData {
     workoutLogs: Array<{ id: string }>;
 }
 
+interface MealAssignment {
+    id: string;
+    isActive: boolean;
+    startDate: string;
+    compliance: number;
+    scheduleDays: number[];
+    plan: {
+        id: string;
+        title: string;
+    };
+}
+
 interface WorkoutPlan {
+    id: string;
+    title: string;
+    daysPerWeek: number;
+}
+
+interface MealPlanOption {
     id: string;
     title: string;
     daysPerWeek: number;
@@ -246,6 +264,187 @@ function AssignPlanModal({
     );
 }
 
+function AssignMealPlanModal({
+    clientId,
+    onClose,
+    onAssigned,
+}: {
+    clientId: string;
+    onClose: () => void;
+    onAssigned: (assignment: MealAssignment) => void;
+}) {
+    const [plans, setPlans] = useState<MealPlanOption[]>([]);
+    const [selectedPlanId, setSelectedPlanId] = useState("");
+    const [startDate, setStartDate] = useState(
+        new Date().toISOString().split("T")[0]
+    );
+    const [scheduleDays, setScheduleDays] = useState<number[]>([0, 1, 2, 3, 4, 5, 6]);
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+    const [error, setError] = useState("");
+
+    useEffect(() => {
+        getAuthHeaders().then((headers) =>
+            fetch(`${process.env.NEXT_PUBLIC_API_URL}/meal-plans`, { headers })
+        )
+            .then((res) => res.json())
+            .then((data) => {
+                setPlans(data);
+                if (data.length > 0) setSelectedPlanId(data[0].id);
+            })
+            .catch(() => setError("Failed to load meal plans"))
+            .finally(() => setLoading(false));
+    }, []);
+
+    const toggleDay = (day: number) => {
+        setScheduleDays((prev) =>
+            prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day].sort()
+        );
+    };
+
+    const handleAssign = async () => {
+        if (!selectedPlanId || scheduleDays.length === 0) return;
+        setSaving(true);
+        setError("");
+
+        try {
+            const res = await fetch(
+                `${process.env.NEXT_PUBLIC_API_URL}/clients/${clientId}/meal-assignments`,
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        ...(await getAuthHeaders()),
+                    },
+                    body: JSON.stringify({
+                        planId: selectedPlanId,
+                        startDate,
+                        scheduleDays,
+                    }),
+                }
+            );
+
+            if (!res.ok) {
+                const data = await res.json();
+                throw new Error(data.error || "Failed to assign meal plan");
+            }
+
+            const assignment = await res.json();
+            const plan = plans.find((p) => p.id === selectedPlanId);
+            onAssigned({
+                ...assignment,
+                plan: { id: selectedPlanId, title: plan?.title || "" },
+            });
+        } catch (err) {
+            setError(err instanceof Error ? err.message : "Something went wrong");
+            setSaving(false);
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+            <div className="relative w-full max-w-lg card-elevated p-6 animate-scale-in">
+                <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                        <UtensilsCrossed className="w-5 h-5 text-brand-orange" />
+                        Assign Meal Plan
+                    </h2>
+                    <button onClick={onClose} className="btn-icon !p-1.5">
+                        <X className="w-4 h-4" />
+                    </button>
+                </div>
+
+                {loading ? (
+                    <div className="flex justify-center py-12">
+                        <Loader2 className="w-6 h-6 text-text-faint animate-spin" />
+                    </div>
+                ) : plans.length === 0 ? (
+                    <div className="text-center py-8">
+                        <p className="text-text-secondary mb-4">No meal plans created yet.</p>
+                        <Link href="/dashboard/meal-plans/new" className="btn-primary">
+                            Create a Meal Plan
+                        </Link>
+                    </div>
+                ) : (
+                    <div className="space-y-5">
+                        <div className="form-field">
+                            <label className="label-mono">Meal Plan</label>
+                            <select
+                                value={selectedPlanId}
+                                onChange={(e) => setSelectedPlanId(e.target.value)}
+                                className="select w-full"
+                            >
+                                {plans.map((plan) => (
+                                    <option key={plan.id} value={plan.id}>
+                                        {plan.title} ({plan.daysPerWeek} days/week)
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div className="form-field">
+                            <label className="label-mono">Start Date</label>
+                            <input
+                                type="date"
+                                value={startDate}
+                                onChange={(e) => setStartDate(e.target.value)}
+                                className="input w-full"
+                            />
+                        </div>
+
+                        <div className="form-field">
+                            <label className="label-mono">Meal Days</label>
+                            <div className="flex gap-2 mt-1">
+                                {DAY_LABELS.map((label, idx) => {
+                                    const dayNum = idx + 1;
+                                    const isSelected = scheduleDays.includes(dayNum);
+                                    return (
+                                        <button
+                                            key={dayNum}
+                                            type="button"
+                                            onClick={() => toggleDay(dayNum)}
+                                            className={`w-10 h-10 rounded-lg text-xs font-semibold transition-all ${
+                                                isSelected
+                                                    ? "bg-brand-orange text-black"
+                                                    : "bg-bg-secondary border border-border text-text-faint hover:border-text-faint"
+                                            }`}
+                                        >
+                                            {label}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        {error && <p className="text-sm text-brand-red">{error}</p>}
+
+                        <div className="flex justify-end gap-3 pt-2">
+                            <button onClick={onClose} className="btn-secondary">
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleAssign}
+                                disabled={saving || scheduleDays.length === 0}
+                                className="btn-primary disabled:opacity-50"
+                            >
+                                {saving ? (
+                                    <>
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                        Assigning...
+                                    </>
+                                ) : (
+                                    "Assign Meal Plan"
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}
+
 function EditableField({
     value,
     onSave,
@@ -344,6 +543,8 @@ export default function ClientProfilePage() {
     const [client, setClient] = useState<ClientData | null>(null);
     const [loading, setLoading] = useState(true);
     const [showAssignModal, setShowAssignModal] = useState(false);
+    const [showMealAssignModal, setShowMealAssignModal] = useState(false);
+    const [mealAssignments, setMealAssignments] = useState<MealAssignment[]>([]);
     const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
 
     useEffect(() => {
@@ -364,6 +565,17 @@ export default function ClientProfilePage() {
             }
         };
         fetchClient();
+
+        const fetchMealAssignments = async () => {
+            try {
+                const res = await fetch(
+                    `${process.env.NEXT_PUBLIC_API_URL}/clients/${id}/meal-assignments`,
+                    { headers: await getAuthHeaders() }
+                );
+                if (res.ok) setMealAssignments(await res.json());
+            } catch { /* silent */ }
+        };
+        fetchMealAssignments();
     }, [id, router]);
 
     const updateField = useCallback(
@@ -446,6 +658,13 @@ export default function ClientProfilePage() {
                     >
                         <Dumbbell className="w-4 h-4" />
                         Assign Plan
+                    </button>
+                    <button
+                        className="btn-secondary"
+                        onClick={() => setShowMealAssignModal(true)}
+                    >
+                        <UtensilsCrossed className="w-4 h-4" />
+                        Assign Meals
                     </button>
                     <button className="btn-icon">
                         <MessageSquare className="w-5 h-5" />
@@ -598,6 +817,60 @@ export default function ClientProfilePage() {
                             </div>
                         )}
 
+                        {/* Active Meal Plan Card */}
+                        {(() => {
+                            const activeMealAssignment = mealAssignments.find((a) => a.isActive);
+                            return activeMealAssignment ? (
+                                <div className="card-elevated p-8 overflow-hidden relative">
+                                    <div className="absolute top-0 right-0 p-8 text-brand-orange/10 -rotate-12 translate-x-4 -translate-y-4">
+                                        <UtensilsCrossed className="w-32 h-32" />
+                                    </div>
+                                    <div className="relative z-10">
+                                        <div className="flex items-center gap-2 text-brand-orange font-bold uppercase tracking-[0.2em] text-[10px] mb-4">
+                                            <UtensilsCrossed className="w-3 h-3" />
+                                            Active Meal Plan
+                                        </div>
+                                        <h2 className="text-2xl font-bold text-white mb-2">
+                                            {activeMealAssignment.plan.title}
+                                        </h2>
+                                        <p className="text-text-secondary text-sm mb-6 max-w-md">
+                                            Started on {formatDate(activeMealAssignment.startDate)}
+                                        </p>
+                                        <div className="flex gap-6">
+                                            <div className="stat-card">
+                                                <p className="label-mono mb-1">Compliance</p>
+                                                <p className="text-xl font-bold text-white">
+                                                    {activeMealAssignment.compliance}%
+                                                </p>
+                                            </div>
+                                            <div className="stat-card">
+                                                <p className="label-mono mb-1">Days/Week</p>
+                                                <p className="text-xl font-bold text-white">
+                                                    {activeMealAssignment.scheduleDays.length}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="card p-8 flex flex-col items-center justify-center text-center border-dashed">
+                                    <div className="empty-state-icon mb-4">
+                                        <UtensilsCrossed className="w-6 h-6" />
+                                    </div>
+                                    <h3 className="text-lg font-bold text-white mb-1">No Meal Plan</h3>
+                                    <p className="text-text-secondary text-sm mb-6">
+                                        This client hasn&apos;t been assigned a meal plan yet.
+                                    </p>
+                                    <button
+                                        className="btn-secondary"
+                                        onClick={() => setShowMealAssignModal(true)}
+                                    >
+                                        Assign Meal Plan
+                                    </button>
+                                </div>
+                            );
+                        })()}
+
                         {/* Check-ins */}
                         <div>
                             <div className="section-header">
@@ -716,7 +989,7 @@ export default function ClientProfilePage() {
                     </div>
                 </div>
 
-            {/* Assign Plan Modal */}
+            {/* Assign Workout Plan Modal */}
             {showAssignModal && (
                 <AssignPlanModal
                     clientId={client.id}
@@ -732,6 +1005,18 @@ export default function ClientProfilePage() {
                                 : prev
                         );
                         setShowAssignModal(false);
+                    }}
+                />
+            )}
+
+            {/* Assign Meal Plan Modal */}
+            {showMealAssignModal && (
+                <AssignMealPlanModal
+                    clientId={client.id}
+                    onClose={() => setShowMealAssignModal(false)}
+                    onAssigned={(assignment) => {
+                        setMealAssignments((prev) => [assignment, ...prev]);
+                        setShowMealAssignModal(false);
                     }}
                 />
             )}

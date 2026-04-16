@@ -16,6 +16,7 @@ import {
     ExternalLink,
     Smartphone,
     Send,
+    Copy,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -82,6 +83,9 @@ function SettingsContent() {
         telegramDeepLink: null,
     });
     const [linkCopied, setLinkCopied] = useState(false);
+    const [waLinkCopied, setWaLinkCopied] = useState(false);
+    const [waLink, setWaLink] = useState<string | null>(null);
+    const [waPhoneNumber, setWaPhoneNumber] = useState<string | null>(null);
     const [stripeLoading, setStripeLoading] = useState(false);
     const searchParams = useSearchParams();
 
@@ -147,6 +151,21 @@ function SettingsContent() {
             }
         };
         fetchProfile();
+
+        const fetchChannels = async () => {
+            try {
+                const res = await fetch(
+                    `${process.env.NEXT_PUBLIC_API_URL}/coaches/channels`,
+                    { headers: await getAuthHeaders() }
+                );
+                if (res.ok) {
+                    const data = await res.json();
+                    setWaLink(data.whatsapp?.waLink || null);
+                    setWaPhoneNumber(data.whatsapp?.phoneNumber || null);
+                }
+            } catch { /* silent */ }
+        };
+        fetchChannels();
     }, []);
 
     const handleSave = async () => {
@@ -462,7 +481,7 @@ function SettingsContent() {
                                                     </p>
                                                     <p className="text-sm text-text-faint">
                                                         {profile.whatsappConnected
-                                                            ? "Your WhatsApp Business is linked"
+                                                            ? `Phone: +${waPhoneNumber || "..."}`
                                                             : "Connect to send workouts via WhatsApp"}
                                                     </p>
                                                 </div>
@@ -478,6 +497,35 @@ function SettingsContent() {
                                                 <ExternalLink className="w-3.5 h-3.5" />
                                             </button>
                                         </div>
+
+                                        {/* wa.me Link */}
+                                        {waLink && (
+                                            <div className="mt-4 p-4 rounded-xl bg-bg-hover">
+                                                <p className="label-mono mb-2">Your WhatsApp Link</p>
+                                                <div className="flex items-center gap-2">
+                                                    <code className="flex-1 text-sm text-brand-green bg-bg-primary px-3 py-2 rounded-lg font-mono truncate">
+                                                        {waLink}
+                                                    </code>
+                                                    <button
+                                                        onClick={() => {
+                                                            navigator.clipboard.writeText(waLink);
+                                                            setWaLinkCopied(true);
+                                                            setTimeout(() => setWaLinkCopied(false), 2000);
+                                                        }}
+                                                        className="btn-secondary !px-3"
+                                                    >
+                                                        {waLinkCopied ? (
+                                                            <Check className="w-4 h-4 text-brand-green" />
+                                                        ) : (
+                                                            <Copy className="w-4 h-4" />
+                                                        )}
+                                                    </button>
+                                                </div>
+                                                <p className="text-xs text-text-faint mt-2">
+                                                    Share this link so leads can message you directly on WhatsApp.
+                                                </p>
+                                            </div>
+                                        )}
                                     </div>
 
                                     <div className="card p-6">
