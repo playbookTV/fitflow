@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { Suspense, useEffect, useState, useCallback, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { getAuthHeaders } from "@/lib/auth";
@@ -94,6 +94,14 @@ const getAvatarGradient = (name: string) => {
 };
 
 export default function MessagesPage() {
+    return (
+        <Suspense>
+            <MessagesPageContent />
+        </Suspense>
+    );
+}
+
+function MessagesPageContent() {
     const searchParams = useSearchParams();
     const preselectedClientId = searchParams.get("client");
     const [conversations, setConversations] = useState<Conversation[]>([]);
