@@ -20,6 +20,10 @@ import leadsRouter from "./routes/leads";
 import publicRouter from "./routes/public";
 import coachExercisesRouter from "./routes/coach-exercises";
 import metaTemplatesRouter from "./routes/meta-templates";
+import nutritionRouter from "./routes/nutrition";
+import mealsRouter from "./routes/meals";
+import mealPlansRouter from "./routes/meal-plans";
+import mealAssignmentsRouter from "./routes/meal-assignments";
 import { startDailyScheduler } from "./jobs/daily-scheduler";
 import { startWeeklyCheckinScheduler } from "./jobs/weekly-checkin";
 import { startRenewalScheduler } from "./jobs/renewal-scheduler";
@@ -27,13 +31,15 @@ import { startEngagementScheduler } from "./jobs/engagement-scheduler";
 import { startWeeklySummaryScheduler } from "./jobs/weekly-summary-scheduler";
 import { startMissedCheckinScheduler } from "./jobs/missed-checkin-scheduler";
 import { startYMoveUsageScheduler } from "./jobs/ymove-usage-scheduler";
+import { startDailyMealScheduler } from "./jobs/daily-meal-scheduler";
 import { schedulersEnabled, workersEnabled } from "./lib/background-jobs";
 import { ensureSharedBot } from "./lib/bot-provisioner";
 
 if (workersEnabled()) {
     require("./workers/workoutProcessor");
     require("./workers/engagementWorker");
-    console.log("[Startup] Background workers enabled (workout + engagement)");
+    require("./workers/mealProcessor");
+    console.log("[Startup] Background workers enabled (workout + engagement + meal)");
 } else {
     console.log("[Startup] Background workers disabled");
 }
@@ -46,7 +52,8 @@ if (schedulersEnabled()) {
     startWeeklySummaryScheduler();
     startMissedCheckinScheduler();
     startYMoveUsageScheduler();
-    console.log("[Startup] Schedulers enabled (7 active)");
+    startDailyMealScheduler();
+    console.log("[Startup] Schedulers enabled (8 active)");
 } else {
     console.log("[Startup] Schedulers disabled");
 }
@@ -90,6 +97,10 @@ app.use("/leads", leadsRouter);
 app.use("/p", publicRouter);
 app.use("/coach-exercises", coachExercisesRouter);
 app.use("/meta-templates", metaTemplatesRouter);
+app.use("/nutrition", nutritionRouter);
+app.use("/meals", mealsRouter);
+app.use("/meal-plans", mealPlansRouter);
+app.use("/clients", mealAssignmentsRouter);
 
 // 404
 app.use((_req: Request, res: Response) => {

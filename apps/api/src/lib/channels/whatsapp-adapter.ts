@@ -3,6 +3,7 @@ import {
     SendResult,
     CheckInPrompt,
     WorkoutPayload,
+    MealPayload,
     OnboardingPayload,
     VideoPayload,
     TemplateId,
@@ -65,6 +66,11 @@ export class WhatsAppAdapter implements DeliveryChannel {
 
     async sendOnboarding(recipientId: string, data: OnboardingPayload): Promise<SendResult> {
         const message = `\u{1F44B} *Welcome to FitFlow!*\n\nHey ${data.clientName}! To get started, I need to collect some info about your goals and fitness level.\n\nClick here to fill your intake form: ${data.intakeFormUrl}\n\nOnce done, your coach will assign your first plan! \u{1F680}`;
+        return this.sendMessage(recipientId, message, data.clientId);
+    }
+
+    async sendMeal(recipientId: string, data: MealPayload): Promise<SendResult> {
+        const message = `\u{1F37D}\u{FE0F} *Today's Meal Plan*\n\nPlan: *${data.planTitle}*\nDay: ${data.dayNumber}\n\n${data.mealsList}\n\n\u{1F4CA} ${data.macrosSummary}\n\nView details: ${data.dashboardUrl}`;
         return this.sendMessage(recipientId, message, data.clientId);
     }
 

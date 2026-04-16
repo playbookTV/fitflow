@@ -21,6 +21,8 @@ model Coach {
   clients           Client[]
   plans             WorkoutPlan[]
   templates         WorkoutPlan[] @relation("CoachTemplates")
+  mealPlans         MealPlan[]
+  mealTemplates     MealPlan[] @relation("CoachMealTemplates")
   botRegistry       BotRegistry?
   offers            Offer[]
   leads             Lead[]
@@ -45,8 +47,10 @@ model Client {
   preferredChannel  MessageChannel @default(WHATSAPP) @map("preferred_channel")
 
   assignments       PlanAssignment[]
+  mealAssignments   MealAssignment[]
   checkIns          CheckIn[]
   workoutLogs       WorkoutLog[]
+  mealLogs          MealLog[]
   payments          Payment[]
   messages          Message[]
 
@@ -289,6 +293,104 @@ model BotRegistry {
   provisionedAt DateTime @default(now()) @map("provisioned_at")
 
   @@map("bot_registry")
+}
+
+// ═══════════════════════════════════════════════════════════════
+// MEAL PLANNING
+// ═══════════════════════════════════════════════════════════════
+
+model MealPlan {
+  id            String   @id @default(uuid())
+  coachId       String   @map("coach_id")
+  coach         Coach    @relation(fields: [coachId], references: [id], onDelete: Cascade)
+  isTemplate    Boolean  @default(false) @map("is_template")
+  ownerCoachId  String?  @map("owner_coach_id")
+  ownerCoach    Coach?   @relation("CoachMealTemplates", fields: [ownerCoachId], references: [id])
+  title         String
+  description   String?
+  days          MealDay[]
+  assignments   MealAssignment[]
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@map("meal_plans")
+}
+
+model MealDay {
+  id        String      @id @default(uuid())
+  planId    String      @map("plan_id")
+  plan      MealPlan    @relation(fields: [planId], references: [id], onDelete: Cascade)
+  dayNumber Int         @map("day_number")
+  title     String?
+  entries   MealEntry[]
+
+  @@map("meal_days")
+}
+
+model MealEntry {
+  id          String  @id @default(uuid())
+  dayId       String  @map("day_id")
+  day         MealDay @relation(fields: [dayId], references: [id], onDelete: Cascade)
+  mealId      String  @map("meal_id")
+  meal        Meal    @relation(fields: [mealId], references: [id])
+  order       Int
+  servingSize String? @map("serving_size")
+  notes       String?
+
+  @@map("meal_entries")
+}
+
+model Meal {
+  id             String      @id @default(uuid())
+  name           String      @unique
+  category       String      // breakfast, lunch, dinner, snack
+  protein        Float?
+  carbs          Float?
+  fat            Float?
+  calories       Int?
+  ingredients    String[]
+  prepTime       String?     @map("prep_time")
+  recipeUrl      String?     @map("recipe_url")
+  spoonacularId  Int?        @unique @map("spoonacular_id")
+  imageUrl       String?     @map("image_url")
+  entries        MealEntry[]
+
+  @@map("meals")
+}
+
+model MealAssignment {
+  id           String   @id @default(uuid())
+  clientId     String   @map("client_id")
+  client       Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  planId       String   @map("plan_id")
+  plan         MealPlan @relation(fields: [planId], references: [id])
+  startDate    DateTime @map("start_date")
+  scheduleDays Int[]    @map("schedule_days")
+  isActive     Boolean  @default(true) @map("is_active")
+  compliance   Int      @default(100)
+  mealLogs     MealLog[]
+
+  @@map("meal_assignments")
+}
+
+model MealLog {
+  id           String         @id @default(uuid())
+  clientId     String         @map("client_id")
+  client       Client         @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  assignmentId String         @map("assignment_id")
+  assignment   MealAssignment @relation(fields: [assignmentId], references: [id])
+  dayNumber    Int            @map("day_number")
+  status       MealStatus     @default(COMPLETED)
+  notes        String?
+  createdAt    DateTime       @default(now()) @map("created_at")
+
+  @@map("meal_logs")
+}
+
+enum MealStatus {
+  COMPLETED
+  SKIPPED
+  MODIFIED
 }
 
 model EventLog {

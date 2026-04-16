@@ -11,3 +11,4 @@ export const engagementQueue = new Queue("engagement", { connection });
 // Dedicated queue for inbound message processing (e.g. "DONE" keyword handling).
 // Previously shared "workout-delivery" which caused BullMQ to dispatch jobs to the wrong worker.
 export const messageQueue = new Queue("message-processing", { connection });
+export const mealQueue = new Queue("meal-delivery", { connection });

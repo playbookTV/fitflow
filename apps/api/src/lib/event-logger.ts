@@ -28,6 +28,11 @@ export const EventType = {
     WORKOUT_DELIVERED: "workout.delivered",
     WORKOUT_COMPLETED: "workout.completed",
 
+    // Meal Plan
+    MEAL_PLAN_ASSIGNED: "meal_plan.assigned",
+    MEAL_DELIVERED: "meal.delivered",
+    MEAL_COMPLETED: "meal.completed",
+
     // Check-in
     CHECKIN_SENT: "checkin.sent",
     CHECKIN_COMPLETED: "checkin.completed",

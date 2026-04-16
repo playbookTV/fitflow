@@ -19,6 +19,7 @@ import {
     Link2,
     UserPlus,
     Activity,
+    UtensilsCrossed,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -35,6 +36,7 @@ const mainNavItems: NavItem[] = [
     { href: "/dashboard/leads", label: "Leads", icon: UserPlus },
     { href: "/dashboard/offers", label: "Offers", icon: Link2 },
     { href: "/dashboard/plans", label: "Plans", icon: Dumbbell },
+    { href: "/dashboard/meal-plans", label: "Meals", icon: UtensilsCrossed },
     { href: "/dashboard/messages", label: "Messages", icon: MessageSquare },
     { href: "/dashboard/billing", label: "Billing", icon: CreditCard },
     { href: "/dashboard/activity", label: "Activity", icon: Activity },

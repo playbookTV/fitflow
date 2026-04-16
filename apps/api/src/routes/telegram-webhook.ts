@@ -110,6 +110,42 @@ router.post("/", async (req, res) => {
                         },
                     });
                 }
+            } else if (data.startsWith("meal_done_")) {
+                const mealAssignment = await prisma.mealAssignment.findFirst({
+                    where: { clientId: client.id, isActive: true },
+                });
+                if (mealAssignment) {
+                    const { differenceInDays } = await import("date-fns");
+                    const dayNumber = differenceInDays(new Date(), mealAssignment.startDate) + 1;
+                    await prisma.mealLog.create({
+                        data: {
+                            clientId: client.id,
+                            assignmentId: mealAssignment.id,
+                            dayNumber,
+                            status: "COMPLETED",
+                            notes: "Completed via Telegram",
+                        },
+                    });
+                    await sendTelegramMessage(botToken, chatId, "\u{2705} Meal logged as done!");
+                }
+            } else if (data.startsWith("meal_skip_")) {
+                const mealAssignment = await prisma.mealAssignment.findFirst({
+                    where: { clientId: client.id, isActive: true },
+                });
+                if (mealAssignment) {
+                    const { differenceInDays } = await import("date-fns");
+                    const dayNumber = differenceInDays(new Date(), mealAssignment.startDate) + 1;
+                    await prisma.mealLog.create({
+                        data: {
+                            clientId: client.id,
+                            assignmentId: mealAssignment.id,
+                            dayNumber,
+                            status: "SKIPPED",
+                            notes: "Skipped via Telegram",
+                        },
+                    });
+                    await sendTelegramMessage(botToken, chatId, "\u{23ED} Meal skipped. No worries!");
+                }
             } else if (data.startsWith("checkin_start_")) {
                 await sendTelegramMessage(
                     botToken,

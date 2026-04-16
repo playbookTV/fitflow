@@ -15,6 +15,15 @@ export enum JobType {
     RENEWAL_7DAY = "RENEWAL_7DAY",
     RENEWAL_2DAY = "RENEWAL_2DAY",
     RENEWAL_POST_EXPIRY = "RENEWAL_POST_EXPIRY",
+
+    // Meal planning
+    MEAL_DELIVERY = "MEAL_DELIVERY",
+}
+
+export interface MealDeliveryJob {
+    clientId: string;
+    assignmentId: string;
+    dayNumber: number;
 }
 
 export interface WorkoutDeliveryJob {
