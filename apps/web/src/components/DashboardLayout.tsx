@@ -50,23 +50,127 @@ const bottomNavItems: NavItem[] = [
 interface NotificationEvent {
     id: string;
     eventType: string;
+    clientName: string | null;
     metadata: Record<string, unknown> | null;
     createdAt: string;
 }
 
-const NOTIF_CONFIG: Record<string, { label: string; icon: React.ElementType; color: string }> = {
-    "lead.created": { label: "New Lead", icon: UserPlus, color: "text-brand-orange" },
-    "client.created": { label: "Client Created", icon: Users, color: "text-brand-blue" },
-    "client.activated": { label: "Client Activated", icon: Activity, color: "text-brand-green" },
-    "payment.confirmed": { label: "Payment Confirmed", icon: CreditCard, color: "text-brand-green" },
-    "payment.bank_transfer_confirmed": { label: "Bank Transfer Confirmed", icon: CreditCard, color: "text-brand-violet" },
-    "plan.assigned": { label: "Plan Assigned", icon: Dumbbell, color: "text-brand-blue" },
-    "checkin.completed": { label: "Check-in Completed", icon: Activity, color: "text-brand-green" },
-    "workout.completed": { label: "Workout Completed", icon: Activity, color: "text-brand-green" },
+const NOTIF_ICONS: Record<string, { icon: React.ElementType; color: string }> = {
+    "lead.created": { icon: UserPlus, color: "text-brand-orange" },
+    "lead.converted": { icon: UserPlus, color: "text-brand-green" },
+    "client.created": { icon: Users, color: "text-brand-blue" },
+    "client.activated": { icon: Users, color: "text-brand-green" },
+    "payment.confirmed": { icon: CreditCard, color: "text-brand-green" },
+    "payment.bank_transfer_confirmed": { icon: CreditCard, color: "text-brand-violet" },
+    "payment.reminder_sent": { icon: CreditCard, color: "text-brand-orange" },
+    "plan.assigned": { icon: Dumbbell, color: "text-brand-blue" },
+    "meal_plan.assigned": { icon: UtensilsCrossed, color: "text-brand-blue" },
+    "meal.delivered": { icon: UtensilsCrossed, color: "text-brand-cyan" },
+    "workout.delivered": { icon: Dumbbell, color: "text-brand-cyan" },
+    "workout.completed": { icon: Dumbbell, color: "text-brand-green" },
+    "checkin.sent": { icon: MessageSquare, color: "text-brand-blue" },
+    "checkin.completed": { icon: MessageSquare, color: "text-brand-green" },
+    "onboarding.sent": { icon: Users, color: "text-brand-violet" },
+    "intake.completed": { icon: Users, color: "text-brand-green" },
+    "engagement.missed_workout_sent": { icon: Activity, color: "text-brand-orange" },
+    "engagement.atrisk_sent": { icon: Activity, color: "text-brand-red" },
+    "engagement.week_summary_sent": { icon: Activity, color: "text-brand-blue" },
+    "engagement.milestone_sent": { icon: Activity, color: "text-brand-green" },
 };
 
-const getNotifConfig = (eventType: string) =>
-    NOTIF_CONFIG[eventType] || { label: eventType, icon: Activity, color: "text-text-secondary" };
+function getNotifIcon(eventType: string) {
+    return NOTIF_ICONS[eventType] || { icon: Activity, color: "text-text-secondary" };
+}
+
+function getNotifMessage(evt: NotificationEvent): string {
+    const name = evt.clientName || "Someone";
+    const meta = evt.metadata || {};
+    const planTitle = meta.planTitle as string | undefined;
+
+    switch (evt.eventType) {
+        case "lead.created":
+            return `${name} signed up as a new lead`;
+        case "lead.converted":
+            return `${name} converted from lead to client`;
+        case "client.created":
+            return `${name} was added as a client`;
+        case "client.activated":
+            return `${name} is now active`;
+        case "payment.confirmed":
+            return `${name} completed their payment`;
+        case "payment.bank_transfer_confirmed": {
+            const amount = meta.amount as number | undefined;
+            const currency = (meta.currency as string || "gbp").toUpperCase();
+            return amount
+                ? `Bank transfer of ${amount / 100} ${currency} confirmed for ${name}`
+                : `Bank transfer confirmed for ${name}`;
+        }
+        case "payment.reminder_sent":
+            return `Payment reminder sent to ${name}`;
+        case "plan.assigned":
+            return planTitle
+                ? `${name} was assigned "${planTitle}"`
+                : `${name} was assigned a new plan`;
+        case "meal_plan.assigned":
+            return planTitle
+                ? `${name} was assigned meal plan "${planTitle}"`
+                : `${name} was assigned a meal plan`;
+        case "meal.delivered": {
+            const day = meta.dayNumber as number | undefined;
+            return day
+                ? `Day ${day} meals sent to ${name}`
+                : `Meals delivered to ${name}`;
+        }
+        case "workout.delivered": {
+            const day = meta.dayNumber as number | undefined;
+            return day
+                ? `Day ${day} workout sent to ${name}`
+                : `Workout delivered to ${name}`;
+        }
+        case "workout.completed": {
+            const day = meta.dayNumber as number | undefined;
+            const compliance = meta.compliance as number | undefined;
+            if (day && compliance) return `${name} completed day ${day} (${compliance}% compliance)`;
+            if (day) return `${name} completed day ${day}`;
+            return `${name} completed a workout`;
+        }
+        case "checkin.sent":
+            return `Check-in reminder sent to ${name}`;
+        case "checkin.completed":
+            return `${name} submitted a check-in`;
+        case "onboarding.sent":
+            return `Onboarding message sent to ${name}`;
+        case "intake.completed":
+            return `${name} completed their intake form`;
+        case "engagement.missed_workout_sent":
+            return `Missed workout follow-up sent to ${name}`;
+        case "engagement.atrisk_sent":
+            return `${name} flagged as at-risk — nudge sent`;
+        case "engagement.reengagement_sent":
+            return `Re-engagement message sent to ${name}`;
+        case "engagement.missed_checkin_sent":
+            return `Missed check-in nudge sent to ${name}`;
+        case "engagement.milestone_sent": {
+            const milestone = meta.milestoneType as string | undefined;
+            return milestone === "halfway"
+                ? `${name} hit the halfway milestone`
+                : milestone === "completion"
+                    ? `${name} completed their programme`
+                    : `${name} reached a milestone`;
+        }
+        case "engagement.week_summary_sent": {
+            const sessions = meta.sessionsCompleted as number | undefined;
+            const scheduled = meta.sessionsScheduled as number | undefined;
+            return sessions != null && scheduled != null
+                ? `Week summary sent to ${name} (${sessions}/${scheduled} sessions)`
+                : `Week summary sent to ${name}`;
+        }
+        case "renewal.reminder_sent":
+            return `Renewal reminder sent to ${name}`;
+        default:
+            return `${evt.eventType.replace(/[._]/g, " ")} — ${name}`;
+    }
+}
 
 interface DashboardLayoutProps {
     children: React.ReactNode;
@@ -321,23 +425,18 @@ export function DashboardLayout({
                                             </div>
                                         ) : (
                                             notifEvents.map((evt) => {
-                                                const config = getNotifConfig(evt.eventType);
-                                                const Icon = config.icon;
-                                                const clientName = (evt.metadata?.clientName as string) || (evt.metadata?.name as string) || "";
+                                                const { icon: Icon, color } = getNotifIcon(evt.eventType);
                                                 return (
                                                     <div
                                                         key={evt.id}
                                                         className="flex items-start gap-3 px-4 py-3 hover:bg-white/5 transition-colors border-b border-border/50 last:border-0"
                                                     >
-                                                        <div className={cn("mt-0.5 p-1.5 rounded-lg bg-white/5", config.color)}>
+                                                        <div className={cn("mt-0.5 p-1.5 rounded-lg bg-white/5", color)}>
                                                             <Icon className="w-3.5 h-3.5" />
                                                         </div>
                                                         <div className="flex-1 min-w-0">
-                                                            <p className="text-sm text-white truncate">
-                                                                {config.label}
-                                                                {clientName && (
-                                                                    <span className="text-text-secondary"> — {clientName}</span>
-                                                                )}
+                                                            <p className="text-sm text-white">
+                                                                {getNotifMessage(evt)}
                                                             </p>
                                                             <p className="text-xs text-text-faint mt-0.5">
                                                                 {formatRelative(evt.createdAt)}

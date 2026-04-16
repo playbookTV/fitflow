@@ -96,7 +96,21 @@ router.get("/events", authenticate, async (req: AuthRequest, res: Response) => {
             orderBy: { createdAt: "desc" },
             take: limit,
         });
-        res.json(events);
+
+        // Resolve client names for events that have a clientId
+        const clientIds = [...new Set(events.map((e) => e.clientId).filter(Boolean))] as string[];
+        const clients = clientIds.length > 0
+            ? await prisma.client.findMany({
+                where: { id: { in: clientIds } },
+                select: { id: true, name: true },
+            })
+            : [];
+        const clientMap = new Map(clients.map((c) => [c.id, c.name]));
+
+        res.json(events.map((e) => ({
+            ...e,
+            clientName: (e.clientId && clientMap.get(e.clientId)) || null,
+        })));
     } catch (error) {
         console.error("[GET /analytics/events]", error);
         res.status(500).json({ error: "Failed to fetch events" });
