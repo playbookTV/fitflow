@@ -2,7 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { cn } from "@/lib/utils";
+import { cn, formatRelative } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import { Logo } from "@/components/ui";
 import {
@@ -21,7 +21,8 @@ import {
     Activity,
     UtensilsCrossed,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
+import { getAuthHeaders } from "@/lib/auth";
 
 interface NavItem {
     href: string;
@@ -46,6 +47,27 @@ const bottomNavItems: NavItem[] = [
     { href: "/dashboard/settings", label: "Settings", icon: Settings },
 ];
 
+interface NotificationEvent {
+    id: string;
+    eventType: string;
+    metadata: Record<string, unknown> | null;
+    createdAt: string;
+}
+
+const NOTIF_CONFIG: Record<string, { label: string; icon: React.ElementType; color: string }> = {
+    "lead.created": { label: "New Lead", icon: UserPlus, color: "text-brand-orange" },
+    "client.created": { label: "Client Created", icon: Users, color: "text-brand-blue" },
+    "client.activated": { label: "Client Activated", icon: Activity, color: "text-brand-green" },
+    "payment.confirmed": { label: "Payment Confirmed", icon: CreditCard, color: "text-brand-green" },
+    "payment.bank_transfer_confirmed": { label: "Bank Transfer Confirmed", icon: CreditCard, color: "text-brand-violet" },
+    "plan.assigned": { label: "Plan Assigned", icon: Dumbbell, color: "text-brand-blue" },
+    "checkin.completed": { label: "Check-in Completed", icon: Activity, color: "text-brand-green" },
+    "workout.completed": { label: "Workout Completed", icon: Activity, color: "text-brand-green" },
+};
+
+const getNotifConfig = (eventType: string) =>
+    NOTIF_CONFIG[eventType] || { label: eventType, icon: Activity, color: "text-text-secondary" };
+
 interface DashboardLayoutProps {
     children: React.ReactNode;
     title?: string;
@@ -65,6 +87,37 @@ export function DashboardLayout({
     const [supabase] = useState(() => createClient());
     const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const [notifOpen, setNotifOpen] = useState(false);
+    const [notifEvents, setNotifEvents] = useState<NotificationEvent[]>([]);
+    const [notifLoading, setNotifLoading] = useState(false);
+    const notifRef = useRef<HTMLDivElement>(null);
+
+    const fetchNotifications = useCallback(async () => {
+        setNotifLoading(true);
+        try {
+            const res = await fetch(
+                `${process.env.NEXT_PUBLIC_API_URL}/analytics/events?limit=8`,
+                { headers: await getAuthHeaders() }
+            );
+            if (res.ok) setNotifEvents(await res.json());
+        } catch {
+            // silently fail — bell still shows count from prop
+        } finally {
+            setNotifLoading(false);
+        }
+    }, []);
+
+    // Close flyout on outside click
+    useEffect(() => {
+        if (!notifOpen) return;
+        const handleClick = (e: MouseEvent) => {
+            if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
+                setNotifOpen(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClick);
+        return () => document.removeEventListener("mousedown", handleClick);
+    }, [notifOpen]);
 
     useEffect(() => {
         const {
@@ -227,14 +280,77 @@ export function DashboardLayout({
 
                     <div className="flex items-center gap-3">
                         {actions}
-                        <button className="btn-icon relative">
-                            <Bell className="w-4 h-4" />
-                            {notifications > 0 && (
-                                <span className="absolute -top-1 -right-1 w-4 h-4 bg-brand-red rounded-full text-[10px] font-bold flex items-center justify-center">
-                                    {notifications > 9 ? "9+" : notifications}
-                                </span>
+                        <div className="relative" ref={notifRef}>
+                            <button
+                                className="btn-icon relative"
+                                onClick={() => {
+                                    const opening = !notifOpen;
+                                    setNotifOpen(opening);
+                                    if (opening) fetchNotifications();
+                                }}
+                            >
+                                <Bell className="w-4 h-4" />
+                                {notifications > 0 && (
+                                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-brand-red rounded-full text-[10px] font-bold flex items-center justify-center">
+                                        {notifications > 9 ? "9+" : notifications}
+                                    </span>
+                                )}
+                            </button>
+
+                            {notifOpen && (
+                                <div className="absolute right-0 top-full mt-2 w-80 max-h-96 bg-bg-secondary border border-border rounded-2xl shadow-xl overflow-hidden z-50">
+                                    <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+                                        <h3 className="text-sm font-semibold text-white">Notifications</h3>
+                                        <Link
+                                            href="/dashboard/activity"
+                                            className="text-xs text-brand-green hover:underline"
+                                            onClick={() => setNotifOpen(false)}
+                                        >
+                                            View all
+                                        </Link>
+                                    </div>
+                                    <div className="overflow-y-auto max-h-80">
+                                        {notifLoading ? (
+                                            <div className="flex items-center justify-center py-8 text-text-faint text-sm">
+                                                Loading...
+                                            </div>
+                                        ) : notifEvents.length === 0 ? (
+                                            <div className="flex flex-col items-center justify-center py-8 text-text-faint">
+                                                <Bell className="w-6 h-6 mb-2 opacity-40" />
+                                                <span className="text-sm">No recent activity</span>
+                                            </div>
+                                        ) : (
+                                            notifEvents.map((evt) => {
+                                                const config = getNotifConfig(evt.eventType);
+                                                const Icon = config.icon;
+                                                const clientName = (evt.metadata?.clientName as string) || (evt.metadata?.name as string) || "";
+                                                return (
+                                                    <div
+                                                        key={evt.id}
+                                                        className="flex items-start gap-3 px-4 py-3 hover:bg-white/5 transition-colors border-b border-border/50 last:border-0"
+                                                    >
+                                                        <div className={cn("mt-0.5 p-1.5 rounded-lg bg-white/5", config.color)}>
+                                                            <Icon className="w-3.5 h-3.5" />
+                                                        </div>
+                                                        <div className="flex-1 min-w-0">
+                                                            <p className="text-sm text-white truncate">
+                                                                {config.label}
+                                                                {clientName && (
+                                                                    <span className="text-text-secondary"> — {clientName}</span>
+                                                                )}
+                                                            </p>
+                                                            <p className="text-xs text-text-faint mt-0.5">
+                                                                {formatRelative(evt.createdAt)}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })
+                                        )}
+                                    </div>
+                                </div>
                             )}
-                        </button>
+                        </div>
                         <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-violet to-brand-blue flex items-center justify-center text-white font-bold text-sm cursor-pointer hover:shadow-glow-violet transition-shadow">
                             T
                         </div>

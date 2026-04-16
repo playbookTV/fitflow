@@ -666,7 +666,10 @@ export default function ClientProfilePage() {
                         <UtensilsCrossed className="w-4 h-4" />
                         Assign Meals
                     </button>
-                    <button className="btn-icon">
+                    <button
+                        className="btn-icon"
+                        onClick={() => router.push(`/dashboard/messages?client=${client.id}`)}
+                    >
                         <MessageSquare className="w-5 h-5" />
                     </button>
                 </div>

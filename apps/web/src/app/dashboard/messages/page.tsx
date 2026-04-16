@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
+import { useSearchParams } from "next/navigation";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { getAuthHeaders } from "@/lib/auth";
 import {
@@ -93,6 +94,8 @@ const getAvatarGradient = (name: string) => {
 };
 
 export default function MessagesPage() {
+    const searchParams = useSearchParams();
+    const preselectedClientId = searchParams.get("client");
     const [conversations, setConversations] = useState<Conversation[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
@@ -119,6 +122,14 @@ export default function MessagesPage() {
 
     // Initial load
     useEffect(() => { fetchConversations(); }, [fetchConversations]);
+
+    // Auto-select conversation from query param
+    useEffect(() => {
+        if (preselectedClientId && conversations.length > 0 && !selectedConversation) {
+            const match = conversations.find((c) => c.clientId === preselectedClientId);
+            if (match) setSelectedConversation(match);
+        }
+    }, [preselectedClientId, conversations, selectedConversation]);
 
     // Poll conversation list every 15s for unread counts
     useEffect(() => {
