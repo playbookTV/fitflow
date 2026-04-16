@@ -66,6 +66,9 @@ if (schedulersEnabled()) {
 const app: Express = express();
 const PORT = process.env.PORT || 3001;
 
+// Trust first proxy (Railway/Render/etc.) so X-Forwarded-For is used for client IP
+app.set("trust proxy", 1);
+
 // Middleware
 app.use(helmet());
 app.use(cors({
