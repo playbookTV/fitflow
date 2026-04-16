@@ -1,0 +1,2144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FitFlow — The Operating System for Serious Coaches</title>
+  <meta name="description" content="FitFlow is the coaching operations platform that automates client delivery via WhatsApp and Telegram. Stop managing spreadsheets. Start scaling your coaching business.">
+  <meta name="theme-color" content="#0a0a0b">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js" defer></script>
+
+  <style>
+    /* ============================================
+       DESIGN SYSTEM — CSS CUSTOM PROPERTIES
+       ============================================ */
+    :root {
+      /* Colors — Background */
+      --bg-primary: #0a0a0b;
+      --bg-secondary: #111113;
+      --bg-card: #151518;
+      --bg-hover: #1a1a1e;
+      --bg-elevated: #1e1e22;
+
+      /* Colors — Text */
+      --text-primary: #f0f0f0;
+      --text-secondary: #a0a0a5;
+      --text-faint: #606065;
+      --text-muted: #404045;
+
+      /* Colors — Borders */
+      --border: #1f1f24;
+      --border-hover: #2a2a30;
+      --border-accent: #333338;
+
+      /* Colors — Brand */
+      --green: #25D366;
+      --green-muted: #1a9e4a;
+      --green-dim: rgba(37,211,102,0.08);
+      --green-glow: rgba(37,211,102,0.15);
+      --green-border: rgba(37,211,102,0.30);
+      --cyan: #26C6DA;
+      --cyan-dim: rgba(38,198,218,0.08);
+      --blue: #4E97F8;
+      --blue-dim: rgba(78,151,248,0.08);
+      --blue-glow: rgba(78,151,248,0.15);
+      --blue-border: rgba(78,151,248,0.30);
+
+      /* Typography */
+      --font-display: 'Syne', sans-serif;
+      --font-body: 'DM Sans', sans-serif;
+      --font-mono: 'IBM Plex Mono', monospace;
+
+      /* Fluid typography */
+      --h1: clamp(2.25rem, 5vw, 4.5rem);
+      --h2: clamp(1.75rem, 3.5vw, 3rem);
+      --h3: clamp(1.25rem, 2vw, 1.75rem);
+      --body: clamp(0.9375rem, 1.2vw, 1.0625rem);
+      --small: 0.875rem;
+      --label: 0.625rem;
+
+      /* Spacing */
+      --section-gap: clamp(80px, 12vw, 140px);
+      --container: min(1200px, 100% - 40px);
+      --container-wide: min(1400px, 100% - 40px);
+
+      /* Radius */
+      --radius-sm: 0.5rem;
+      --radius-md: 0.75rem;
+      --radius-lg: 1rem;
+      --radius-xl: 1.5rem;
+      --radius-2xl: 2rem;
+    }
+
+    /* ============================================
+       RESET & BASE
+       ============================================ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html {
+      scroll-behavior: smooth;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      text-rendering: optimizeLegibility;
+    }
+
+    body {
+      font-family: var(--font-body);
+      font-size: var(--body);
+      color: var(--text-primary);
+      background: var(--bg-primary);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    img { max-width: 100%; display: block; }
+    button { cursor: pointer; border: none; background: none; font-family: inherit; }
+    input { font-family: inherit; }
+
+    ::selection { background: rgba(37,211,102,0.20); }
+
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--border-hover); }
+
+    :focus-visible {
+      outline: 2px solid var(--green);
+      outline-offset: 2px;
+      border-radius: 4px;
+    }
+
+    /* ============================================
+       UTILITY CLASSES
+       ============================================ */
+    .container { width: var(--container); margin: 0 auto; }
+    .container-wide { width: var(--container-wide); margin: 0 auto; }
+
+    .label-mono {
+      font-family: var(--font-mono);
+      font-size: var(--label);
+      font-weight: 600;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--text-faint);
+    }
+
+    .section-label {
+      font-family: var(--font-mono);
+      font-size: 0.6875rem;
+      font-weight: 600;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--text-faint);
+      margin-bottom: 1.5rem;
+    }
+
+    .gradient-text {
+      background: linear-gradient(135deg, var(--green), var(--cyan));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* ============================================
+       SCROLL REVEAL ANIMATIONS
+       ============================================ */
+    [data-reveal] {
+      opacity: 0;
+      transform: translateY(24px);
+      transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+                  transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    [data-reveal].revealed {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    [data-reveal-delay="1"] { transition-delay: 80ms; }
+    [data-reveal-delay="2"] { transition-delay: 160ms; }
+    [data-reveal-delay="3"] { transition-delay: 240ms; }
+    [data-reveal-delay="4"] { transition-delay: 320ms; }
+    [data-reveal-delay="5"] { transition-delay: 400ms; }
+    [data-reveal-delay="6"] { transition-delay: 480ms; }
+
+    @media (prefers-reduced-motion: reduce) {
+      [data-reveal] {
+        opacity: 1;
+        transform: none;
+        transition: none;
+      }
+      .ticker-track { animation: none !important; }
+      .hero-glow { animation: none !important; }
+      .chat-float { animation: none !important; }
+    }
+
+    /* ============================================
+       KEYFRAME ANIMATIONS
+       ============================================ */
+    @keyframes ticker {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+
+    @keyframes pulseGlow {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-6px); }
+    }
+
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ============================================
+       NAVIGATION
+       ============================================ */
+    .nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      padding: 1rem 0;
+      transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .nav.scrolled {
+      background: rgba(10, 10, 11, 0.85);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      padding: 0.75rem 0;
+    }
+
+    .nav-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: var(--container);
+      margin: 0 auto;
+    }
+
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 0.625rem;
+    }
+
+    .nav-logo-icon {
+      width: 1.75rem;
+      height: auto;
+      display: flex;
+      align-items: center;
+    }
+
+    .nav-logo-icon svg {
+      width: 100%;
+      height: auto;
+    }
+
+    .nav-logo-text {
+      font-family: var(--font-mono);
+      font-weight: 700;
+      font-size: 0.75rem;
+      letter-spacing: 0.2em;
+      color: var(--text-secondary);
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 2rem;
+      list-style: none;
+    }
+
+    .nav-link {
+      font-family: var(--font-mono);
+      font-size: 0.6875rem;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-faint);
+      transition: color 0.2s;
+      position: relative;
+    }
+
+    .nav-link::after {
+      content: '';
+      position: absolute;
+      bottom: -4px;
+      left: 0;
+      width: 100%;
+      height: 1px;
+      background: var(--green);
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .nav-link:hover { color: var(--text-primary); }
+    .nav-link:hover::after { transform: scaleX(1); }
+
+    .nav-cta {
+      font-family: var(--font-mono);
+      font-size: 0.6875rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 0.625rem 1.25rem;
+      background: var(--green);
+      color: #000;
+      border-radius: var(--radius-lg);
+      transition: all 0.2s;
+    }
+
+    .nav-cta:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 0 20px var(--green-glow);
+    }
+
+    /* Mobile hamburger */
+    .nav-hamburger {
+      display: none;
+      flex-direction: column;
+      gap: 5px;
+      padding: 4px;
+    }
+
+    .nav-hamburger span {
+      display: block;
+      width: 20px;
+      height: 1.5px;
+      background: var(--text-secondary);
+      transition: all 0.3s;
+    }
+
+    .nav-hamburger.open span:nth-child(1) {
+      transform: rotate(45deg) translate(4px, 4px);
+    }
+    .nav-hamburger.open span:nth-child(2) { opacity: 0; }
+    .nav-hamburger.open span:nth-child(3) {
+      transform: rotate(-45deg) translate(4px, -4px);
+    }
+
+    .nav-mobile {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(10, 10, 11, 0.95);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      z-index: 99;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2rem;
+    }
+
+    .nav-mobile.open { display: flex; }
+
+    .nav-mobile a {
+      font-family: var(--font-display);
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      transition: color 0.2s;
+    }
+
+    .nav-mobile a:hover { color: var(--text-primary); }
+
+    @media (max-width: 768px) {
+      .nav-links { display: none; }
+      .nav-cta.desktop { display: none; }
+      .nav-hamburger { display: flex; }
+    }
+
+    /* ============================================
+       HERO
+       ============================================ */
+    .hero {
+      position: relative;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 8rem 1.25rem 4rem;
+      overflow: hidden;
+    }
+
+    .hero-bg {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+    }
+
+    /* Grid background */
+    .hero-grid {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+      background-size: 64px 64px;
+      mask-image: radial-gradient(ellipse at center, black 30%, transparent 70%);
+      -webkit-mask-image: radial-gradient(ellipse at center, black 30%, transparent 70%);
+    }
+
+    /* Radial glow */
+    .hero-glow {
+      position: absolute;
+      top: -20%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 120%;
+      height: 80%;
+      background: radial-gradient(ellipse at center, var(--green-glow) 0%, transparent 60%);
+      animation: pulseGlow 5s ease-in-out infinite;
+      pointer-events: none;
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 1;
+      max-width: 800px;
+    }
+
+    .hero-overline {
+      font-family: var(--font-mono);
+      font-size: var(--label);
+      font-weight: 600;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--green);
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+    }
+
+    .hero-overline-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 8px var(--green-glow);
+    }
+
+    .hero h1 {
+      font-family: var(--font-display);
+      font-size: var(--h1);
+      font-weight: 800;
+      line-height: 1.05;
+      letter-spacing: -0.02em;
+      margin-bottom: 1.5rem;
+    }
+
+    .hero-sub {
+      font-size: clamp(1rem, 1.5vw, 1.1875rem);
+      color: var(--text-secondary);
+      max-width: 560px;
+      margin: 0 auto 2.5rem;
+      line-height: 1.65;
+    }
+
+    .hero-ctas {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .btn-primary {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 0.875rem 2rem;
+      background: var(--green);
+      color: #000;
+      border-radius: var(--radius-lg);
+      transition: all 0.25s;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 0 30px var(--green-glow), 0 4px 20px rgba(0,0,0,0.3);
+    }
+
+    .btn-ghost {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 0.875rem 2rem;
+      background: transparent;
+      color: var(--text-secondary);
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: var(--radius-lg);
+      transition: all 0.25s;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .btn-ghost:hover {
+      color: var(--text-primary);
+      border-color: rgba(255,255,255,0.20);
+      background: rgba(255,255,255,0.05);
+      transform: translateY(-1px);
+    }
+
+    /* Ticker */
+    .ticker {
+      margin-top: 4rem;
+      overflow: hidden;
+      position: relative;
+      z-index: 1;
+      width: 100vw;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      padding: 0.875rem 0;
+      background: rgba(17, 17, 19, 0.5);
+    }
+
+    .ticker-track {
+      display: flex;
+      gap: 3rem;
+      animation: ticker 35s linear infinite;
+      width: max-content;
+    }
+
+    .ticker-item {
+      font-family: var(--font-mono);
+      font-size: 0.6875rem;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-faint);
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .ticker-dot {
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: var(--green);
+      flex-shrink: 0;
+    }
+
+    /* ============================================
+       SECTION — PROBLEM
+       ============================================ */
+    .section { padding: var(--section-gap) 0; }
+
+    .problem { position: relative; }
+
+    .problem-header {
+      max-width: 640px;
+      margin-bottom: 3.5rem;
+    }
+
+    .problem-header h2 {
+      font-family: var(--font-display);
+      font-size: var(--h2);
+      font-weight: 800;
+      line-height: 1.15;
+      letter-spacing: -0.02em;
+    }
+
+    .problem-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+    }
+
+    .problem-card {
+      padding: 2rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      background-image: linear-gradient(180deg, rgba(255,255,255,0.03) 0%, transparent 100%);
+      transition: all 0.3s;
+    }
+
+    .problem-card:hover {
+      border-color: var(--border-hover);
+      transform: translateY(-2px);
+    }
+
+    .problem-card-number {
+      font-family: var(--font-mono);
+      font-size: var(--label);
+      font-weight: 700;
+      letter-spacing: 0.2em;
+      color: var(--green);
+      margin-bottom: 1rem;
+    }
+
+    .problem-card h3 {
+      font-family: var(--font-display);
+      font-size: 1.125rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      line-height: 1.3;
+    }
+
+    .problem-card p {
+      font-size: var(--small);
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    @media (max-width: 768px) {
+      .problem-grid { grid-template-columns: 1fr; }
+    }
+
+    /* ============================================
+       SECTION — HOW IT WORKS
+       ============================================ */
+    .how-it-works { position: relative; }
+
+    .how-header {
+      text-align: center;
+      max-width: 600px;
+      margin: 0 auto 4rem;
+    }
+
+    .how-header h2 {
+      font-family: var(--font-display);
+      font-size: var(--h2);
+      font-weight: 800;
+      line-height: 1.15;
+      letter-spacing: -0.02em;
+    }
+
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2rem;
+      position: relative;
+    }
+
+    /* Connecting line */
+    .steps::before {
+      content: '';
+      position: absolute;
+      top: 2.25rem;
+      left: calc(16.67% + 1.5rem);
+      right: calc(16.67% + 1.5rem);
+      height: 1px;
+      background: linear-gradient(90deg, var(--border), var(--green-border), var(--border));
+    }
+
+    .step {
+      text-align: center;
+      position: relative;
+    }
+
+    .step-number {
+      width: 4.5rem;
+      height: 4.5rem;
+      border-radius: 50%;
+      border: 1px solid var(--green-border);
+      background: var(--green-dim);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 1.5rem;
+      font-family: var(--font-display);
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: var(--green);
+      position: relative;
+      z-index: 1;
+    }
+
+    .step h3 {
+      font-family: var(--font-display);
+      font-size: var(--h3);
+      font-weight: 700;
+      margin-bottom: 0.75rem;
+      line-height: 1.3;
+    }
+
+    .step p {
+      font-size: var(--small);
+      color: var(--text-secondary);
+      line-height: 1.6;
+      max-width: 280px;
+      margin: 0 auto;
+    }
+
+    @media (max-width: 768px) {
+      .steps {
+        grid-template-columns: 1fr;
+        gap: 3rem;
+      }
+      .steps::before { display: none; }
+    }
+
+    /* ============================================
+       SECTION — FEATURES (BENTO GRID)
+       ============================================ */
+    .features-header {
+      max-width: 640px;
+      margin-bottom: 3.5rem;
+    }
+
+    .features-header h2 {
+      font-family: var(--font-display);
+      font-size: var(--h2);
+      font-weight: 800;
+      line-height: 1.15;
+      letter-spacing: -0.02em;
+    }
+
+    .bento {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: auto auto;
+      gap: 1rem;
+    }
+
+    .bento-card {
+      padding: 2rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      background-image: linear-gradient(180deg, rgba(255,255,255,0.03) 0%, transparent 100%);
+      transition: all 0.3s;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .bento-card:hover {
+      border-color: var(--border-hover);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+    }
+
+    .bento-card.span-2 { grid-column: span 2; }
+
+    .bento-icon {
+      width: 2.5rem;
+      height: 2.5rem;
+      border-radius: var(--radius-md);
+      background: var(--green-dim);
+      border: 1px solid var(--green-border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--green);
+      margin-bottom: 1.25rem;
+    }
+
+    .bento-icon.blue {
+      background: var(--blue-dim);
+      border-color: var(--blue-border);
+      color: var(--blue);
+    }
+
+    .bento-icon.cyan {
+      background: var(--cyan-dim);
+      border-color: rgba(38,198,218,0.30);
+      color: var(--cyan);
+    }
+
+    .bento-card h3 {
+      font-family: var(--font-display);
+      font-size: 1.125rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      line-height: 1.3;
+    }
+
+    .bento-card p {
+      font-size: var(--small);
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    /* Mini UI fragments inside bento cards */
+    .bento-visual {
+      margin-top: 1.5rem;
+      padding: 1rem;
+      background: var(--bg-primary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      font-family: var(--font-mono);
+      font-size: 0.6875rem;
+      color: var(--text-faint);
+      overflow: hidden;
+    }
+
+    .bento-visual-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.375rem 0;
+      border-bottom: 1px solid rgba(255,255,255,0.03);
+    }
+
+    .bento-visual-row:last-child { border-bottom: none; }
+
+    .bento-visual-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .bento-visual-bar {
+      height: 3px;
+      border-radius: 2px;
+      background: var(--green-dim);
+    }
+
+    @media (max-width: 768px) {
+      .bento {
+        grid-template-columns: 1fr;
+      }
+      .bento-card.span-2 { grid-column: span 1; }
+    }
+
+    /* ============================================
+       SECTION — MEET YOUR CHANNELS
+       ============================================ */
+    .channels {
+      position: relative;
+      background: var(--bg-secondary);
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .channels-inner {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4rem;
+      align-items: center;
+    }
+
+    .channels-copy h2 {
+      font-family: var(--font-display);
+      font-size: var(--h2);
+      font-weight: 800;
+      line-height: 1.15;
+      letter-spacing: -0.02em;
+      margin-bottom: 1.5rem;
+    }
+
+    .channels-copy p {
+      color: var(--text-secondary);
+      line-height: 1.7;
+      margin-bottom: 1rem;
+    }
+
+    .channels-copy .highlight {
+      color: var(--text-primary);
+      font-weight: 600;
+    }
+
+    .channels-tagline {
+      font-family: var(--font-display);
+      font-size: 1.125rem;
+      font-weight: 600;
+      color: var(--green);
+      margin-top: 1.5rem;
+    }
+
+    .channels-mockups {
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+    }
+
+    /* Phone mockup */
+    .phone-mockup {
+      flex: 1;
+      max-width: 240px;
+      border-radius: var(--radius-xl);
+      border: 1px solid var(--border);
+      overflow: hidden;
+      background: var(--bg-primary);
+      animation: float 4s ease-in-out infinite;
+    }
+
+    .phone-mockup.chat-float-delay {
+      animation-delay: -2s;
+    }
+
+    .phone-header {
+      padding: 0.75rem 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-family: var(--font-mono);
+      font-size: 0.625rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .phone-header.whatsapp {
+      background: rgba(37,211,102,0.10);
+      color: var(--green);
+      border-bottom: 1px solid var(--green-border);
+    }
+
+    .phone-header.telegram {
+      background: var(--blue-dim);
+      color: var(--blue);
+      border-bottom: 1px solid var(--blue-border);
+    }
+
+    .phone-header-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+
+    .phone-header.whatsapp .phone-header-dot { background: var(--green); }
+    .phone-header.telegram .phone-header-dot { background: var(--blue); }
+
+    .phone-body { padding: 0.75rem; }
+
+    .chat-bubble {
+      padding: 0.625rem 0.75rem;
+      border-radius: var(--radius-md);
+      font-size: 0.6875rem;
+      line-height: 1.5;
+      margin-bottom: 0.5rem;
+      max-width: 90%;
+    }
+
+    .chat-bubble.bot {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.05);
+      color: var(--text-secondary);
+    }
+
+    .chat-bubble.user {
+      margin-left: auto;
+      color: #000;
+    }
+
+    .chat-bubble.user.wa { background: var(--green); }
+    .chat-bubble.user.tg { background: var(--blue); }
+
+    .chat-time {
+      font-family: var(--font-mono);
+      font-size: 0.5625rem;
+      color: var(--text-muted);
+      text-align: right;
+      margin-top: 0.25rem;
+    }
+
+    @media (max-width: 768px) {
+      .channels-inner {
+        grid-template-columns: 1fr;
+        gap: 3rem;
+      }
+      .channels-mockups { justify-content: center; }
+      .phone-mockup { max-width: 200px; }
+    }
+
+    @media (max-width: 480px) {
+      .channels-mockups { flex-direction: column; align-items: center; }
+      .phone-mockup { max-width: 260px; }
+    }
+
+    /* ============================================
+       SECTION — SOCIAL PROOF
+       ============================================ */
+    .proof { text-align: center; }
+
+    .proof-header {
+      max-width: 600px;
+      margin: 0 auto 3.5rem;
+    }
+
+    .proof-header h2 {
+      font-family: var(--font-display);
+      font-size: var(--h2);
+      font-weight: 800;
+      line-height: 1.15;
+      letter-spacing: -0.02em;
+    }
+
+    .proof-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.5rem;
+      margin-bottom: 4rem;
+    }
+
+    .proof-stat {
+      padding: 2rem;
+      border-radius: var(--radius-xl);
+      border: 1px solid rgba(255,255,255,0.05);
+      background: rgba(255,255,255,0.03);
+    }
+
+    .proof-stat-value {
+      font-family: var(--font-display);
+      font-size: clamp(2rem, 4vw, 3rem);
+      font-weight: 800;
+      line-height: 1;
+      margin-bottom: 0.5rem;
+    }
+
+    .proof-stat-label {
+      font-family: var(--font-mono);
+      font-size: var(--label);
+      font-weight: 600;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--text-faint);
+    }
+
+    .testimonials {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.5rem;
+    }
+
+    .testimonial-card {
+      padding: 2rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      text-align: left;
+      background-image: linear-gradient(180deg, rgba(255,255,255,0.03) 0%, transparent 100%);
+    }
+
+    .testimonial-quote {
+      font-size: var(--small);
+      color: var(--text-secondary);
+      line-height: 1.7;
+      margin-bottom: 1.5rem;
+      font-style: italic;
+    }
+
+    .testimonial-quote::before {
+      content: '\201C';
+      font-family: var(--font-display);
+      font-size: 2rem;
+      line-height: 0;
+      color: var(--green);
+      vertical-align: -0.5em;
+      margin-right: 0.25rem;
+    }
+
+    .testimonial-author {
+      font-family: var(--font-mono);
+      font-size: 0.6875rem;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .testimonial-role {
+      font-family: var(--font-mono);
+      font-size: 0.625rem;
+      color: var(--text-faint);
+      margin-top: 0.25rem;
+    }
+
+    .testimonial-note {
+      font-family: var(--font-mono);
+      font-size: 0.5625rem;
+      color: var(--text-muted);
+      text-align: center;
+      margin-top: 2rem;
+      letter-spacing: 0.05em;
+    }
+
+    @media (max-width: 768px) {
+      .proof-stats { grid-template-columns: 1fr; gap: 1rem; }
+      .testimonials { grid-template-columns: 1fr; }
+    }
+
+    /* ============================================
+       SECTION — PRICING
+       ============================================ */
+    .pricing-header {
+      text-align: center;
+      max-width: 600px;
+      margin: 0 auto 3.5rem;
+    }
+
+    .pricing-header h2 {
+      font-family: var(--font-display);
+      font-size: var(--h2);
+      font-weight: 800;
+      line-height: 1.15;
+      letter-spacing: -0.02em;
+    }
+
+    .pricing-header p {
+      color: var(--text-secondary);
+      margin-top: 1rem;
+    }
+
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.5rem;
+      align-items: start;
+    }
+
+    .pricing-card {
+      padding: 2.5rem 2rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      background-image: linear-gradient(180deg, rgba(255,255,255,0.03) 0%, transparent 100%);
+      transition: all 0.3s;
+    }
+
+    .pricing-card:hover {
+      transform: translateY(-2px);
+      border-color: var(--border-hover);
+    }
+
+    .pricing-card.featured {
+      border-color: var(--green-border);
+      position: relative;
+      box-shadow: 0 0 40px rgba(37,211,102,0.08);
+    }
+
+    .pricing-badge {
+      position: absolute;
+      top: -0.75rem;
+      left: 50%;
+      transform: translateX(-50%);
+      font-family: var(--font-mono);
+      font-size: 0.5625rem;
+      font-weight: 700;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      padding: 0.375rem 1rem;
+      background: var(--green);
+      color: #000;
+      border-radius: 2rem;
+    }
+
+    .pricing-tier {
+      font-family: var(--font-mono);
+      font-size: 0.6875rem;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--text-faint);
+      margin-bottom: 1rem;
+    }
+
+    .pricing-price {
+      font-family: var(--font-display);
+      font-size: 2.5rem;
+      font-weight: 800;
+      line-height: 1;
+      margin-bottom: 0.25rem;
+    }
+
+    .pricing-period {
+      font-family: var(--font-mono);
+      font-size: 0.625rem;
+      color: var(--text-faint);
+      margin-bottom: 1.5rem;
+    }
+
+    .pricing-desc {
+      font-size: var(--small);
+      color: var(--text-secondary);
+      margin-bottom: 2rem;
+      line-height: 1.5;
+    }
+
+    .pricing-features {
+      list-style: none;
+      margin-bottom: 2rem;
+    }
+
+    .pricing-features li {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.625rem;
+      font-size: var(--small);
+      color: var(--text-secondary);
+      padding: 0.5rem 0;
+    }
+
+    .pricing-features li i {
+      color: var(--green);
+      width: 16px;
+      height: 16px;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .pricing-btn {
+      width: 100%;
+      text-align: center;
+      font-family: var(--font-mono);
+      font-size: 0.6875rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 0.75rem 1.5rem;
+      border-radius: var(--radius-lg);
+      transition: all 0.25s;
+      display: block;
+    }
+
+    .pricing-btn.primary {
+      background: var(--green);
+      color: #000;
+    }
+
+    .pricing-btn.primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 0 20px var(--green-glow);
+    }
+
+    .pricing-btn.secondary {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.10);
+      color: var(--text-secondary);
+    }
+
+    .pricing-btn.secondary:hover {
+      border-color: rgba(255,255,255,0.20);
+      color: var(--text-primary);
+      background: rgba(255,255,255,0.08);
+    }
+
+    .pricing-note {
+      text-align: center;
+      margin-top: 2.5rem;
+      font-family: var(--font-mono);
+      font-size: 0.6875rem;
+      color: var(--text-faint);
+      letter-spacing: 0.05em;
+    }
+
+    @media (max-width: 768px) {
+      .pricing-grid {
+        grid-template-columns: 1fr;
+        max-width: 400px;
+        margin: 0 auto;
+      }
+    }
+
+    /* ============================================
+       SECTION — CTA / WAITLIST
+       ============================================ */
+    .cta-section {
+      position: relative;
+      text-align: center;
+      overflow: hidden;
+    }
+
+    .cta-glow {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 150%;
+      height: 150%;
+      background: radial-gradient(ellipse at center, var(--green-glow) 0%, transparent 55%);
+      pointer-events: none;
+      animation: pulseGlow 6s ease-in-out infinite;
+    }
+
+    .cta-content {
+      position: relative;
+      z-index: 1;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .cta-content h2 {
+      font-family: var(--font-display);
+      font-size: var(--h2);
+      font-weight: 800;
+      line-height: 1.15;
+      letter-spacing: -0.02em;
+      margin-bottom: 1rem;
+    }
+
+    .cta-tagline {
+      font-family: var(--font-display);
+      font-size: 1.125rem;
+      color: var(--text-secondary);
+      margin-bottom: 2.5rem;
+    }
+
+    .cta-form {
+      display: flex;
+      gap: 0.75rem;
+      max-width: 440px;
+      margin: 0 auto 1.25rem;
+    }
+
+    .cta-input {
+      flex: 1;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: var(--radius-lg);
+      padding: 0.875rem 1.25rem;
+      font-size: var(--small);
+      color: var(--text-primary);
+      transition: all 0.2s;
+    }
+
+    .cta-input::placeholder { color: var(--text-faint); }
+
+    .cta-input:focus {
+      outline: none;
+      border-color: var(--green-border);
+      box-shadow: 0 0 0 3px var(--green-dim);
+    }
+
+    .cta-input.error {
+      border-color: rgba(239,83,80,0.50);
+      box-shadow: 0 0 0 3px rgba(239,83,80,0.08);
+    }
+
+    .cta-submit {
+      font-family: var(--font-mono);
+      font-size: 0.6875rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 0.875rem 1.75rem;
+      background: var(--green);
+      color: #000;
+      border-radius: var(--radius-lg);
+      transition: all 0.25s;
+      white-space: nowrap;
+    }
+
+    .cta-submit:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 0 20px var(--green-glow);
+    }
+
+    .cta-micro {
+      font-family: var(--font-mono);
+      font-size: 0.625rem;
+      color: var(--text-muted);
+      letter-spacing: 0.05em;
+    }
+
+    .cta-error {
+      font-size: 0.75rem;
+      color: #EF5350;
+      margin-top: 0.5rem;
+    }
+
+    .cta-success {
+      animation: fadeInUp 0.5s ease-out;
+    }
+
+    .cta-success-check {
+      width: 3.5rem;
+      height: 3.5rem;
+      border-radius: 50%;
+      background: var(--green-dim);
+      border: 1px solid var(--green-border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 1.25rem;
+      color: var(--green);
+    }
+
+    .cta-success h3 {
+      font-family: var(--font-display);
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+
+    .cta-success p {
+      color: var(--text-secondary);
+      font-size: var(--small);
+    }
+
+    @media (max-width: 480px) {
+      .cta-form { flex-direction: column; }
+    }
+
+    /* ============================================
+       FOOTER
+       ============================================ */
+    .footer {
+      border-top: 1px solid var(--border);
+      padding: 3rem 0 2rem;
+    }
+
+    .footer-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1.5rem;
+    }
+
+    .footer-logo {
+      display: flex;
+      align-items: center;
+      gap: 0.625rem;
+    }
+
+    .footer-logo-icon {
+      width: 1.5rem;
+      height: auto;
+      display: flex;
+      align-items: center;
+    }
+
+    .footer-logo-icon svg {
+      width: 100%;
+      height: auto;
+    }
+
+    .footer-logo-text {
+      font-family: var(--font-mono);
+      font-weight: 700;
+      font-size: 0.625rem;
+      letter-spacing: 0.2em;
+      color: var(--text-muted);
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 2rem;
+      list-style: none;
+    }
+
+    .footer-links a {
+      font-family: var(--font-mono);
+      font-size: 0.625rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-faint);
+      transition: color 0.2s;
+    }
+
+    .footer-links a:hover { color: var(--text-secondary); }
+
+    .footer-bottom {
+      margin-top: 2rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+      text-align: center;
+      font-family: var(--font-mono);
+      font-size: 0.5625rem;
+      color: var(--text-muted);
+      letter-spacing: 0.1em;
+    }
+
+    @media (max-width: 480px) {
+      .footer-inner { flex-direction: column; text-align: center; }
+      .footer-links { flex-wrap: wrap; justify-content: center; gap: 1rem; }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ==========================================
+       NAVIGATION
+       ========================================== -->
+  <nav class="nav" id="nav">
+    <div class="nav-inner">
+      <a href="#" class="nav-logo">
+        <div class="nav-logo-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 301 219" fill="none"><path d="M0 0C1.421 0.278 16.795 11.658 19.147 13.354L150.197 107.832L300.512 0.041C297.702 4.35 293.44 12.779 290.97 17.516C286.915 24.613 281.582 35.76 276.975 42.754C276.092 44.091 267.45 49.939 265.397 51.4L245.002 66.012C213.617 88.528 181.327 111.133 150.289 133.974L35.479 51.338C32.073 48.902 27.132 45.589 24.115 42.838C23.135 41.945 20.155 36.332 19.3 34.795L4.306 8.039C3.068 5.828 0.893 2.182 0 0Z" fill="#25D366"/><path d="M37.717 72.88C38.777 73.331 46.795 79.271 48.202 80.28L72.958 97.837C108.092 123.006 143.398 147.934 178.873 172.62C183.275 169.867 188.504 166.002 192.831 162.975L218.347 145.13C216.5 149.644 203.497 180.405 201.63 182.425C199.762 184.442 196.868 186.067 194.609 187.632C189.48 191.187 184.183 194.627 179.248 198.442C173.255 194.67 166.881 190.137 160.998 186.102L150.276 178.785C140.752 185.392 130.975 191.775 121.539 198.505L107.518 188.7C104.804 186.825 101.161 184.857 98.954 182.427C96.988 180.262 84.38 150.156 82.099 145.097C88.228 148.938 95.932 154.697 101.981 158.922C107.894 163.052 116.02 168.355 121.564 172.722C125.014 170.375 128.443 167.995 131.849 165.58C131.591 165.437 131.33 165.297 131.085 165.13C124.573 160.68 118.173 156.045 111.751 151.468L78.554 127.89C75.061 125.403 57.758 113.734 55.93 111.484C54.881 110.193 38.198 75.023 37.717 72.88Z" fill="#25D366"/><path d="M262.588 72.891C262.725 73.03 262.695 73.103 262.755 73.354C258.878 81.615 254.948 89.851 250.968 98.062C249.41 101.335 245.393 110.985 243.178 112.682C237.615 116.948 231.025 121.473 225.24 125.581L181.617 156.583C178.377 154.108 174.947 151.695 171.633 149.306C168.917 147.324 166.177 145.374 163.415 143.458C167.376 140.777 171.489 137.838 175.358 135.013C204.12 114.012 233.975 94.066 262.588 72.891Z" fill="#25D366"/><path d="M124.939 47.025C151.59 46.485 180.162 46.708 206.883 46.915C197.526 52.838 187.278 61.924 177.8 68.109C171.859 68.364 164.43 68.153 158.376 68.15L152.15 68.13L161.382 80.132C157.092 83.065 148.014 89.32 144.151 92.618L109.503 47.234L124.939 47.025Z" fill="#25D366"/><path d="M149.898 192.34C150.952 192.807 154.46 195.27 155.585 195.987C160.266 198.985 165.004 202.522 169.74 205.395C167.862 206.365 164.572 208.762 162.77 210.025C158.862 212.795 154.936 215.54 150.992 218.26L150.785 218.312C149.732 218.042 132.96 206.032 131.33 204.885C137.064 201.125 144.507 196.412 149.898 192.34Z" fill="#25D366"/></svg></div>
+        <span class="nav-logo-text">FITFLOW</span>
+      </a>
+
+      <ul class="nav-links">
+        <li><a href="#features" class="nav-link">Features</a></li>
+        <li><a href="#how-it-works" class="nav-link">How It Works</a></li>
+        <li><a href="#pricing" class="nav-link">Pricing</a></li>
+      </ul>
+
+      <a href="#waitlist" class="nav-cta desktop">Join Waitlist</a>
+
+      <button class="nav-hamburger" id="hamburger" aria-label="Menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- Mobile nav -->
+  <div class="nav-mobile" id="mobileNav">
+    <a href="#features" onclick="closeMobile()">Features</a>
+    <a href="#how-it-works" onclick="closeMobile()">How It Works</a>
+    <a href="#pricing" onclick="closeMobile()">Pricing</a>
+    <a href="#waitlist" onclick="closeMobile()" class="nav-cta" style="margin-top:1rem;">Join Waitlist</a>
+  </div>
+
+  <!-- ==========================================
+       HERO
+       ========================================== -->
+  <section class="hero" id="hero">
+    <div class="hero-bg">
+      <div class="hero-grid"></div>
+      <div class="hero-glow"></div>
+    </div>
+
+    <div class="hero-content">
+      <div class="hero-overline" data-reveal>
+        <span class="hero-overline-dot"></span>
+        Coaching Operations Platform
+      </div>
+
+      <h1 data-reveal data-reveal-delay="1">
+        Your coaching business,<br><span class="gradient-text">engineered to scale.</span>
+      </h1>
+
+      <p class="hero-sub" data-reveal data-reveal-delay="2">
+        FitFlow handles the ops layer — automated check-ins, client tracking, and delivery via WhatsApp and Telegram — so you can focus on what you do best: coaching.
+      </p>
+
+      <div class="hero-ctas" data-reveal data-reveal-delay="3">
+        <a href="#waitlist" class="btn-primary">
+          Get Early Access
+          <i data-lucide="arrow-right" style="width:14px;height:14px;"></i>
+        </a>
+        <a href="#how-it-works" class="btn-ghost">
+          See How It Works
+        </a>
+      </div>
+    </div>
+
+    <div class="ticker">
+      <div class="ticker-track">
+        <span class="ticker-item"><span class="ticker-dot"></span>Telegram & WhatsApp delivery</span>
+        <span class="ticker-item"><span class="ticker-dot"></span>847 client check-ins sent</span>
+        <span class="ticker-item"><span class="ticker-dot"></span>94% response rate</span>
+        <span class="ticker-item"><span class="ticker-dot"></span>22 message templates</span>
+        <span class="ticker-item"><span class="ticker-dot"></span>Timezone-aware scheduling</span>
+        <span class="ticker-item"><span class="ticker-dot"></span>Built for 10 to 100+ clients</span>
+        <!-- Duplicate for seamless loop -->
+        <span class="ticker-item"><span class="ticker-dot"></span>Telegram & WhatsApp delivery</span>
+        <span class="ticker-item"><span class="ticker-dot"></span>847 client check-ins sent</span>
+        <span class="ticker-item"><span class="ticker-dot"></span>94% response rate</span>
+        <span class="ticker-item"><span class="ticker-dot"></span>22 message templates</span>
+        <span class="ticker-item"><span class="ticker-dot"></span>Timezone-aware scheduling</span>
+        <span class="ticker-item"><span class="ticker-dot"></span>Built for 10 to 100+ clients</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==========================================
+       PROBLEM STATEMENT
+       ========================================== -->
+  <section class="section problem" id="problem">
+    <div class="container">
+      <div class="problem-header">
+        <div class="section-label" data-reveal>01 / The Problem</div>
+        <h2 data-reveal data-reveal-delay="1">
+          Most coaches are running a business on spreadsheets and scattered DMs.
+        </h2>
+      </div>
+
+      <div class="problem-grid">
+        <div class="problem-card" data-reveal data-reveal-delay="1">
+          <div class="problem-card-number">01</div>
+          <h3>Check-ins fall through the cracks</h3>
+          <p>You're manually chasing clients for weekly updates. Some reply, some don't, and you lose track of who needs attention.</p>
+        </div>
+
+        <div class="problem-card" data-reveal data-reveal-delay="2">
+          <div class="problem-card-number">02</div>
+          <h3>Progress lives in your DMs</h3>
+          <p>Client data is scattered across WhatsApp threads, spreadsheets, and notes apps. There's no single place to see how a client is actually doing.</p>
+        </div>
+
+        <div class="problem-card" data-reveal data-reveal-delay="3">
+          <div class="problem-card-number">03</div>
+          <h3>Manual follow-up doesn't scale</h3>
+          <p>At 10 clients, you can manage it. At 40, you're spending more time on admin than coaching. At 80, things start breaking.</p>
+        </div>
+
+        <div class="problem-card" data-reveal data-reveal-delay="4">
+          <div class="problem-card-number">04</div>
+          <h3>Nobody wants another app</h3>
+          <p>Your clients already have WhatsApp and Telegram. Asking them to download another tool just adds friction and kills engagement.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==========================================
+       HOW IT WORKS
+       ========================================== -->
+  <section class="section how-it-works" id="how-it-works">
+    <div class="container">
+      <div class="how-header">
+        <div class="section-label" data-reveal>02 / How It Works</div>
+        <h2 data-reveal data-reveal-delay="1">Three steps to<br>automated coaching delivery.</h2>
+      </div>
+
+      <div class="steps">
+        <div class="step" data-reveal data-reveal-delay="1">
+          <div class="step-number">1</div>
+          <h3>Connect your channels</h3>
+          <p>Link WhatsApp and Telegram. Your clients stay on the apps they already use — no new downloads, no friction.</p>
+        </div>
+
+        <div class="step" data-reveal data-reveal-delay="2">
+          <div class="step-number">2</div>
+          <h3>Build your system</h3>
+          <p>Set up workout plans, check-in schedules, and message templates. FitFlow adapts to how you already coach.</p>
+        </div>
+
+        <div class="step" data-reveal data-reveal-delay="3">
+          <div class="step-number">3</div>
+          <h3>Deliver automatically</h3>
+          <p>Workouts go out on schedule, check-ins get collected, and progress is tracked — all without you lifting a finger.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==========================================
+       FEATURES — BENTO GRID
+       ========================================== -->
+  <section class="section" id="features">
+    <div class="container">
+      <div class="features-header">
+        <div class="section-label" data-reveal>03 / Built for Operations</div>
+        <h2 data-reveal data-reveal-delay="1">Everything you need to deliver coaching at scale.</h2>
+      </div>
+
+      <div class="bento">
+        <!-- Card 1: WhatsApp & Telegram — spans 2 columns -->
+        <div class="bento-card span-2" data-reveal data-reveal-delay="1">
+          <div class="bento-icon">
+            <i data-lucide="message-circle" style="width:18px;height:18px;"></i>
+          </div>
+          <h3>WhatsApp & Telegram delivery</h3>
+          <p>Clients receive check-ins, workouts, and updates on whichever channel they use. Coaches can support both simultaneously — no switching between tools.</p>
+          <div class="bento-visual">
+            <div class="bento-visual-row">
+              <span style="color:var(--green);">WhatsApp</span>
+              <span>32 clients connected</span>
+              <span style="color:var(--green);">Active</span>
+            </div>
+            <div class="bento-visual-row">
+              <span style="color:var(--blue);">Telegram</span>
+              <span>18 clients connected</span>
+              <span style="color:var(--blue);">Active</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 2: Automated check-ins -->
+        <div class="bento-card" data-reveal data-reveal-delay="2">
+          <div class="bento-icon cyan">
+            <i data-lucide="calendar-check" style="width:18px;height:18px;"></i>
+          </div>
+          <h3>Automated check-in sequences</h3>
+          <p>Set it and forget it. Clients get prompted on schedule — weekly weigh-ins, energy levels, sleep quality — all collected and surfaced automatically.</p>
+        </div>
+
+        <!-- Card 3: 22 templates -->
+        <div class="bento-card" data-reveal data-reveal-delay="3">
+          <div class="bento-icon blue">
+            <i data-lucide="layout-template" style="width:18px;height:18px;"></i>
+          </div>
+          <h3>22 message templates</h3>
+          <p>Pre-built and editable across every coaching scenario: onboarding, check-ins, milestones, re-engagement, and more.</p>
+        </div>
+
+        <!-- Card 4: Progress dashboards -->
+        <div class="bento-card" data-reveal data-reveal-delay="4">
+          <div class="bento-icon">
+            <i data-lucide="bar-chart-3" style="width:18px;height:18px;"></i>
+          </div>
+          <h3>Progress dashboards</h3>
+          <p>Client data surfaced without manual chasing. See weight trends, compliance rates, and engagement at a glance.</p>
+          <div class="bento-visual">
+            <div class="bento-visual-row">
+              <span>Sarah M.</span>
+              <div style="display:flex;gap:3px;align-items:center;">
+                <div class="bento-visual-bar" style="width:60px;background:var(--green);"></div>
+                <span style="color:var(--green);">94%</span>
+              </div>
+            </div>
+            <div class="bento-visual-row">
+              <span>James K.</span>
+              <div style="display:flex;gap:3px;align-items:center;">
+                <div class="bento-visual-bar" style="width:40px;background:var(--green);"></div>
+                <span style="color:var(--green);">78%</span>
+              </div>
+            </div>
+            <div class="bento-visual-row">
+              <span>Priya R.</span>
+              <div style="display:flex;gap:3px;align-items:center;">
+                <div class="bento-visual-bar" style="width:20px;background:rgba(240,133,58,0.6);"></div>
+                <span style="color:#F0853A;">42%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 5: Re-engagement -->
+        <div class="bento-card" data-reveal data-reveal-delay="5">
+          <div class="bento-icon cyan">
+            <i data-lucide="user-check" style="width:18px;height:18px;"></i>
+          </div>
+          <h3>Re-engagement flows</h3>
+          <p>Automatically flag inactive clients and trigger follow-up sequences. No one slips through the cracks.</p>
+        </div>
+
+        <!-- Card 6: Multi-client management — spans 2 columns -->
+        <div class="bento-card span-2" data-reveal data-reveal-delay="6">
+          <div class="bento-icon blue">
+            <i data-lucide="users" style="width:18px;height:18px;"></i>
+          </div>
+          <h3>Multi-client management</h3>
+          <p>Built to handle 10 to 100+ clients without breaking. Pipeline views, bulk actions, and smart filters keep you in control as your roster grows.</p>
+          <div class="bento-visual">
+            <div class="bento-visual-row">
+              <span>Pipeline</span>
+              <div style="display:flex;gap:6px;">
+                <span style="padding:2px 6px;border-radius:4px;background:var(--green-dim);color:var(--green);font-size:0.5625rem;">38 ACTIVE</span>
+                <span style="padding:2px 6px;border-radius:4px;background:var(--blue-dim);color:var(--blue);font-size:0.5625rem;">12 ONBOARDING</span>
+                <span style="padding:2px 6px;border-radius:4px;background:rgba(240,133,58,0.08);color:#F0853A;font-size:0.5625rem;">4 AT RISK</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==========================================
+       MEET YOUR CHANNELS
+       ========================================== -->
+  <section class="section channels" id="channels">
+    <div class="container">
+      <div class="channels-inner">
+        <div class="channels-copy">
+          <div class="section-label" data-reveal>04 / Meet Your Channels</div>
+          <h2 data-reveal data-reveal-delay="1">
+            Your clients are already on WhatsApp and Telegram.
+          </h2>
+          <p data-reveal data-reveal-delay="2">
+            <span class="highlight">No new app required.</span> FitFlow delivers check-ins, collects responses, and tracks progress through the messaging apps your clients already open every day.
+          </p>
+          <p data-reveal data-reveal-delay="3">
+            High open rates on both platforms. Instant delivery. Clients reply in seconds, not days — because there's zero friction between your coaching and their routine.
+          </p>
+          <div class="channels-tagline" data-reveal data-reveal-delay="4">
+            Delivered where your clients already are.
+          </div>
+        </div>
+
+        <div class="channels-mockups" data-reveal data-reveal-delay="2">
+          <!-- WhatsApp mockup -->
+          <div class="phone-mockup">
+            <div class="phone-header whatsapp">
+              <span class="phone-header-dot"></span>
+              WhatsApp
+            </div>
+            <div class="phone-body">
+              <div class="chat-bubble bot">
+                Hey Sarah! Time for your weekly check-in. How are you feeling this week? (1-10)
+              </div>
+              <div class="chat-bubble user wa">8 — feeling strong!</div>
+              <div class="chat-bubble bot">
+                Great to hear! Current weight?
+              </div>
+              <div class="chat-bubble user wa">67.2kg</div>
+              <div class="chat-bubble bot">
+                Logged. Down 0.4kg from last week. Keep it up! Your coach has been notified.
+              </div>
+              <div class="chat-time">10:32 AM</div>
+            </div>
+          </div>
+
+          <!-- Telegram mockup -->
+          <div class="phone-mockup chat-float-delay">
+            <div class="phone-header telegram">
+              <span class="phone-header-dot"></span>
+              Telegram
+            </div>
+            <div class="phone-body">
+              <div class="chat-bubble bot">
+                Hey James! Time for your weekly check-in. How are you feeling this week? (1-10)
+              </div>
+              <div class="chat-bubble user tg">7 — bit tired but good</div>
+              <div class="chat-bubble bot">
+                Thanks! Current weight?
+              </div>
+              <div class="chat-bubble user tg">82.1kg</div>
+              <div class="chat-bubble bot">
+                Logged. Holding steady at 82kg. Solid consistency. Your coach has been notified.
+              </div>
+              <div class="chat-time">10:45 AM</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==========================================
+       SOCIAL PROOF
+       ========================================== -->
+  <section class="section proof" id="proof">
+    <div class="container">
+      <div class="proof-header">
+        <div class="section-label" data-reveal>05 / Early Results</div>
+        <h2 data-reveal data-reveal-delay="1">Numbers from our<br>beta cohort.</h2>
+      </div>
+
+      <div class="proof-stats" data-reveal data-reveal-delay="2">
+        <div class="proof-stat">
+          <div class="proof-stat-value gradient-text">94%</div>
+          <div class="proof-stat-label">Check-in response rate</div>
+        </div>
+        <div class="proof-stat">
+          <div class="proof-stat-value gradient-text">3.2hrs</div>
+          <div class="proof-stat-label">Saved per coach per week</div>
+        </div>
+        <div class="proof-stat">
+          <div class="proof-stat-value gradient-text">2x</div>
+          <div class="proof-stat-label">Client retention vs. manual</div>
+        </div>
+      </div>
+
+      <div class="testimonials">
+        <div class="testimonial-card" data-reveal data-reveal-delay="1">
+          <div class="testimonial-quote">I was spending 2 hours every Sunday just sending check-in messages. Now it's automated and I actually have time to review the data before Monday sessions.</div>
+          <div class="testimonial-author">Marcus T.</div>
+          <div class="testimonial-role">Online strength coach, 47 clients</div>
+        </div>
+
+        <div class="testimonial-card" data-reveal data-reveal-delay="2">
+          <div class="testimonial-quote">The Telegram bot feels like my own assistant. Clients think I'm personally following up with them — they have no idea it's automated.</div>
+          <div class="testimonial-author">Priya S.</div>
+          <div class="testimonial-role">Nutrition coach, 32 clients</div>
+        </div>
+
+        <div class="testimonial-card" data-reveal data-reveal-delay="3">
+          <div class="testimonial-quote">Went from 25 to 60 clients in three months. Without FitFlow handling delivery, I would have had to hire an assistant or cap my roster.</div>
+          <div class="testimonial-author">Daniel R.</div>
+          <div class="testimonial-role">Performance coach, 63 clients</div>
+        </div>
+      </div>
+
+      <div class="testimonial-note">Illustrative quotes from beta coaches. Results may vary.</div>
+    </div>
+  </section>
+
+  <!-- ==========================================
+       PRICING
+       ========================================== -->
+  <section class="section" id="pricing">
+    <div class="container">
+      <div class="pricing-header">
+        <div class="section-label" data-reveal>06 / Pricing</div>
+        <h2 data-reveal data-reveal-delay="1">Simple plans that<br>grow with your business.</h2>
+        <p data-reveal data-reveal-delay="2">No setup fees. No per-message charges. Just coaching ops that work.</p>
+      </div>
+
+      <div class="pricing-grid">
+        <!-- Starter -->
+        <div class="pricing-card" data-reveal data-reveal-delay="1">
+          <div class="pricing-tier">Starter</div>
+          <div class="pricing-price">Free</div>
+          <div class="pricing-period">to get started</div>
+          <div class="pricing-desc">For coaches just getting started with automated delivery.</div>
+          <ul class="pricing-features">
+            <li><i data-lucide="check"></i> Up to 20 clients</li>
+            <li><i data-lucide="check"></i> WhatsApp & Telegram delivery</li>
+            <li><i data-lucide="check"></i> Core check-in sequences</li>
+            <li><i data-lucide="check"></i> Basic progress dashboard</li>
+            <li><i data-lucide="check"></i> 5 message templates</li>
+          </ul>
+          <a href="#waitlist" class="pricing-btn secondary">Join Waitlist</a>
+        </div>
+
+        <!-- Growth (Featured) -->
+        <div class="pricing-card featured" data-reveal data-reveal-delay="2">
+          <div class="pricing-badge">Popular</div>
+          <div class="pricing-tier">Growth</div>
+          <div class="pricing-price">Coming Soon</div>
+          <div class="pricing-period">per month</div>
+          <div class="pricing-desc">For established coaches ready to scale their roster.</div>
+          <ul class="pricing-features">
+            <li><i data-lucide="check"></i> Up to 60 clients</li>
+            <li><i data-lucide="check"></i> WhatsApp & Telegram delivery</li>
+            <li><i data-lucide="check"></i> Full template library (22 templates)</li>
+            <li><i data-lucide="check"></i> Advanced analytics & trends</li>
+            <li><i data-lucide="check"></i> Re-engagement automation</li>
+            <li><i data-lucide="check"></i> Priority support</li>
+          </ul>
+          <a href="#waitlist" class="pricing-btn primary">Join Waitlist</a>
+        </div>
+
+        <!-- Scale -->
+        <div class="pricing-card" data-reveal data-reveal-delay="3">
+          <div class="pricing-tier">Scale</div>
+          <div class="pricing-price">Coming Soon</div>
+          <div class="pricing-period">per month</div>
+          <div class="pricing-desc">For coaching businesses running at full capacity.</div>
+          <ul class="pricing-features">
+            <li><i data-lucide="check"></i> Unlimited clients</li>
+            <li><i data-lucide="check"></i> WhatsApp & Telegram delivery</li>
+            <li><i data-lucide="check"></i> Custom onboarding flows</li>
+            <li><i data-lucide="check"></i> Team collaboration</li>
+            <li><i data-lucide="check"></i> API access</li>
+            <li><i data-lucide="check"></i> Dedicated support</li>
+          </ul>
+          <a href="#waitlist" class="pricing-btn secondary">Join Waitlist</a>
+        </div>
+      </div>
+
+      <div class="pricing-note" data-reveal>All plans include WhatsApp and Telegram delivery.</div>
+    </div>
+  </section>
+
+  <!-- ==========================================
+       CTA / WAITLIST
+       ========================================== -->
+  <section class="section cta-section" id="waitlist">
+    <div class="cta-glow"></div>
+    <div class="container">
+      <div class="cta-content">
+        <div class="section-label" data-reveal>07 / Join the Waitlist</div>
+
+        <div id="ctaFormContainer">
+          <h2 data-reveal data-reveal-delay="1">You built a coaching business.<br>Let FitFlow run it.</h2>
+          <div class="cta-tagline" data-reveal data-reveal-delay="2">Delivered where your clients already are.</div>
+
+          <form class="cta-form" data-reveal data-reveal-delay="3" id="waitlistForm" novalidate>
+            <input
+              type="email"
+              class="cta-input"
+              id="emailInput"
+              placeholder="you@example.com"
+              required
+              autocomplete="email"
+            >
+            <button type="submit" class="cta-submit">Get Early Access</button>
+          </form>
+          <div class="cta-error" id="formError" style="display:none;"></div>
+          <div class="cta-micro" data-reveal data-reveal-delay="4">No credit card. No setup fee. Limited beta spots.</div>
+        </div>
+
+        <div id="ctaSuccess" class="cta-success" style="display:none;">
+          <div class="cta-success-check">
+            <i data-lucide="check" style="width:24px;height:24px;"></i>
+          </div>
+          <h3>You're on the list.</h3>
+          <p id="ctaSuccessPosition" style="display:none;font-family:var(--font-mono);font-size:0.8125rem;color:var(--green);margin-bottom:0.5rem;"></p>
+          <p>We'll be in touch with early access details soon.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==========================================
+       FOOTER
+       ========================================== -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-inner">
+        <a href="#" class="footer-logo">
+          <div class="footer-logo-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 301 219" fill="none"><path d="M0 0C1.421 0.278 16.795 11.658 19.147 13.354L150.197 107.832L300.512 0.041C297.702 4.35 293.44 12.779 290.97 17.516C286.915 24.613 281.582 35.76 276.975 42.754C276.092 44.091 267.45 49.939 265.397 51.4L245.002 66.012C213.617 88.528 181.327 111.133 150.289 133.974L35.479 51.338C32.073 48.902 27.132 45.589 24.115 42.838C23.135 41.945 20.155 36.332 19.3 34.795L4.306 8.039C3.068 5.828 0.893 2.182 0 0Z" fill="#25D366"/><path d="M37.717 72.88C38.777 73.331 46.795 79.271 48.202 80.28L72.958 97.837C108.092 123.006 143.398 147.934 178.873 172.62C183.275 169.867 188.504 166.002 192.831 162.975L218.347 145.13C216.5 149.644 203.497 180.405 201.63 182.425C199.762 184.442 196.868 186.067 194.609 187.632C189.48 191.187 184.183 194.627 179.248 198.442C173.255 194.67 166.881 190.137 160.998 186.102L150.276 178.785C140.752 185.392 130.975 191.775 121.539 198.505L107.518 188.7C104.804 186.825 101.161 184.857 98.954 182.427C96.988 180.262 84.38 150.156 82.099 145.097C88.228 148.938 95.932 154.697 101.981 158.922C107.894 163.052 116.02 168.355 121.564 172.722C125.014 170.375 128.443 167.995 131.849 165.58C131.591 165.437 131.33 165.297 131.085 165.13C124.573 160.68 118.173 156.045 111.751 151.468L78.554 127.89C75.061 125.403 57.758 113.734 55.93 111.484C54.881 110.193 38.198 75.023 37.717 72.88Z" fill="#25D366"/><path d="M262.588 72.891C262.725 73.03 262.695 73.103 262.755 73.354C258.878 81.615 254.948 89.851 250.968 98.062C249.41 101.335 245.393 110.985 243.178 112.682C237.615 116.948 231.025 121.473 225.24 125.581L181.617 156.583C178.377 154.108 174.947 151.695 171.633 149.306C168.917 147.324 166.177 145.374 163.415 143.458C167.376 140.777 171.489 137.838 175.358 135.013C204.12 114.012 233.975 94.066 262.588 72.891Z" fill="#25D366"/><path d="M124.939 47.025C151.59 46.485 180.162 46.708 206.883 46.915C197.526 52.838 187.278 61.924 177.8 68.109C171.859 68.364 164.43 68.153 158.376 68.15L152.15 68.13L161.382 80.132C157.092 83.065 148.014 89.32 144.151 92.618L109.503 47.234L124.939 47.025Z" fill="#25D366"/><path d="M149.898 192.34C150.952 192.807 154.46 195.27 155.585 195.987C160.266 198.985 165.004 202.522 169.74 205.395C167.862 206.365 164.572 208.762 162.77 210.025C158.862 212.795 154.936 215.54 150.992 218.26L150.785 218.312C149.732 218.042 132.96 206.032 131.33 204.885C137.064 201.125 144.507 196.412 149.898 192.34Z" fill="#25D366"/></svg></div>
+          <span class="footer-logo-text">FITFLOW</span>
+        </a>
+
+        <ul class="footer-links">
+          <li><a href="#features">Features</a></li>
+          <li><a href="#pricing">Pricing</a></li>
+          <li><a href="privacy.html">Privacy Policy</a></li>
+          <li><a href="#">Terms</a></li>
+        </ul>
+
+        <a href="#" aria-label="Follow on X" style="color:var(--text-faint);transition:color 0.2s;" onmouseover="this.style.color='var(--text-secondary)'" onmouseout="this.style.color='var(--text-faint)'">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+        </a>
+      </div>
+
+      <div class="footer-bottom">
+        &copy; 2026 FitFlow. All rights reserved.
+      </div>
+    </div>
+  </footer>
+
+  <!-- ==========================================
+       JAVASCRIPT
+       ========================================== -->
+  <script>
+    // Initialize Lucide icons
+    document.addEventListener('DOMContentLoaded', function () {
+      if (window.lucide) lucide.createIcons();
+    });
+
+    // ---- SCROLL REVEAL (Intersection Observer) ----
+    (function () {
+      var elements = document.querySelectorAll('[data-reveal]');
+      if (!elements.length) return;
+
+      var observer = new IntersectionObserver(function (entries) {
+        entries.forEach(function (entry) {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('revealed');
+            observer.unobserve(entry.target);
+          }
+        });
+      }, {
+        threshold: 0.15,
+        rootMargin: '0px 0px -40px 0px'
+      });
+
+      elements.forEach(function (el) { observer.observe(el); });
+    })();
+
+    // ---- STICKY NAV ----
+    (function () {
+      var nav = document.getElementById('nav');
+      var scrolled = false;
+
+      function checkScroll() {
+        var shouldBeScrolled = window.scrollY > 50;
+        if (shouldBeScrolled !== scrolled) {
+          scrolled = shouldBeScrolled;
+          nav.classList.toggle('scrolled', scrolled);
+        }
+      }
+
+      window.addEventListener('scroll', checkScroll, { passive: true });
+      checkScroll();
+    })();
+
+    // ---- MOBILE MENU ----
+    var hamburger = document.getElementById('hamburger');
+    var mobileNav = document.getElementById('mobileNav');
+
+    hamburger.addEventListener('click', function () {
+      hamburger.classList.toggle('open');
+      mobileNav.classList.toggle('open');
+      document.body.style.overflow = mobileNav.classList.contains('open') ? 'hidden' : '';
+    });
+
+    function closeMobile() {
+      hamburger.classList.remove('open');
+      mobileNav.classList.remove('open');
+      document.body.style.overflow = '';
+    }
+
+    // ---- EMAIL FORM (Nexuswait integration) ----
+    (function () {
+      var NEXUSWAIT_URL = 'https://api.nexuswait.com/v1/projects/1ecf05da-c246-4622-9568-de1e6cbb9036/subscribers';
+
+      var form = document.getElementById('waitlistForm');
+      var input = document.getElementById('emailInput');
+      var submitBtn = form.querySelector('.cta-submit');
+      var error = document.getElementById('formError');
+      var formContainer = document.getElementById('ctaFormContainer');
+      var success = document.getElementById('ctaSuccess');
+
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        error.style.display = 'none';
+        input.classList.remove('error');
+
+        var email = input.value.trim();
+
+        if (!email) {
+          showError('Please enter your email address.');
+          return;
+        }
+
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+          showError('Please enter a valid email address.');
+          return;
+        }
+
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Submitting...';
+
+        fetch(NEXUSWAIT_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: email, source: 'website' })
+        })
+        .then(function (res) {
+          if (!res.ok) throw new Error('Signup failed');
+          return res.json();
+        })
+        .then(function (data) {
+          formContainer.style.display = 'none';
+          success.style.display = 'block';
+          // Show position if returned
+          if (data && data.position) {
+            document.getElementById('ctaSuccessPosition').textContent = "You're #" + data.position + ' on the waitlist.';
+            document.getElementById('ctaSuccessPosition').style.display = 'block';
+          }
+          if (window.lucide) lucide.createIcons();
+        })
+        .catch(function () {
+          showError('Something went wrong. Please try again.');
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Get Early Access';
+        });
+      });
+
+      function showError(msg) {
+        error.textContent = msg;
+        error.style.display = 'block';
+        input.classList.add('error');
+      }
+    })();
+
+    // ---- SMOOTH SCROLL FOR ANCHOR LINKS ----
+    document.querySelectorAll('a[href^="#"]').forEach(function (anchor) {
+      anchor.addEventListener('click', function (e) {
+        var target = document.querySelector(this.getAttribute('href'));
+        if (target) {
+          e.preventDefault();
+          var offset = 80; // nav height
+          var top = target.getBoundingClientRect().top + window.pageYOffset - offset;
+          window.scrollTo({ top: top, behavior: 'smooth' });
+        }
+      });
+    });
+  </script>
+
+</body>
+</html>

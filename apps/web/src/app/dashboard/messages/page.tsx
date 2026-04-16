@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { getAuthHeaders } from "@/lib/auth";
 import {
@@ -99,26 +99,68 @@ export default function MessagesPage() {
     const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
     const [newMessage, setNewMessage] = useState("");
 
+    const fetchConversations = useCallback(async () => {
+        try {
+            const response = await fetch(
+                `${process.env.NEXT_PUBLIC_API_URL}/messages/conversations`,
+                { headers: await getAuthHeaders() }
+            );
+            if (response.ok) {
+                setConversations(await response.json());
+            } else {
+                setConversations(MOCK_CONVERSATIONS);
+            }
+        } catch {
+            setConversations(MOCK_CONVERSATIONS);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    // Initial load
+    useEffect(() => { fetchConversations(); }, [fetchConversations]);
+
+    // Poll conversation list every 15s for unread counts
     useEffect(() => {
-        const fetchConversations = async () => {
+        const interval = setInterval(fetchConversations, 15000);
+        return () => clearInterval(interval);
+    }, [fetchConversations]);
+
+    // Poll active conversation every 5s for new messages
+    const selectedClientIdRef = useRef<string | null>(null);
+    useEffect(() => {
+        selectedClientIdRef.current = selectedConversation?.clientId || null;
+    }, [selectedConversation?.clientId]);
+
+    useEffect(() => {
+        if (!selectedConversation) return;
+        const interval = setInterval(async () => {
+            const clientId = selectedClientIdRef.current;
+            if (!clientId) return;
             try {
-                const response = await fetch(
-                    `${process.env.NEXT_PUBLIC_API_URL}/messages/conversations`,
+                const res = await fetch(
+                    `${process.env.NEXT_PUBLIC_API_URL}/messages/${clientId}?limit=50`,
                     { headers: await getAuthHeaders() }
                 );
-                if (response.ok) {
-                    setConversations(await response.json());
-                } else {
-                    setConversations(MOCK_CONVERSATIONS);
+                if (res.ok) {
+                    const msgs = await res.json();
+                    const formatted: Message[] = msgs.reverse().map((m: any) => ({
+                        id: m.id,
+                        content: m.content,
+                        direction: m.direction === "INBOUND" ? "inbound" : "outbound",
+                        status: m.status || "sent",
+                        createdAt: m.createdAt,
+                    }));
+                    setSelectedConversation((prev) =>
+                        prev && prev.clientId === clientId
+                            ? { ...prev, messages: formatted }
+                            : prev
+                    );
                 }
-            } catch {
-                setConversations(MOCK_CONVERSATIONS);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchConversations();
-    }, []);
+            } catch { /* silent */ }
+        }, 5000);
+        return () => clearInterval(interval);
+    }, [selectedConversation?.clientId]);
 
     const filteredConversations = conversations.filter((conv) =>
         conv.clientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -128,20 +170,73 @@ export default function MessagesPage() {
     const handleSendMessage = async () => {
         if (!newMessage.trim() || !selectedConversation) return;
 
-        const message: Message = {
-            id: `temp-${Date.now()}`,
-            content: newMessage,
+        const tempId = `temp-${Date.now()}`;
+        const content = newMessage;
+        setNewMessage("");
+
+        // Optimistic update
+        const optimistic: Message = {
+            id: tempId,
+            content,
             direction: "outbound",
             status: "sent",
             createdAt: new Date().toISOString(),
         };
 
         setSelectedConversation((prev) =>
-            prev ? { ...prev, messages: [...prev.messages, message] } : null
+            prev ? { ...prev, messages: [...prev.messages, optimistic] } : null
         );
-        setNewMessage("");
 
-        // API call would go here
+        try {
+            const res = await fetch(
+                `${process.env.NEXT_PUBLIC_API_URL}/messages/${selectedConversation.clientId}`,
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        ...(await getAuthHeaders()),
+                    },
+                    body: JSON.stringify({ content }),
+                }
+            );
+
+            if (!res.ok) throw new Error("Send failed");
+
+            const saved = await res.json();
+
+            // Replace optimistic message with the real one
+            setSelectedConversation((prev) =>
+                prev
+                    ? {
+                          ...prev,
+                          messages: prev.messages.map((m) =>
+                              m.id === tempId ? { ...saved } : m
+                          ),
+                      }
+                    : null
+            );
+
+            // Update conversation list with latest message
+            setConversations((prev) =>
+                prev.map((c) =>
+                    c.clientId === selectedConversation.clientId
+                        ? { ...c, lastMessage: content, lastMessageAt: saved.createdAt }
+                        : c
+                )
+            );
+        } catch {
+            // Mark as failed
+            setSelectedConversation((prev) =>
+                prev
+                    ? {
+                          ...prev,
+                          messages: prev.messages.map((m) =>
+                              m.id === tempId ? { ...m, status: "failed" as const } : m
+                          ),
+                      }
+                    : null
+            );
+        }
     };
 
     const totalUnread = conversations.reduce((sum, c) => sum + c.unreadCount, 0);

@@ -2,6 +2,7 @@ import { Router } from "express";
 import { prisma } from "../lib/prisma";
 import { MessageChannel } from "@prisma/client";
 import { logEvent, EventType } from "../lib/event-logger";
+import { getChannel } from "../lib/channels/channel-router";
 
 const router: Router = Router();
 
@@ -107,6 +108,21 @@ router.post("/:coachSlug/:offerSlug/apply", async (req, res) => {
                 source: source || null,
             },
         });
+
+        // Auto-send intake/onboarding message via the lead's preferred channel
+        if (channelTag === MessageChannel.WHATSAPP && phone) {
+            try {
+                const adapter = await getChannel(MessageChannel.WHATSAPP, coach.id);
+                const intakeUrl = `${process.env.WEB_URL}/intake/${lead.id}`;
+                await adapter.sendOnboarding(phone, {
+                    clientId: lead.id,
+                    clientName: name,
+                    intakeFormUrl: intakeUrl,
+                });
+            } catch (err) {
+                console.error("[Lead Apply] Failed to auto-send WhatsApp onboarding:", err);
+            }
+        }
 
         res.status(201).json({
             success: true,

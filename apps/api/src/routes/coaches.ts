@@ -90,8 +90,17 @@ router.get("/channels", authenticate, async (req: AuthRequest, res: Response) =>
             ? `https://t.me/${botUsername}?start=${coach.slug}`
             : null;
 
+        const displayNumber = process.env.META_WHATSAPP_DISPLAY_NUMBER || null;
+        const waLink = displayNumber
+            ? `https://wa.me/${displayNumber.replaceAll(/\D/g, "")}`
+            : null;
+
         res.json({
-            whatsapp: { connected: true }, // Managed at platform level
+            whatsapp: {
+                connected: !!displayNumber,
+                phoneNumber: displayNumber,
+                waLink,
+            },
             telegram: {
                 connected: !!botUsername,
                 botUsername: botUsername || null,

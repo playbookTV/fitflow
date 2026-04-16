@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Privacy Policy — FitFlow</title>
+  <meta name="description" content="FitFlow Privacy Policy. How we collect, use, and protect data for coaches and their clients.">
+  <meta name="theme-color" content="#0a0a0b">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg-primary: #0a0a0b;
+      --bg-secondary: #111113;
+      --bg-card: #151518;
+      --text-primary: #f0f0f0;
+      --text-secondary: #a0a0a5;
+      --text-faint: #606065;
+      --text-muted: #404045;
+      --border: #1f1f24;
+      --green: #25D366;
+      --cyan: #26C6DA;
+      --green-border: rgba(37,211,102,0.30);
+      --font-display: 'Syne', sans-serif;
+      --font-body: 'DM Sans', sans-serif;
+      --font-mono: 'IBM Plex Mono', monospace;
+      --radius-md: 0.75rem;
+      --radius-lg: 1rem;
+      --radius-xl: 1.5rem;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html {
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    body {
+      font-family: var(--font-body);
+      font-size: 1rem;
+      color: var(--text-primary);
+      background: var(--bg-primary);
+      line-height: 1.7;
+    }
+
+    a { color: var(--green); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    ::selection { background: rgba(37,211,102,0.20); }
+
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    /* Nav (simplified) */
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      padding: 1rem 0;
+      background: rgba(10, 10, 11, 0.9);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .nav-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      max-width: min(1200px, 100% - 40px);
+      margin: 0 auto;
+    }
+
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 0.625rem;
+      text-decoration: none;
+    }
+
+    .nav-logo-icon { width: 1.75rem; height: auto; display: flex; align-items: center; }
+    .nav-logo-icon svg { width: 100%; height: auto; }
+
+    .nav-logo-text {
+      font-family: var(--font-mono);
+      font-weight: 700;
+      font-size: 0.75rem;
+      letter-spacing: 0.2em;
+      color: var(--text-secondary);
+    }
+
+    .nav-back {
+      font-family: var(--font-mono);
+      font-size: 0.6875rem;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-faint);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .nav-back:hover { color: var(--text-primary); text-decoration: none; }
+
+    /* Content */
+    .content {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 4rem 1.25rem 6rem;
+    }
+
+    .page-label {
+      font-family: var(--font-mono);
+      font-size: 0.625rem;
+      font-weight: 600;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--text-faint);
+      margin-bottom: 1rem;
+    }
+
+    .page-title {
+      font-family: var(--font-display);
+      font-size: clamp(2rem, 4vw, 3rem);
+      font-weight: 800;
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.75rem;
+    }
+
+    .page-updated {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-bottom: 3rem;
+    }
+
+    .intro {
+      font-size: 1.0625rem;
+      color: var(--text-secondary);
+      margin-bottom: 3rem;
+      padding-bottom: 2rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    h2 {
+      font-family: var(--font-display);
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-top: 3rem;
+      margin-bottom: 1rem;
+      letter-spacing: -0.01em;
+    }
+
+    h3 {
+      font-family: var(--font-display);
+      font-size: 1.125rem;
+      font-weight: 600;
+      margin-top: 2rem;
+      margin-bottom: 0.75rem;
+    }
+
+    p { color: var(--text-secondary); margin-bottom: 1rem; }
+
+    ul, ol {
+      color: var(--text-secondary);
+      margin-bottom: 1rem;
+      padding-left: 1.5rem;
+    }
+
+    li { margin-bottom: 0.5rem; }
+
+    strong { color: var(--text-primary); font-weight: 600; }
+
+    .highlight-box {
+      padding: 1.25rem 1.5rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      margin: 1.5rem 0;
+    }
+
+    .highlight-box p:last-child { margin-bottom: 0; }
+
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1.5rem 0;
+      font-size: 0.875rem;
+    }
+
+    .data-table th {
+      font-family: var(--font-mono);
+      font-size: 0.625rem;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--text-faint);
+      text-align: left;
+      padding: 0.75rem 1rem;
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .data-table td {
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid var(--border);
+      color: var(--text-secondary);
+      vertical-align: top;
+    }
+
+    .data-table tr:last-child td { border-bottom: none; }
+
+    .section-divider {
+      height: 1px;
+      background: var(--border);
+      margin: 3rem 0;
+    }
+
+    /* Footer */
+    .footer {
+      border-top: 1px solid var(--border);
+      padding: 2rem 0;
+      text-align: center;
+    }
+
+    .footer-text {
+      font-family: var(--font-mono);
+      font-size: 0.5625rem;
+      color: var(--text-muted);
+      letter-spacing: 0.1em;
+    }
+  </style>
+</head>
+
+<body>
+
+  <nav class="nav">
+    <div class="nav-inner">
+      <a href="index.html" class="nav-logo">
+        <div class="nav-logo-icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 301 219" fill="none"><path d="M0 0C1.421 0.278 16.795 11.658 19.147 13.354L150.197 107.832L300.512 0.041C297.702 4.35 293.44 12.779 290.97 17.516C286.915 24.613 281.582 35.76 276.975 42.754C276.092 44.091 267.45 49.939 265.397 51.4L245.002 66.012C213.617 88.528 181.327 111.133 150.289 133.974L35.479 51.338C32.073 48.902 27.132 45.589 24.115 42.838C23.135 41.945 20.155 36.332 19.3 34.795L4.306 8.039C3.068 5.828 0.893 2.182 0 0Z" fill="#25D366"/><path d="M37.717 72.88C38.777 73.331 46.795 79.271 48.202 80.28L72.958 97.837C108.092 123.006 143.398 147.934 178.873 172.62C183.275 169.867 188.504 166.002 192.831 162.975L218.347 145.13C216.5 149.644 203.497 180.405 201.63 182.425C199.762 184.442 196.868 186.067 194.609 187.632C189.48 191.187 184.183 194.627 179.248 198.442C173.255 194.67 166.881 190.137 160.998 186.102L150.276 178.785C140.752 185.392 130.975 191.775 121.539 198.505L107.518 188.7C104.804 186.825 101.161 184.857 98.954 182.427C96.988 180.262 84.38 150.156 82.099 145.097C88.228 148.938 95.932 154.697 101.981 158.922C107.894 163.052 116.02 168.355 121.564 172.722C125.014 170.375 128.443 167.995 131.849 165.58C131.591 165.437 131.33 165.297 131.085 165.13C124.573 160.68 118.173 156.045 111.751 151.468L78.554 127.89C75.061 125.403 57.758 113.734 55.93 111.484C54.881 110.193 38.198 75.023 37.717 72.88Z" fill="#25D366"/><path d="M262.588 72.891C262.725 73.03 262.695 73.103 262.755 73.354C258.878 81.615 254.948 89.851 250.968 98.062C249.41 101.335 245.393 110.985 243.178 112.682C237.615 116.948 231.025 121.473 225.24 125.581L181.617 156.583C178.377 154.108 174.947 151.695 171.633 149.306C168.917 147.324 166.177 145.374 163.415 143.458C167.376 140.777 171.489 137.838 175.358 135.013C204.12 114.012 233.975 94.066 262.588 72.891Z" fill="#25D366"/><path d="M124.939 47.025C151.59 46.485 180.162 46.708 206.883 46.915C197.526 52.838 187.278 61.924 177.8 68.109C171.859 68.364 164.43 68.153 158.376 68.15L152.15 68.13L161.382 80.132C157.092 83.065 148.014 89.32 144.151 92.618L109.503 47.234L124.939 47.025Z" fill="#25D366"/><path d="M149.898 192.34C150.952 192.807 154.46 195.27 155.585 195.987C160.266 198.985 165.004 202.522 169.74 205.395C167.862 206.365 164.572 208.762 162.77 210.025C158.862 212.795 154.936 215.54 150.992 218.26L150.785 218.312C149.732 218.042 132.96 206.032 131.33 204.885C137.064 201.125 144.507 196.412 149.898 192.34Z" fill="#25D366"/></svg></div>
+        <span class="nav-logo-text">FITFLOW</span>
+      </a>
+      <a href="index.html" class="nav-back">&larr; Back to Home</a>
+    </div>
+  </nav>
+
+  <main class="content">
+    <div class="page-label">Legal</div>
+    <h1 class="page-title">Privacy Policy</h1>
+    <p class="page-updated">Last updated: April 13, 2026</p>
+
+    <div class="intro">
+      <p>FitFlow ("we", "us", "our") operates a coaching operations platform that helps fitness coaches and personal trainers manage client delivery through messaging channels including WhatsApp and Telegram. This Privacy Policy explains how we collect, use, disclose, and safeguard information for both <strong>Coaches</strong> (our direct customers) and their <strong>Clients</strong> (end users who interact with FitFlow through messaging channels).</p>
+    </div>
+
+    <!-- 1. Information We Collect -->
+    <h2>1. Information We Collect</h2>
+
+    <h3>1.1 Information from Coaches</h3>
+    <p>When you register for and use FitFlow as a coach, we may collect:</p>
+    <ul>
+      <li><strong>Account information:</strong> name, email address, phone number, business name, and login credentials (managed via Supabase Auth)</li>
+      <li><strong>Payment information:</strong> billing details processed through Stripe Connect. We do not store full credit card numbers on our servers.</li>
+      <li><strong>Business data:</strong> coaching offers, workout plans, exercise libraries, message templates, and scheduling preferences you create within the platform</li>
+      <li><strong>Channel credentials:</strong> WhatsApp Business API tokens and Telegram Bot API tokens used to connect your messaging accounts</li>
+      <li><strong>Usage data:</strong> feature usage, login activity, and interaction patterns with the dashboard</li>
+    </ul>
+
+    <h3>1.2 Information from Clients (End Users)</h3>
+    <p>When a coach's client interacts with FitFlow through WhatsApp or Telegram, we may collect:</p>
+    <ul>
+      <li><strong>Contact information:</strong> name, phone number, email address, and messaging platform identifier</li>
+      <li><strong>Health and fitness data:</strong> body weight, energy levels, sleep quality, training goals, injury history, experience level, and other information provided through check-ins and onboarding forms</li>
+      <li><strong>Workout data:</strong> plan assignments, workout completion status, and compliance records</li>
+      <li><strong>Communication data:</strong> messages exchanged through WhatsApp and Telegram including check-in responses, delivered workout content, and automated bot interactions</li>
+      <li><strong>Payment data:</strong> payment status and transaction records related to coaching services</li>
+    </ul>
+
+    <h3>1.3 Information Collected Automatically</h3>
+    <ul>
+      <li><strong>Device and browser data:</strong> IP address, browser type, operating system, and device identifiers</li>
+      <li><strong>Cookies and analytics:</strong> session cookies for authentication and anonymized usage analytics</li>
+      <li><strong>Log data:</strong> server logs including timestamps, request paths, and error reports</li>
+    </ul>
+
+    <div class="section-divider"></div>
+
+    <!-- 2. How We Use Information -->
+    <h2>2. How We Use Information</h2>
+
+    <h3>2.1 For Coaches</h3>
+    <ul>
+      <li>Provide, maintain, and improve the FitFlow platform</li>
+      <li>Authenticate accounts and secure access</li>
+      <li>Process payments and manage billing through Stripe Connect</li>
+      <li>Deliver automated messages, check-ins, and workout content via WhatsApp and Telegram on the coach's behalf</li>
+      <li>Generate analytics dashboards including client compliance, progress trends, and engagement metrics</li>
+      <li>Send service-related communications (account updates, security alerts, feature announcements)</li>
+      <li>Provide customer support</li>
+    </ul>
+
+    <h3>2.2 For Clients</h3>
+    <ul>
+      <li>Deliver coaching content (workout plans, check-in prompts, milestone messages) through the client's preferred messaging channel</li>
+      <li>Collect and process check-in responses (weight, energy, sleep) and surface them to the client's coach</li>
+      <li>Track workout completion and progress over time</li>
+      <li>Send automated re-engagement messages when a client becomes inactive</li>
+      <li>Facilitate onboarding and intake questionnaires</li>
+    </ul>
+
+    <div class="highlight-box">
+      <p><strong>Important:</strong> FitFlow processes client data on behalf of coaches. Coaches are the data controllers for their client data. FitFlow acts as a data processor, handling client information only as instructed by the coach through their use of the platform.</p>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <!-- 3. Data Sharing -->
+    <h2>3. How We Share Information</h2>
+    <p>We do not sell personal information. We share data only in the following circumstances:</p>
+
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Recipient</th>
+          <th>Data Shared</th>
+          <th>Purpose</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Coaches</strong></td>
+          <td>Their clients' check-in data, progress, contact info</td>
+          <td>Core platform functionality</td>
+        </tr>
+        <tr>
+          <td><strong>Meta (WhatsApp Business API)</strong></td>
+          <td>Phone numbers, message content</td>
+          <td>Delivering messages via WhatsApp</td>
+        </tr>
+        <tr>
+          <td><strong>Telegram Bot API</strong></td>
+          <td>Telegram user IDs, message content</td>
+          <td>Delivering messages via Telegram</td>
+        </tr>
+        <tr>
+          <td><strong>Stripe</strong></td>
+          <td>Payment and billing information</td>
+          <td>Payment processing</td>
+        </tr>
+        <tr>
+          <td><strong>Supabase</strong></td>
+          <td>Account credentials, database records</td>
+          <td>Authentication and data storage</td>
+        </tr>
+        <tr>
+          <td><strong>Law enforcement</strong></td>
+          <td>As required</td>
+          <td>Legal compliance</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="section-divider"></div>
+
+    <!-- 4. WhatsApp and Telegram Data -->
+    <h2>4. Messaging Channel Data</h2>
+
+    <h3>4.1 WhatsApp (Meta Cloud API)</h3>
+    <p>FitFlow integrates with the Meta Cloud API to send and receive WhatsApp messages on behalf of coaches. This means:</p>
+    <ul>
+      <li>Messages sent through FitFlow are processed by Meta in accordance with <a href="https://www.whatsapp.com/legal/privacy-policy" target="_blank" rel="noopener">WhatsApp's Privacy Policy</a></li>
+      <li>We store message content and delivery status in our database to provide coaches with message history and analytics</li>
+      <li>Phone numbers are used solely for message delivery and client identification</li>
+      <li>We use approved WhatsApp message templates in compliance with Meta's Business Messaging policies</li>
+      <li>We do not use WhatsApp data for advertising purposes</li>
+    </ul>
+
+    <h3>4.2 Telegram (Bot API)</h3>
+    <p>Each coach may have a dedicated Telegram bot provisioned through the Telegram Bot API:</p>
+    <ul>
+      <li>Messages are processed by Telegram in accordance with <a href="https://telegram.org/privacy" target="_blank" rel="noopener">Telegram's Privacy Policy</a></li>
+      <li>We store message content and interaction data to provide coaching functionality</li>
+      <li>Telegram user IDs and chat IDs are used solely for message delivery</li>
+      <li>Bot interactions are limited to coaching-related functionality (check-ins, workout delivery, progress tracking)</li>
+    </ul>
+
+    <div class="section-divider"></div>
+
+    <!-- 5. Data Retention -->
+    <h2>5. Data Retention</h2>
+    <ul>
+      <li><strong>Coach accounts:</strong> Data is retained for the duration of the account and for up to 30 days after account deletion to allow for recovery</li>
+      <li><strong>Client data:</strong> Retained as long as the coach maintains an active account. When a coach removes a client or deletes their account, associated client data is deleted within 30 days</li>
+      <li><strong>Message history:</strong> Retained for the duration of the coaching relationship. Coaches may delete message history at any time</li>
+      <li><strong>Payment records:</strong> Retained as required by financial regulations (typically 7 years)</li>
+      <li><strong>Server logs:</strong> Automatically purged after 90 days</li>
+    </ul>
+
+    <div class="section-divider"></div>
+
+    <!-- 6. Data Security -->
+    <h2>6. Data Security</h2>
+    <p>We implement industry-standard security measures to protect your data:</p>
+    <ul>
+      <li>All data is transmitted over HTTPS/TLS encryption</li>
+      <li>Database access is restricted and authenticated through Supabase Row Level Security</li>
+      <li>API authentication uses secure token-based access control</li>
+      <li>Webhook endpoints use signature verification to prevent tampering</li>
+      <li>Sensitive credentials (API keys, bot tokens) are stored encrypted and never exposed to the client-side</li>
+      <li>We conduct regular security reviews of our codebase and infrastructure</li>
+    </ul>
+
+    <div class="section-divider"></div>
+
+    <!-- 7. Your Rights -->
+    <h2>7. Your Rights</h2>
+
+    <h3>7.1 Coach Rights</h3>
+    <p>As a FitFlow coach, you have the right to:</p>
+    <ul>
+      <li><strong>Access</strong> your account data and all client data you have collected</li>
+      <li><strong>Export</strong> your data in a standard format</li>
+      <li><strong>Delete</strong> your account and all associated data</li>
+      <li><strong>Modify</strong> your personal and business information at any time</li>
+      <li><strong>Disconnect</strong> messaging channels (WhatsApp, Telegram) at any time</li>
+    </ul>
+
+    <h3>7.2 Client Rights</h3>
+    <p>As a client of a FitFlow coach, you have the right to:</p>
+    <ul>
+      <li><strong>Access</strong> the data your coach has collected about you by contacting your coach directly</li>
+      <li><strong>Request deletion</strong> of your data by contacting your coach, who can remove your records from FitFlow</li>
+      <li><strong>Opt out</strong> of automated messages at any time by notifying your coach</li>
+      <li><strong>Contact us directly</strong> at the email below if your coach is unresponsive to your data requests</li>
+    </ul>
+
+    <div class="highlight-box">
+      <p><strong>For EU/EEA residents:</strong> You have additional rights under the General Data Protection Regulation (GDPR), including the right to data portability, the right to restrict processing, and the right to lodge a complaint with a supervisory authority. FitFlow processes data under the legal bases of contractual necessity (for coaches) and legitimate interest (for clients, on behalf of their coach).</p>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <!-- 8. Cookies -->
+    <h2>8. Cookies</h2>
+    <p>FitFlow uses only essential cookies required for platform functionality:</p>
+    <ul>
+      <li><strong>Authentication cookies:</strong> To maintain your logged-in session</li>
+      <li><strong>Preference cookies:</strong> To remember your settings (e.g., theme preference)</li>
+    </ul>
+    <p>We do not use advertising cookies or tracking pixels. We do not participate in cross-site tracking.</p>
+
+    <div class="section-divider"></div>
+
+    <!-- 9. Children -->
+    <h2>9. Children's Privacy</h2>
+    <p>FitFlow is not intended for use by individuals under the age of 16. We do not knowingly collect personal information from children. If you believe a child has provided us with personal data, please contact us and we will delete it promptly.</p>
+
+    <div class="section-divider"></div>
+
+    <!-- 10. International Transfers -->
+    <h2>10. International Data Transfers</h2>
+    <p>Your data may be processed in countries other than your own. Our service providers (Supabase, Stripe, Meta, Telegram) operate globally. Where data is transferred internationally, we ensure appropriate safeguards are in place, including standard contractual clauses where applicable.</p>
+
+    <div class="section-divider"></div>
+
+    <!-- 11. Third-Party Services -->
+    <h2>11. Third-Party Services</h2>
+    <p>FitFlow integrates with the following third-party services, each governed by their own privacy policies:</p>
+    <ul>
+      <li><a href="https://supabase.com/privacy" target="_blank" rel="noopener">Supabase</a> — Authentication and database</li>
+      <li><a href="https://stripe.com/privacy" target="_blank" rel="noopener">Stripe</a> — Payment processing</li>
+      <li><a href="https://www.whatsapp.com/legal/privacy-policy" target="_blank" rel="noopener">WhatsApp / Meta</a> — Messaging delivery</li>
+      <li><a href="https://telegram.org/privacy" target="_blank" rel="noopener">Telegram</a> — Messaging delivery</li>
+    </ul>
+
+    <div class="section-divider"></div>
+
+    <!-- 12. Changes -->
+    <h2>12. Changes to This Policy</h2>
+    <p>We may update this Privacy Policy from time to time. We will notify coaches of material changes via email or an in-app notification. The "Last updated" date at the top of this page reflects the most recent revision.</p>
+
+    <div class="section-divider"></div>
+
+    <!-- 13. Contact -->
+    <h2>13. Contact Us</h2>
+    <p>If you have questions about this Privacy Policy or wish to exercise your data rights, contact us at:</p>
+    <div class="highlight-box">
+      <p><strong>FitFlow</strong><br>
+      Email: <a href="mailto:privacy@fitflow.app">privacy@fitflow.app</a></p>
+    </div>
+
+  </main>
+
+  <footer class="footer">
+    <div class="footer-text">&copy; 2026 FitFlow. All rights reserved.</div>
+  </footer>
+
+</body>
+</html>

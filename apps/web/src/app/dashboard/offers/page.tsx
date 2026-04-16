@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { DashboardLayout } from "@/components/DashboardLayout";
-import { Plus, Link2, Users, Trash2, Copy } from "lucide-react";
+import { Plus, Link2, Users, Trash2, Copy, MessageCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getAuthHeaders } from "@/lib/auth";
 
@@ -24,6 +24,7 @@ export default function OffersPage() {
     const [showCreate, setShowCreate] = useState(false);
     const [newOffer, setNewOffer] = useState({ name: "", slug: "" });
     const [creating, setCreating] = useState(false);
+    const [waLink, setWaLink] = useState<string | null>(null);
 
     const fetchOffers = async () => {
         try {
@@ -38,7 +39,21 @@ export default function OffersPage() {
         }
     };
 
-    useEffect(() => { fetchOffers(); }, []);
+    const fetchChannels = async () => {
+        try {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/coaches/channels`, {
+                headers: await getAuthHeaders(),
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setWaLink(data.whatsapp?.waLink || null);
+            }
+        } catch (error) {
+            console.error("Failed to fetch channels:", error);
+        }
+    };
+
+    useEffect(() => { fetchOffers(); fetchChannels(); }, []);
 
     const handleCreate = async () => {
         if (!newOffer.name || !newOffer.slug) return;
@@ -74,6 +89,12 @@ export default function OffersPage() {
 
     const copyLink = (slug: string) => {
         const url = `${window.location.origin}/${slug}`;
+        navigator.clipboard.writeText(url);
+    };
+
+    const copyWaLink = (offerName: string) => {
+        if (!waLink) return;
+        const url = `${waLink}?text=${encodeURIComponent(`Hi, I'm interested in ${offerName}`)}`;
         navigator.clipboard.writeText(url);
     };
 
@@ -181,10 +202,19 @@ export default function OffersPage() {
                                 <button
                                     onClick={() => copyLink(offer.slug)}
                                     className="btn-ghost p-2"
-                                    title="Copy link"
+                                    title="Copy intake link"
                                 >
                                     <Copy className="w-4 h-4" />
                                 </button>
+                                {waLink && (
+                                    <button
+                                        onClick={() => copyWaLink(offer.name)}
+                                        className="btn-ghost p-2 text-brand-green hover:text-brand-green"
+                                        title="Copy WhatsApp link"
+                                    >
+                                        <MessageCircle className="w-4 h-4" />
+                                    </button>
+                                )}
                                 <button
                                     onClick={() => handleDelete(offer.id)}
                                     className="btn-ghost p-2 text-brand-red hover:text-brand-red"

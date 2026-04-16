@@ -15,9 +15,16 @@ import { buildSendPayload } from "../templates/meta-templates";
  * Wraps existing Meta Cloud API functions behind the channel abstraction.
  */
 export class WhatsAppAdapter implements DeliveryChannel {
+    constructor(private coachName?: string) {}
+
+    private brandText(text: string): string {
+        if (!this.coachName) return text;
+        return `*${this.coachName}*\n\n${text}`;
+    }
+
     async sendMessage(recipientId: string, content: string, clientId?: string): Promise<SendResult> {
         try {
-            const result = await sendWhatsAppMessage(recipientId, content, clientId);
+            const result = await sendWhatsAppMessage(recipientId, this.brandText(content), clientId);
             return {
                 success: true,
                 messageId: result.messages?.[0]?.id,

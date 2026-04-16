@@ -5,18 +5,19 @@ import { TelegramAdapter } from "./telegram-adapter";
 import { prisma } from "../prisma";
 import { getSharedBotToken } from "../bot-provisioner";
 
-// Singleton WhatsApp adapter (all coaches share the same WA Business API)
-const whatsAppAdapter = new WhatsAppAdapter();
-
 /**
  * Resolves the correct DeliveryChannel adapter based on channel type.
  *
- * For WhatsApp: returns a singleton adapter (shared WA Business API credentials).
+ * For WhatsApp: creates a per-call adapter with coach branding.
  * For Telegram: uses the shared bot token with coach-branded messaging.
  */
 export async function getChannel(channel: MessageChannel, coachId: string): Promise<DeliveryChannel> {
     if (channel === MessageChannel.WHATSAPP) {
-        return whatsAppAdapter;
+        const coach = await prisma.coach.findUnique({
+            where: { id: coachId },
+            select: { name: true },
+        });
+        return new WhatsAppAdapter(coach?.name ?? undefined);
     }
 
     if (channel === MessageChannel.TELEGRAM) {

@@ -1,0 +1,9 @@
+{
+  "name": "@fitflow/marketing",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "npx serve . -p 3002",
+    "build": "echo 'Static site — no build step required'"
+  }
+}
