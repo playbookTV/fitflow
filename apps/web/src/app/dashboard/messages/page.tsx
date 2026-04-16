@@ -132,8 +132,9 @@ export default function MessagesPage() {
         selectedClientIdRef.current = selectedConversation?.clientId || null;
     }, [selectedConversation?.clientId]);
 
+    const selectedClientId = selectedConversation?.clientId || null;
     useEffect(() => {
-        if (!selectedConversation) return;
+        if (!selectedClientId) return;
         const interval = setInterval(async () => {
             const clientId = selectedClientIdRef.current;
             if (!clientId) return;
@@ -144,7 +145,7 @@ export default function MessagesPage() {
                 );
                 if (res.ok) {
                     const msgs = await res.json();
-                    const formatted: Message[] = msgs.reverse().map((m: any) => ({
+                    const formatted: Message[] = msgs.reverse().map((m: Record<string, string>) => ({
                         id: m.id,
                         content: m.content,
                         direction: m.direction === "INBOUND" ? "inbound" : "outbound",
@@ -160,7 +161,7 @@ export default function MessagesPage() {
             } catch { /* silent */ }
         }, 5000);
         return () => clearInterval(interval);
-    }, [selectedConversation?.clientId]);
+    }, [selectedClientId]);
 
     const filteredConversations = conversations.filter((conv) =>
         conv.clientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
