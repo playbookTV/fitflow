@@ -24,6 +24,8 @@ import nutritionRouter from "./routes/nutrition";
 import mealsRouter from "./routes/meals";
 import mealPlansRouter from "./routes/meal-plans";
 import mealAssignmentsRouter from "./routes/meal-assignments";
+import shortLinksRouter from "./routes/short-links";
+import { prisma } from "./lib/prisma";
 import { startDailyScheduler } from "./jobs/daily-scheduler";
 import { startWeeklyCheckinScheduler } from "./jobs/weekly-checkin";
 import { startRenewalScheduler } from "./jobs/renewal-scheduler";
@@ -101,6 +103,26 @@ app.use("/nutrition", nutritionRouter);
 app.use("/meals", mealsRouter);
 app.use("/meal-plans", mealPlansRouter);
 app.use("/clients", mealAssignmentsRouter);
+app.use("/short-links", shortLinksRouter);
+
+// GET /go/:code — Short link resolve (returns JSON for web app redirect)
+app.get("/go/:code", async (req: Request, res: Response) => {
+    try {
+        const link = await prisma.shortLink.findUnique({
+            where: { code: req.params.code as string },
+        });
+        if (!link) return res.status(404).json({ error: "Link not found" });
+
+        await prisma.shortLink.update({
+            where: { id: link.id },
+            data: { clicks: { increment: 1 } },
+        });
+
+        res.json({ targetUrl: link.targetUrl });
+    } catch {
+        res.status(500).json({ error: "Failed to resolve link" });
+    }
+});
 
 // 404
 app.use((_req: Request, res: Response) => {

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { DashboardLayout } from "@/components/DashboardLayout";
-import { Plus, Link2, Users, Trash2, Copy, MessageCircle } from "lucide-react";
+import { Plus, Link2, Users, Trash2, Copy, MessageCircle, QrCode } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getAuthHeaders } from "@/lib/auth";
 
@@ -25,6 +25,8 @@ export default function OffersPage() {
     const [newOffer, setNewOffer] = useState({ name: "", slug: "" });
     const [creating, setCreating] = useState(false);
     const [waLink, setWaLink] = useState<string | null>(null);
+    const [showQrOffer, setShowQrOffer] = useState<string | null>(null);
+    const [shortLinks, setShortLinks] = useState<Record<string, { id: string; shortUrl: string }>>({});
 
     const fetchOffers = async () => {
         try {
@@ -53,7 +55,23 @@ export default function OffersPage() {
         }
     };
 
-    useEffect(() => { fetchOffers(); fetchChannels(); }, []);
+    const fetchShortLinks = async () => {
+        try {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/short-links`, {
+                headers: await getAuthHeaders(),
+            });
+            if (res.ok) {
+                const links = await res.json();
+                const map: Record<string, { id: string; shortUrl: string }> = {};
+                for (const link of links) {
+                    map[link.label || link.code] = { id: link.id, shortUrl: link.shortUrl };
+                }
+                setShortLinks(map);
+            }
+        } catch { /* silent */ }
+    };
+
+    useEffect(() => { fetchOffers(); fetchChannels(); fetchShortLinks(); }, []);
 
     const handleCreate = async () => {
         if (!newOffer.name || !newOffer.slug) return;
@@ -215,6 +233,15 @@ export default function OffersPage() {
                                         <MessageCircle className="w-4 h-4" />
                                     </button>
                                 )}
+                                {shortLinks[offer.name] && (
+                                    <button
+                                        onClick={() => setShowQrOffer(showQrOffer === offer.id ? null : offer.id)}
+                                        className="btn-ghost p-2 text-brand-cyan hover:text-brand-cyan"
+                                        title="Show QR code"
+                                    >
+                                        <QrCode className="w-4 h-4" />
+                                    </button>
+                                )}
                                 <button
                                     onClick={() => handleDelete(offer.id)}
                                     className="btn-ghost p-2 text-brand-red hover:text-brand-red"
@@ -223,6 +250,19 @@ export default function OffersPage() {
                                     <Trash2 className="w-4 h-4" />
                                 </button>
                             </div>
+
+                            {/* QR Code popup */}
+                            {showQrOffer === offer.id && shortLinks[offer.name] && (
+                                <div className="mt-3 flex justify-center p-4 rounded-xl bg-white">
+                                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                                    <img
+                                        src={`${process.env.NEXT_PUBLIC_API_URL}/short-links/${shortLinks[offer.name].id}/qr?size=200`}
+                                        alt={`QR code for ${offer.name}`}
+                                        width={200}
+                                        height={200}
+                                    />
+                                </div>
+                            )}
                         </div>
                     ))}
                 </div>

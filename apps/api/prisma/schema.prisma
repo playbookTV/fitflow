@@ -23,6 +23,7 @@ model Coach {
   templates         WorkoutPlan[] @relation("CoachTemplates")
   mealPlans         MealPlan[]
   mealTemplates     MealPlan[] @relation("CoachMealTemplates")
+  shortLinks        ShortLink[]
   botRegistry       BotRegistry?
   offers            Offer[]
   leads             Lead[]
@@ -391,6 +392,19 @@ enum MealStatus {
   COMPLETED
   SKIPPED
   MODIFIED
+}
+
+model ShortLink {
+  id        String   @id @default(uuid())
+  coachId   String   @map("coach_id")
+  coach     Coach    @relation(fields: [coachId], references: [id], onDelete: Cascade)
+  code      String   @unique
+  targetUrl String   @map("target_url")
+  label     String?
+  clicks    Int      @default(0)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("short_links")
 }
 
 model EventLog {

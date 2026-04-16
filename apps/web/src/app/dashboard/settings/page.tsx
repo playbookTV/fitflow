@@ -17,6 +17,10 @@ import {
     Smartphone,
     Send,
     Copy,
+    Link2,
+    QrCode,
+    Download,
+    MousePointerClick,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -87,6 +91,8 @@ function SettingsContent() {
     const [waLink, setWaLink] = useState<string | null>(null);
     const [waPhoneNumber, setWaPhoneNumber] = useState<string | null>(null);
     const [stripeLoading, setStripeLoading] = useState(false);
+    const [shortLinks, setShortLinks] = useState<{ id: string; code: string; targetUrl: string; label: string | null; clicks: number; shortUrl: string }[]>([]);
+    const [showQrId, setShowQrId] = useState<string | null>(null);
     const searchParams = useSearchParams();
 
     const handleStripeConnect = useCallback(async () => {
@@ -166,6 +172,17 @@ function SettingsContent() {
             } catch { /* silent */ }
         };
         fetchChannels();
+
+        const fetchShortLinks = async () => {
+            try {
+                const res = await fetch(
+                    `${process.env.NEXT_PUBLIC_API_URL}/short-links`,
+                    { headers: await getAuthHeaders() }
+                );
+                if (res.ok) setShortLinks(await res.json());
+            } catch { /* silent */ }
+        };
+        fetchShortLinks();
     }, []);
 
     const handleSave = async () => {
@@ -630,6 +647,81 @@ function SettingsContent() {
                                                 <ExternalLink className="w-3.5 h-3.5" />
                                             </button>
                                         </div>
+                                    </div>
+
+                                    {/* Short Links & QR Codes */}
+                                    <div className="card p-6">
+                                        <h3 className="text-lg font-semibold text-white mb-6 flex items-center gap-2">
+                                            <Link2 className="w-5 h-5 text-brand-cyan" />
+                                            Short Links & QR Codes
+                                        </h3>
+                                        {shortLinks.length === 0 ? (
+                                            <p className="text-sm text-text-secondary">
+                                                No short links yet. They&apos;ll be auto-generated when you create offers.
+                                            </p>
+                                        ) : (
+                                            <div className="space-y-3">
+                                                {shortLinks.map((link) => (
+                                                    <div key={link.id} className="p-4 rounded-xl bg-bg-hover">
+                                                        <div className="flex items-center justify-between mb-2">
+                                                            <div>
+                                                                <p className="text-sm font-medium text-white">
+                                                                    {link.label || link.code}
+                                                                </p>
+                                                                <p className="text-xs text-text-faint font-mono truncate">
+                                                                    {link.targetUrl}
+                                                                </p>
+                                                            </div>
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="flex items-center gap-1 text-xs text-text-faint">
+                                                                    <MousePointerClick className="w-3 h-3" />
+                                                                    {link.clicks}
+                                                                </span>
+                                                                <button
+                                                                    onClick={() => {
+                                                                        navigator.clipboard.writeText(link.shortUrl);
+                                                                    }}
+                                                                    className="btn-ghost !p-1.5"
+                                                                    title="Copy short link"
+                                                                >
+                                                                    <Copy className="w-3.5 h-3.5" />
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => setShowQrId(showQrId === link.id ? null : link.id)}
+                                                                    className="btn-ghost !p-1.5"
+                                                                    title="Show QR code"
+                                                                >
+                                                                    <QrCode className="w-3.5 h-3.5" />
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                        <code className="text-xs text-brand-cyan bg-bg-primary px-2 py-1 rounded font-mono">
+                                                            {link.shortUrl}
+                                                        </code>
+
+                                                        {showQrId === link.id && (
+                                                            <div className="mt-4 flex flex-col items-center gap-3 p-4 rounded-xl bg-white">
+                                                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                                                <img
+                                                                    src={`${process.env.NEXT_PUBLIC_API_URL}/short-links/${link.id}/qr?size=200`}
+                                                                    alt={`QR code for ${link.code}`}
+                                                                    width={200}
+                                                                    height={200}
+                                                                />
+                                                                <a
+                                                                    href={`${process.env.NEXT_PUBLIC_API_URL}/short-links/${link.id}/qr?size=600`}
+                                                                    download={`${link.code}-qr.png`}
+                                                                    className="flex items-center gap-1.5 text-xs text-gray-600 hover:text-black transition-colors"
+                                                                >
+                                                                    <Download className="w-3.5 h-3.5" />
+                                                                    Download HD
+                                                                </a>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             )}
