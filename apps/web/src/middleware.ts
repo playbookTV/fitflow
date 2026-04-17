@@ -2,6 +2,33 @@ import { NextResponse, type NextRequest } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
 
 export async function middleware(request: NextRequest) {
+    // ── ftfw.fit vanity domain routing ──
+    const hostname = request.headers.get("host") || "";
+    const isVanityDomain = hostname.includes("ftfw.fit");
+
+    if (isVanityDomain) {
+        const pathname = request.nextUrl.pathname;
+        const segments = pathname.split("/").filter(Boolean);
+
+        if (segments.length === 0) {
+            // ftfw.fit/ root → rewrite to /t (index/landing)
+            const url = request.nextUrl.clone();
+            url.pathname = "/t";
+            return NextResponse.rewrite(url);
+        }
+
+        if (segments.length === 1) {
+            // ftfw.fit/coach-slug → rewrite to /t/coach-slug
+            const url = request.nextUrl.clone();
+            url.pathname = `/t/${segments[0]}`;
+            return NextResponse.rewrite(url);
+        }
+
+        // ftfw.fit/coach-slug/offer-slug → falls through to [coachSlug]/[offerSlug]
+        return NextResponse.next();
+    }
+
+    // ── Main app auth logic ──
     const { response, user } = await updateSession(request);
 
     // If user is not logged in and trying to access protected pages, redirect to login

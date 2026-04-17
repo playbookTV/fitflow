@@ -21,6 +21,8 @@ import {
     QrCode,
     Download,
     MousePointerClick,
+    Eye,
+    EyeOff,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -37,6 +39,16 @@ interface CoachProfile {
         smsReminders: boolean;
         weeklyDigest: boolean;
     };
+    bio?: string;
+    avatarUrl?: string;
+    profileVisible: boolean;
+    showRatesPublicly: boolean;
+    showWhatsapp: boolean;
+    showTelegram: boolean;
+    defaultPaymentModel?: string;
+    defaultPricePerSession?: number;
+    defaultSessionsPerBlock?: number;
+    defaultMonthlyRate?: number;
     stripeConnected: boolean;
     whatsappConnected: boolean;
     telegramConnected: boolean;
@@ -44,10 +56,11 @@ interface CoachProfile {
     telegramDeepLink: string | null;
 }
 
-type TabId = "profile" | "notifications" | "integrations" | "billing";
+type TabId = "profile" | "public-profile" | "notifications" | "integrations" | "billing";
 
 const tabs: { id: TabId; label: string; icon: React.ElementType }[] = [
     { id: "profile", label: "Profile", icon: User },
+    { id: "public-profile", label: "Public Profile", icon: Globe },
     { id: "notifications", label: "Notifications", icon: Bell },
     { id: "integrations", label: "Integrations", icon: MessageSquare },
     { id: "billing", label: "Billing", icon: CreditCard },
@@ -61,6 +74,30 @@ const timezones = [
     { value: "America/Los_Angeles", label: "Los Angeles (PST/PDT)" },
     { value: "Asia/Dubai", label: "Dubai (GST)" },
 ];
+
+function ShareLinkRow({ label, url }: { label: string; url: string }) {
+    const [copied, setCopied] = useState(false);
+    const handleCopy = () => {
+        navigator.clipboard.writeText(`https://${url}`);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+    };
+    return (
+        <div className="flex items-center justify-between p-3 rounded-xl bg-bg-hover">
+            <div>
+                <p className="text-xs text-text-faint">{label}</p>
+                <code className="text-sm text-brand-green font-mono">{url}</code>
+            </div>
+            <button onClick={handleCopy} className="btn-ghost !p-2">
+                {copied ? (
+                    <Check className="w-4 h-4 text-brand-green" />
+                ) : (
+                    <Copy className="w-4 h-4" />
+                )}
+            </button>
+        </div>
+    );
+}
 
 function SettingsContent() {
     const [activeTab, setActiveTab] = useState<TabId>("profile");
@@ -80,6 +117,10 @@ function SettingsContent() {
             smsReminders: false,
             weeklyDigest: true,
         },
+        profileVisible: true,
+        showRatesPublicly: true,
+        showWhatsapp: true,
+        showTelegram: true,
         stripeConnected: false,
         whatsappConnected: false,
         telegramConnected: false,
@@ -203,6 +244,15 @@ function SettingsContent() {
                         businessName: profile.businessName,
                         timezone: profile.timezone,
                         notifications: profile.notifications,
+                        bio: profile.bio || null,
+                        avatarUrl: profile.avatarUrl || null,
+                        profileVisible: profile.profileVisible,
+                        showRatesPublicly: profile.showRatesPublicly,
+                        showWhatsapp: profile.showWhatsapp,
+                        showTelegram: profile.showTelegram,
+                        defaultPricePerSession: profile.defaultPricePerSession || null,
+                        defaultSessionsPerBlock: profile.defaultSessionsPerBlock || null,
+                        defaultMonthlyRate: profile.defaultMonthlyRate || null,
                     }),
                 }
             );
@@ -403,6 +453,238 @@ function SettingsContent() {
                                             </div>
                                         </div>
                                     </div>
+                                </div>
+                            )}
+
+                            {/* Public Profile Tab */}
+                            {activeTab === "public-profile" && (
+                                <div className="space-y-8 animate-fade-in">
+                                    {/* Status Indicator */}
+                                    <div className={cn(
+                                        "flex items-center gap-3 p-4 rounded-xl border",
+                                        profile.profileVisible
+                                            ? "border-brand-green/20 bg-brand-green/5"
+                                            : "border-brand-red/20 bg-brand-red/5"
+                                    )}>
+                                        {profile.profileVisible ? (
+                                            <Eye className="w-4 h-4 text-brand-green" />
+                                        ) : (
+                                            <EyeOff className="w-4 h-4 text-brand-red" />
+                                        )}
+                                        <span className={cn(
+                                            "text-sm font-medium",
+                                            profile.profileVisible ? "text-brand-green" : "text-brand-red"
+                                        )}>
+                                            {profile.profileVisible && profile.slug
+                                                ? `Profile live at ftfw.fit/${profile.slug}`
+                                                : profile.profileVisible && !profile.slug
+                                                    ? "Set a slug to publish your profile"
+                                                    : "Profile hidden"}
+                                        </span>
+                                    </div>
+
+                                    {/* Bio & Avatar */}
+                                    <div className="card p-6">
+                                        <h3 className="text-lg font-semibold text-white mb-6 flex items-center gap-2">
+                                            <User className="w-5 h-5 text-brand-green" />
+                                            Profile Page
+                                        </h3>
+                                        <div className="space-y-5">
+                                            <div className="form-field">
+                                                <label className="label">Bio</label>
+                                                <textarea
+                                                    value={profile.bio || ""}
+                                                    onChange={(e) => {
+                                                        if (e.target.value.length <= 200) {
+                                                            updateProfile({ bio: e.target.value });
+                                                        }
+                                                    }}
+                                                    className="textarea"
+                                                    placeholder="Tell potential clients about yourself..."
+                                                    rows={3}
+                                                />
+                                                <p className="text-xs text-text-faint mt-1 text-right">
+                                                    {(profile.bio || "").length} / 200
+                                                </p>
+                                            </div>
+                                            <div className="form-field">
+                                                <label className="label">Avatar URL</label>
+                                                <input
+                                                    type="url"
+                                                    value={profile.avatarUrl || ""}
+                                                    onChange={(e) =>
+                                                        updateProfile({ avatarUrl: e.target.value })
+                                                    }
+                                                    className="input"
+                                                    placeholder="https://..."
+                                                />
+                                                <p className="text-xs text-text-faint mt-1">
+                                                    Upload your photo to Supabase Storage and paste the URL here
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Default Rates */}
+                                    <div className="card p-6">
+                                        <h3 className="text-lg font-semibold text-white mb-6 flex items-center gap-2">
+                                            <CreditCard className="w-5 h-5 text-brand-cyan" />
+                                            Default Rates
+                                        </h3>
+                                        <p className="text-xs text-text-faint mb-5">
+                                            These are displayed on your public profile. Per-client rates may differ.
+                                        </p>
+                                        <div className="space-y-5">
+                                            {(profile.defaultPaymentModel === "SESSION_BLOCKS" || profile.defaultPaymentModel === "PER_SESSION") && (
+                                                <div className="form-field">
+                                                    <label className="label">Price per session (in smallest currency unit)</label>
+                                                    <input
+                                                        type="number"
+                                                        value={profile.defaultPricePerSession || ""}
+                                                        onChange={(e) =>
+                                                            updateProfile({ defaultPricePerSession: e.target.value ? Number(e.target.value) : undefined })
+                                                        }
+                                                        className="input"
+                                                        placeholder="e.g. 4000 for £40"
+                                                    />
+                                                </div>
+                                            )}
+                                            {profile.defaultPaymentModel === "SESSION_BLOCKS" && (
+                                                <div className="form-field">
+                                                    <label className="label">Sessions per block</label>
+                                                    <input
+                                                        type="number"
+                                                        value={profile.defaultSessionsPerBlock || ""}
+                                                        onChange={(e) =>
+                                                            updateProfile({ defaultSessionsPerBlock: e.target.value ? Number(e.target.value) : undefined })
+                                                        }
+                                                        className="input"
+                                                        placeholder="e.g. 10"
+                                                    />
+                                                </div>
+                                            )}
+                                            {profile.defaultPaymentModel === "MONTHLY_RETAINER" && (
+                                                <div className="form-field">
+                                                    <label className="label">Monthly rate (in smallest currency unit)</label>
+                                                    <input
+                                                        type="number"
+                                                        value={profile.defaultMonthlyRate || ""}
+                                                        onChange={(e) =>
+                                                            updateProfile({ defaultMonthlyRate: e.target.value ? Number(e.target.value) : undefined })
+                                                        }
+                                                        className="input"
+                                                        placeholder="e.g. 12000 for £120"
+                                                    />
+                                                </div>
+                                            )}
+                                            {!profile.defaultPaymentModel && (
+                                                <p className="text-sm text-text-secondary">
+                                                    Set a payment model in Setup to configure rates.
+                                                </p>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Visibility Toggles */}
+                                    <div className="card p-6">
+                                        <h3 className="text-lg font-semibold text-white mb-6 flex items-center gap-2">
+                                            <Eye className="w-5 h-5 text-brand-violet" />
+                                            Visibility
+                                        </h3>
+                                        <div className="space-y-4">
+                                            <label className="flex items-center justify-between p-4 rounded-xl bg-bg-hover cursor-pointer">
+                                                <div>
+                                                    <p className="font-medium text-white">Profile page live</p>
+                                                    <p className="text-sm text-text-faint">
+                                                        Make your profile visible at ftfw.fit/{profile.slug || "your-slug"}
+                                                    </p>
+                                                </div>
+                                                <button
+                                                    onClick={() => updateProfile({ profileVisible: !profile.profileVisible })}
+                                                    className={cn(
+                                                        "toggle",
+                                                        profile.profileVisible && "toggle-active"
+                                                    )}
+                                                >
+                                                    <span className="toggle-thumb" />
+                                                </button>
+                                            </label>
+                                            <label className="flex items-center justify-between p-4 rounded-xl bg-bg-hover cursor-pointer">
+                                                <div>
+                                                    <p className="font-medium text-white">Show rates publicly</p>
+                                                    <p className="text-sm text-text-faint">
+                                                        Display your pricing on the profile page
+                                                    </p>
+                                                </div>
+                                                <button
+                                                    onClick={() => updateProfile({ showRatesPublicly: !profile.showRatesPublicly })}
+                                                    className={cn(
+                                                        "toggle",
+                                                        profile.showRatesPublicly && "toggle-active"
+                                                    )}
+                                                >
+                                                    <span className="toggle-thumb" />
+                                                </button>
+                                            </label>
+                                            <label className="flex items-center justify-between p-4 rounded-xl bg-bg-hover cursor-pointer">
+                                                <div>
+                                                    <p className="font-medium text-white">Show WhatsApp button</p>
+                                                    <p className="text-sm text-text-faint">
+                                                        Display WhatsApp contact button on profile
+                                                    </p>
+                                                </div>
+                                                <button
+                                                    onClick={() => updateProfile({ showWhatsapp: !profile.showWhatsapp })}
+                                                    className={cn(
+                                                        "toggle",
+                                                        profile.showWhatsapp && "toggle-active"
+                                                    )}
+                                                >
+                                                    <span className="toggle-thumb" />
+                                                </button>
+                                            </label>
+                                            <label className="flex items-center justify-between p-4 rounded-xl bg-bg-hover cursor-pointer">
+                                                <div>
+                                                    <p className="font-medium text-white">Show Telegram button</p>
+                                                    <p className="text-sm text-text-faint">
+                                                        {profile.telegramConnected
+                                                            ? "Display Telegram contact button on profile"
+                                                            : "Connect Telegram first to enable this"}
+                                                    </p>
+                                                </div>
+                                                <button
+                                                    onClick={() => {
+                                                        if (profile.telegramConnected) {
+                                                            updateProfile({ showTelegram: !profile.showTelegram });
+                                                        }
+                                                    }}
+                                                    disabled={!profile.telegramConnected}
+                                                    className={cn(
+                                                        "toggle",
+                                                        profile.showTelegram && profile.telegramConnected && "toggle-active",
+                                                        !profile.telegramConnected && "opacity-50 cursor-not-allowed"
+                                                    )}
+                                                >
+                                                    <span className="toggle-thumb" />
+                                                </button>
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    {/* Share Links */}
+                                    {profile.slug && (
+                                        <div className="card p-6">
+                                            <h3 className="text-lg font-semibold text-white mb-6 flex items-center gap-2">
+                                                <Link2 className="w-5 h-5 text-brand-blue" />
+                                                Share Your Profile
+                                            </h3>
+                                            <div className="space-y-3">
+                                                <ShareLinkRow label="Profile page" url={`ftfw.fit/${profile.slug}`} />
+                                                <ShareLinkRow label="WhatsApp deep link" url={`ftfw.fit/${profile.slug}?c=wb`} />
+                                                <ShareLinkRow label="Telegram deep link" url={`ftfw.fit/${profile.slug}?c=tg`} />
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             )}
 

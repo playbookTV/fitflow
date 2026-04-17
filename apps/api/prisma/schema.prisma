@@ -25,6 +25,18 @@ model Coach {
   activeClientRange String?   @map("active_client_range")
   onboardingCompleted Boolean @default(false) @map("onboarding_completed")
   onboardingStep    Int       @default(0) @map("onboarding_step")
+
+  // Public profile (ftfw.fit)
+  bio                     String?
+  avatarUrl               String?   @map("avatar_url")
+  profileVisible          Boolean   @default(true)  @map("profile_visible")
+  showRatesPublicly       Boolean   @default(true)  @map("show_rates_publicly")
+  showWhatsapp            Boolean   @default(true)  @map("show_whatsapp")
+  showTelegram            Boolean   @default(true)  @map("show_telegram")
+  defaultPricePerSession  Int?      @map("default_price_per_session")
+  defaultSessionsPerBlock Int?      @map("default_sessions_per_block")
+  defaultMonthlyRate      Int?      @map("default_monthly_rate")
+
   clients           Client[]
   subscription      Subscription?
   plans             WorkoutPlan[]
@@ -494,4 +506,36 @@ model EventLog {
   @@index([clientId])
   @@index([eventType])
   @@map("event_logs")
+}
+
+// ═══════════════════════════════════════════════════════════════
+// VANITY URL (ftfw.fit)
+// ═══════════════════════════════════════════════════════════════
+
+model SlugRedirect {
+  id        String   @id @default(uuid())
+  oldSlug   String   @unique @map("old_slug")
+  newSlug   String   @map("new_slug")
+  coachId   String   @map("coach_id")
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("slug_redirects")
+}
+
+model ProfileEvent {
+  id        String   @id @default(uuid())
+  coachSlug String   @map("coach_slug")
+  coachId   String   @map("coach_id")
+  event     String   // viewed | channel_click | redirect | link_copied
+  channel   String?  // wb | tg
+  source    String?  // direct | wb_link | tg_link
+  ipHash    String   @map("ip_hash")
+  userAgent String?  @map("user_agent")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([coachId])
+  @@index([coachSlug])
+  @@index([event])
+  @@map("profile_events")
 }

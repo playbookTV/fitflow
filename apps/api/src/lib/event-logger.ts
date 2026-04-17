@@ -67,6 +67,12 @@ export const EventType = {
     COACH_ONBOARDING_COMPLETED: "coach_onboarding.completed",
     TRAINER_ACTIVATED: "trainer.activated",
 
+    // Profile (ftfw.fit)
+    PROFILE_VIEWED: "profile.viewed",
+    PROFILE_CHANNEL_CLICK: "profile.channel_click",
+    PROFILE_REDIRECT: "profile.redirect",
+    PROFILE_LINK_COPIED: "profile.link_copied",
+
     // Coach subscription
     SUBSCRIPTION_CREATED: "subscription.created",
     SUBSCRIPTION_UPGRADED: "subscription.upgraded",

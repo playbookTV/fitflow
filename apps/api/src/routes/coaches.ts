@@ -7,6 +7,11 @@ import { logEvent, EventType } from "../lib/event-logger";
 
 const router: Router = Router();
 
+const RESERVED_SLUGS = new Set([
+    "app", "api", "admin", "login", "register", "settings", "help",
+    "404", "health", "status", "dashboard", "setup", "go", "onboarding", "t",
+]);
+
 // GET /coaches/me - Get current coach profile
 router.get("/me", authenticate, async (req: AuthRequest, res: Response) => {
     const coachId = req.user?.id as string;
@@ -38,6 +43,15 @@ router.get("/me", authenticate, async (req: AuthRequest, res: Response) => {
             activeClientRange: coach.activeClientRange,
             onboardingCompleted: coach.onboardingCompleted,
             onboardingStep: coach.onboardingStep,
+            bio: coach.bio,
+            avatarUrl: coach.avatarUrl,
+            profileVisible: coach.profileVisible,
+            showRatesPublicly: coach.showRatesPublicly,
+            showWhatsapp: coach.showWhatsapp,
+            showTelegram: coach.showTelegram,
+            defaultPricePerSession: coach.defaultPricePerSession,
+            defaultSessionsPerBlock: coach.defaultSessionsPerBlock,
+            defaultMonthlyRate: coach.defaultMonthlyRate,
             stripeConnected: !!coach.stripeAccountId,
             whatsappConnected: true, // Managed at platform level for now
             telegramConnected: !!botUsername,
@@ -59,9 +73,53 @@ router.patch("/me", authenticate, async (req: AuthRequest, res: Response) => {
         name, slug, phone, businessName, timezone, defaultChannel,
         specialities, defaultPaymentModel, activeClientRange,
         onboardingStep, onboardingCompleted,
+        bio, avatarUrl, profileVisible, showRatesPublicly,
+        showWhatsapp, showTelegram,
+        defaultPricePerSession, defaultSessionsPerBlock, defaultMonthlyRate,
     } = req.body;
 
+    // Validate reserved slugs
+    if (slug !== undefined) {
+        const normalized = slug.toLowerCase().replaceAll(/[^a-z0-9-]/g, "");
+        if (RESERVED_SLUGS.has(normalized)) {
+            return res.status(400).json({ error: "This slug is reserved and cannot be used" });
+        }
+        if (normalized.length < 3 || normalized.length > 30) {
+            return res.status(400).json({ error: "Slug must be 3–30 characters" });
+        }
+    }
+
+    // Validate bio length
+    if (bio !== undefined && bio !== null && bio.length > 200) {
+        return res.status(400).json({ error: "Bio must be 200 characters or fewer" });
+    }
+
     try {
+        // Check if slug is changing — create redirect from old slug
+        if (slug !== undefined) {
+            const current = await prisma.coach.findUnique({
+                where: { id: coachId },
+                select: { slug: true },
+            });
+
+            if (current?.slug && current.slug !== slug) {
+                // Upsert: if old slug redirect already exists, update it
+                await prisma.slugRedirect.upsert({
+                    where: { oldSlug: current.slug },
+                    update: {
+                        newSlug: slug,
+                        expiresAt: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
+                    },
+                    create: {
+                        oldSlug: current.slug,
+                        newSlug: slug,
+                        coachId,
+                        expiresAt: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
+                    },
+                });
+            }
+        }
+
         const coach = await prisma.coach.update({
             where: { id: coachId },
             data: {
@@ -76,6 +134,15 @@ router.patch("/me", authenticate, async (req: AuthRequest, res: Response) => {
                 ...(activeClientRange !== undefined && { activeClientRange }),
                 ...(onboardingStep !== undefined && { onboardingStep }),
                 ...(onboardingCompleted !== undefined && { onboardingCompleted }),
+                ...(bio !== undefined && { bio }),
+                ...(avatarUrl !== undefined && { avatarUrl }),
+                ...(profileVisible !== undefined && { profileVisible }),
+                ...(showRatesPublicly !== undefined && { showRatesPublicly }),
+                ...(showWhatsapp !== undefined && { showWhatsapp }),
+                ...(showTelegram !== undefined && { showTelegram }),
+                ...(defaultPricePerSession !== undefined && { defaultPricePerSession }),
+                ...(defaultSessionsPerBlock !== undefined && { defaultSessionsPerBlock }),
+                ...(defaultMonthlyRate !== undefined && { defaultMonthlyRate }),
             },
         });
 
