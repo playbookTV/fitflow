@@ -12,12 +12,17 @@
  */
 import { describe, it, expect } from "vitest";
 import axios from "axios";
+import dotenv from "dotenv";
+import path from "node:path";
 import { TemplateId } from "@fitflow/shared";
 import { META_TEMPLATES, buildCreatePayload, buildSendPayload } from "../../lib/templates/meta-templates";
 
+// Load REAL .env (not .env.test) for contract tests — we need actual Meta credentials
+const realEnv = dotenv.config({ path: path.resolve(__dirname, "../../../.env") }).parsed || {};
+
 const META_TOKEN = process.env.META_TEST_ACCESS_TOKEN;
-const PHONE_NUMBER_ID = process.env.META_WHATSAPP_PHONE_NUMBER_ID;
-const BUSINESS_ACCOUNT_ID = process.env.META_WHATSAPP_BUSINESS_ACCOUNT_ID;
+const PHONE_NUMBER_ID = realEnv.META_WHATSAPP_PHONE_NUMBER_ID || process.env.META_WHATSAPP_PHONE_NUMBER_ID;
+const BUSINESS_ACCOUNT_ID = realEnv.META_WHATSAPP_BUSINESS_ACCOUNT_ID || process.env.META_WHATSAPP_BUSINESS_ACCOUNT_ID;
 const API_VERSION = "v22.0";
 const BASE_URL = `https://graph.facebook.com/${API_VERSION}`;
 
