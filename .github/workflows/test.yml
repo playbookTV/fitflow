@@ -1,0 +1,122 @@
+name: Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  test-shared:
+    name: Test shared package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @fitflow/shared test:coverage
+
+  test-api:
+    name: Test API
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: fitflow_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/fitflow_test
+      DIRECT_URL: postgresql://postgres:postgres@localhost:5432/fitflow_test
+      REDIS_URL: redis://localhost:6379
+      SUPABASE_URL: http://localhost:54321
+      SUPABASE_SERVICE_KEY: test-service-key
+      META_WHATSAPP_ACCESS_TOKEN: test-token
+      META_WHATSAPP_PHONE_NUMBER_ID: test-phone-id
+      META_WHATSAPP_BUSINESS_ACCOUNT_ID: test-business-id
+      META_WHATSAPP_VERIFY_TOKEN: test-verify-token
+      META_APP_SECRET: test-app-secret
+      STRIPE_SECRET_KEY: sk_test_fake
+      STRIPE_WEBHOOK_SECRET: whsec_test_fake
+      STRIPE_SUBSCRIPTION_WEBHOOK_SECRET: whsec_sub_test_fake
+      NODE_ENV: test
+      ENABLE_SCHEDULERS: "false"
+      ENABLE_WORKERS: "false"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @fitflow/shared build
+      - run: pnpm --filter @fitflow/api prisma:generate
+      - run: pnpm --filter @fitflow/api test:coverage
+
+  test-web:
+    name: Test web app
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @fitflow/shared build
+      - run: pnpm --filter @fitflow/web test:coverage
+
+  test-meta-contract:
+    name: Meta API contract tests
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @fitflow/shared build
+      - run: pnpm --filter @fitflow/api prisma:generate
+      - run: pnpm --filter @fitflow/api vitest run src/__tests__/meta-integration
+        env:
+          META_TEST_ACCESS_TOKEN: ${{ secrets.META_TEST_ACCESS_TOKEN }}
+          META_WHATSAPP_PHONE_NUMBER_ID: ${{ secrets.META_WHATSAPP_PHONE_NUMBER_ID }}
+          META_WHATSAPP_BUSINESS_ACCOUNT_ID: ${{ secrets.META_WHATSAPP_BUSINESS_ACCOUNT_ID }}
+          NODE_ENV: test
+          ENABLE_SCHEDULERS: "false"
+          ENABLE_WORKERS: "false"

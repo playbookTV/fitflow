@@ -41,6 +41,12 @@ export enum TemplateId {
     RENEWAL_2DAY = "renewal.2day",
     RENEWAL_POST_EXPIRY = "renewal.post_expiry",
 
+    // Meal Delivery
+    MEAL_DAILY = "meal.daily",
+    MEAL_REST_DAY = "meal.rest_day",
+    MEAL_LOGGED_CONFIRMATION = "meal.logged_confirmation",
+    MEAL_MISSED_NUDGE = "meal.missed_nudge",
+
     // Exercise Videos
     EXERCISE_VIDEO = "exercise.video",
 
@@ -230,6 +236,27 @@ export interface SystemBroadcastContext {
     client_first_name: string;
     coach_first_name: string;
     broadcast_message: string;
+}
+
+export interface MealDailyContext {
+    day_number: number;
+    plan_title: string;
+    meals_list: string;
+    macros_summary: string;
+}
+
+export interface MealRestDayContext {
+    client_first_name: string;
+    coach_first_name: string;
+}
+
+export interface MealLoggedConfirmationContext {
+    day_number: number;
+    client_first_name: string;
+}
+
+export interface MealMissedNudgeContext {
+    client_first_name: string;
 }
 
 export interface ExerciseVideoContext {

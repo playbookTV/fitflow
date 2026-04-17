@@ -159,9 +159,11 @@ app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
     res.status(500).json({ error: "Internal server error" });
 });
 
-app.listen(PORT, async () => {
-    console.log(`✅ FitFlow API running on http://localhost:${PORT}`);
-    await ensureSharedBot();
-});
+if (process.env.NODE_ENV !== "test") {
+    app.listen(PORT, async () => {
+        console.log(`✅ FitFlow API running on http://localhost:${PORT}`);
+        await ensureSharedBot();
+    });
+}
 
 export default app;

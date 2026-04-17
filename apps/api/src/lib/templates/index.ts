@@ -8,6 +8,7 @@ import "./milestones";
 import "./payments";
 import "./renewals";
 import "./system";
+import "./meals";
 import "./exercise";
 
 // Re-export the public API

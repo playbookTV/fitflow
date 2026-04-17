@@ -276,6 +276,48 @@ export const META_TEMPLATES: Record<TemplateId, MetaTemplateDefinition> = {
         paramKeys: ["client_first_name", "renewal_date", "payment_link", "coach_first_name"],
     },
 
+    // ── Meal Delivery ─────────────────────────────────────────────
+    [TemplateId.MEAL_DAILY]: {
+        metaName: "fitflow_meal_daily",
+        category: "UTILITY",
+        language: "en",
+        bodyText:
+            "🍽️ Today's Meal Plan — Day {{1}}\n\n" +
+            "Plan: {{2}}\n\n" +
+            "{{3}}\n\n" +
+            "📊 {{4}}\n\n" +
+            "Hit Done ✅ when you've followed today's plan, or Skipped ⏭ if you couldn't stick to it.",
+        paramKeys: ["day_number", "plan_title", "meals_list", "macros_summary"],
+    },
+    [TemplateId.MEAL_REST_DAY]: {
+        metaName: "fitflow_meal_rest_day",
+        category: "UTILITY",
+        language: "en",
+        bodyText:
+            "No structured meals today, {{1}} 🍃\n\n" +
+            "Keep your protein up and stay hydrated. If you need ideas, check your plan in the dashboard — yesterday's meals work well as a repeat.\n\n" +
+            "Best, {{2}} — your coach",
+        paramKeys: ["client_first_name", "coach_first_name"],
+    },
+    [TemplateId.MEAL_LOGGED_CONFIRMATION]: {
+        metaName: "fitflow_meal_logged_confirm",
+        category: "UTILITY",
+        language: "en",
+        bodyText:
+            "🙌 Meal plan logged for Day {{1}}.\n\n" +
+            "Nice work, {{2}}! Consistency with nutrition is where the real results come from. Keep it up! 🥗",
+        paramKeys: ["day_number", "client_first_name"],
+    },
+    [TemplateId.MEAL_MISSED_NUDGE]: {
+        metaName: "fitflow_meal_missed_nudge",
+        category: "UTILITY",
+        language: "en",
+        bodyText:
+            "Hey {{1}}, quick reminder — did you follow yesterday's meal plan?\n\n" +
+            "Even a rough log helps your coach keep your nutrition on track. Just reply Done or Skipped when you get a moment 👇",
+        paramKeys: ["client_first_name"],
+    },
+
     // ── Exercise Videos ──────────────────────────────────────────
     [TemplateId.EXERCISE_VIDEO]: {
         metaName: "fitflow_exercise_video",

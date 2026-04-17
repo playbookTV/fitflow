@@ -1,0 +1,44 @@
+{
+    "object": "whatsapp_business_account",
+    "entry": [
+        {
+            "id": "TEST_BUSINESS_ID",
+            "changes": [
+                {
+                    "value": {
+                        "messaging_product": "whatsapp",
+                        "metadata": {
+                            "display_phone_number": "441234567890",
+                            "phone_number_id": "test-phone-id"
+                        },
+                        "contacts": [
+                            {
+                                "profile": {
+                                    "name": "Test User"
+                                },
+                                "wa_id": "447700900000"
+                            }
+                        ],
+                        "messages": [
+                            {
+                                "from": "447700900000",
+                                "id": "wamid.flow_checkin_001",
+                                "timestamp": "1700000100",
+                                "type": "interactive",
+                                "interactive": {
+                                    "type": "nfm_reply",
+                                    "nfm_reply": {
+                                        "response_json": "{\"flow_token\":\"checkin_test-client-id_1700000000\",\"flow_type\":\"weekly_checkin\",\"weight\":\"80.5\",\"weight_unit\":\"kg\",\"energy\":\"4\",\"sleep\":\"7-8 hours\",\"notes\":\"Feeling good\"}",
+                                        "body": "checkin_test-client-id_1700000000",
+                                        "name": "flow"
+                                    }
+                                }
+                            }
+                        ]
+                    },
+                    "field": "messages"
+                }
+            ]
+        }
+    ]
+}
