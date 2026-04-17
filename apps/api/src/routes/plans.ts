@@ -2,6 +2,8 @@ import { Router, Response } from "express";
 import { authenticate, AuthRequest } from "../middleware/auth";
 import { enforceLimit } from "../middleware/subscription";
 import { prisma } from "../lib/prisma";
+import { validate } from "../middleware/validate";
+import { createPlanSchema } from "../lib/schemas";
 
 const router: Router = Router();
 
@@ -35,14 +37,11 @@ router.get("/", authenticate, async (req: AuthRequest, res: Response) => {
 });
 
 // POST /plans - Create a new plan
-router.post("/", authenticate, enforceLimit("workoutPlans"), async (req: AuthRequest, res: Response) => {
+router.post("/", authenticate, enforceLimit("workoutPlans"), validate(createPlanSchema), async (req: AuthRequest, res: Response) => {
     const coachId = req.user?.id as string;
     const { title, description, isTemplate, days } = req.body;
 
     if (!coachId) return res.status(401).json({ error: "Unauthorized" });
-    if (!Array.isArray(days) || days.length === 0) {
-        return res.status(400).json({ error: "days array is required" });
-    }
 
     try {
         const plan = await prisma.workoutPlan.create({

@@ -1,4 +1,5 @@
-import "dotenv/config";
+// Validate required env vars at startup (throws if any are missing)
+import { env } from "./lib/env";
 import express, { Express, Request, Response, NextFunction } from "express";
 import cors from "cors";
 import helmet from "helmet";
@@ -64,25 +65,29 @@ if (schedulersEnabled()) {
 }
 
 const app: Express = express();
-const PORT = process.env.PORT || 3001;
+const PORT = env.PORT;
 
 // Trust first proxy (Railway/Render/etc.) so X-Forwarded-For is used for client IP
 app.set("trust proxy", 1);
 
 // Middleware
 app.use(helmet());
+const allowedOrigins = [
+    env.WEB_URL,
+    ...(env.PREVIEW_URL ? [env.PREVIEW_URL] : []),
+];
 app.use(cors({
-    origin: [
-        process.env.WEB_URL || "http://localhost:3000",
-        /\.vercel\.app$/ // Allow all Vercel preview/production deployments
-    ],
-    credentials: true
+    origin: allowedOrigins,
+    credentials: true,
 }));
+// IMPORTANT: payment-webhook and subscription-webhook routes MUST be mounted
+// BEFORE express.json() because they use express.raw() for Stripe signature
+// verification. The verify callback below stores rawBody for Meta webhook
+// signature verification in webhooks.ts.
 app.use("/payments", paymentWebhookRouter);
 app.use("/subscriptions", subscriptionWebhookRouter);
 app.use(express.json({
     verify: (req: any, _res, buf) => {
-        // Store raw body for webhook signature verification (e.g. Meta WhatsApp)
         req.rawBody = buf;
     },
 }));

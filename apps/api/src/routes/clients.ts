@@ -6,6 +6,8 @@ import { prisma } from "../lib/prisma";
 import { onboardingQueue } from "../lib/queue";
 import { JobType } from "../lib/types";
 import { logEvent, EventType } from "../lib/event-logger";
+import { validate } from "../middleware/validate";
+import { createClientSchema, updateClientSchema } from "../lib/schemas";
 
 const router: Router = Router();
 
@@ -30,9 +32,9 @@ router.get("/", authenticate, async (req: AuthRequest, res: Response) => {
 });
 
 // POST /clients - Create a new client
-router.post("/", authenticate, enforceLimit("clients"), async (req: AuthRequest, res: Response) => {
+router.post("/", authenticate, enforceLimit("clients"), validate(createClientSchema), async (req: AuthRequest, res: Response) => {
     const coachId = req.user?.id as string;
-    const { name, phone, email, goals, notes, status, preferredChannel } = req.body;
+    const { name, phone, email, goals, notes, preferredChannel } = req.body;
 
     if (!coachId) return res.status(401).json({ error: "Unauthorized" });
 
@@ -45,7 +47,6 @@ router.post("/", authenticate, enforceLimit("clients"), async (req: AuthRequest,
                 email,
                 goals,
                 notes,
-                ...(status && { status }),
                 ...(preferredChannel && { preferredChannel }),
             },
         });
@@ -102,28 +103,16 @@ router.get("/:id", authenticate, async (req: AuthRequest, res: Response) => {
 });
 
 // PATCH /clients/:id - Update client
-router.patch("/:id", authenticate, async (req: AuthRequest, res: Response) => {
+router.patch("/:id", authenticate, validate(updateClientSchema), async (req: AuthRequest, res: Response) => {
     const coachId = req.user?.id as string;
     const { id } = req.params;
 
     if (!coachId) return res.status(401).json({ error: "Unauthorized" });
 
-    // Explicit allowlist — prevents mass-assignment of coachId, status, etc.
-    const { name, phone, email, goals, notes, status, preferredChannel, timezone } = req.body;
-    const allowedData: Record<string, unknown> = {};
-    if (name !== undefined) allowedData.name = name;
-    if (phone !== undefined) allowedData.phone = phone;
-    if (email !== undefined) allowedData.email = email;
-    if (goals !== undefined) allowedData.goals = goals;
-    if (notes !== undefined) allowedData.notes = notes;
-    if (status !== undefined) allowedData.status = status;
-    if (preferredChannel !== undefined) allowedData.preferredChannel = preferredChannel;
-    if (timezone !== undefined) allowedData.timezone = timezone;
-
     try {
         const client = await prisma.client.update({
             where: { id: id as string, coachId },
-            data: allowedData,
+            data: req.body,
         });
         res.json(client);
     } catch (error) {

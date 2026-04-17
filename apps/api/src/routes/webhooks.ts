@@ -171,9 +171,15 @@ router.get("/", (req, res) => {
 // POST /webhooks - Receive Meta Webhook Events (WhatsApp)
 router.post("/", async (req, res) => {
     // Verify Meta webhook signature before processing
+    const rawBody = (req as any).rawBody;
+    if (!rawBody || !Buffer.isBuffer(rawBody)) {
+        console.error("[Webhook] Missing rawBody — JSON body parser may not have run");
+        res.sendStatus(500);
+        return;
+    }
     const appSecret = process.env.META_APP_SECRET;
     const signature = req.headers["x-hub-signature-256"];
-    if (!appSecret || typeof signature !== "string" || !verifyMetaSignature((req as any).rawBody, signature, appSecret)) {
+    if (!appSecret || typeof signature !== "string" || !verifyMetaSignature(rawBody, signature, appSecret)) {
         console.warn("[Webhook] Invalid or missing Meta signature — rejecting.");
         res.sendStatus(403);
         return;
@@ -250,12 +256,17 @@ router.post("/", async (req, res) => {
                             }
                         });
 
-                        if (responseData.flow_type === "weekly_checkin" || flowToken.startsWith("checkin_")) {
+                        const KNOWN_FLOW_TYPES = new Set(["weekly_checkin", "workout_log"]);
+                        const flowType = typeof responseData.flow_type === "string"
+                            ? responseData.flow_type.slice(0, 50)
+                            : undefined;
+
+                        if (flowType === "weekly_checkin" || flowToken.startsWith("checkin_")) {
                             await handleCheckinFlowResponse(client.id, responseData);
-                        } else if (responseData.flow_type === "workout_log" || flowToken.startsWith("workout_")) {
+                        } else if (flowType === "workout_log" || flowToken.startsWith("workout_")) {
                             await handleWorkoutLogFlowResponse(client.id, responseData);
-                        } else {
-                            console.log(`[Webhook] Unknown flow type: ${responseData.flow_type}`);
+                        } else if (flowType && !KNOWN_FLOW_TYPES.has(flowType)) {
+                            console.log(`[Webhook] Unknown flow type: ${flowType}`);
                         }
                         continue;
                     }

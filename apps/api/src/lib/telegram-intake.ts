@@ -41,11 +41,13 @@ function nextStep(current: IntakeStep): IntakeStep {
 }
 
 async function updateIntake(leadId: string, data: Partial<IntakeData>): Promise<void> {
-    const lead = await prisma.lead.findUnique({ where: { id: leadId } });
-    const current = (lead?.intakeData as unknown as IntakeData) || { step: "name" };
-    await prisma.lead.update({
-        where: { id: leadId },
-        data: { intakeData: { ...current, ...data } as any },
+    await prisma.$transaction(async (tx) => {
+        const lead = await tx.lead.findUnique({ where: { id: leadId } });
+        const current = (lead?.intakeData as unknown as IntakeData) || { step: "name" };
+        await tx.lead.update({
+            where: { id: leadId },
+            data: { intakeData: { ...current, ...data } as any },
+        });
     });
 }
 
@@ -404,13 +406,13 @@ export async function resumeIntakeFlow(
  * Reusable by both the automated intake flow and the manual API endpoint.
  */
 export async function convertLeadToClient(leadId: string, coachId: string) {
-    const lead = await prisma.lead.findFirst({ where: { id: leadId, coachId } });
-    if (!lead) throw new Error(`Lead ${leadId} not found`);
-    if (lead.status === "CONVERTED") throw new Error(`Lead ${leadId} already converted`);
-
-    const intake = (lead.intakeData as unknown as IntakeData) || {};
-
     const client = await prisma.$transaction(async (tx) => {
+        const lead = await tx.lead.findFirst({ where: { id: leadId, coachId } });
+        if (!lead) throw new Error(`Lead ${leadId} not found`);
+        if (lead.status === "CONVERTED") throw new Error(`Lead ${leadId} already converted`);
+
+        const intake = (lead.intakeData as unknown as IntakeData) || {};
+
         const newClient = await tx.client.create({
             data: {
                 coachId,

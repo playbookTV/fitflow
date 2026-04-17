@@ -87,9 +87,9 @@ describe("authenticate middleware", () => {
         expect(next).toHaveBeenCalled();
     });
 
-    it("detects GBP billing currency from Accept-Language en-GB", async () => {
+    it("always defaults to USD billing currency regardless of Accept-Language", async () => {
         prismaMock.coach.findUnique.mockResolvedValueOnce(null);
-        prismaMock.coach.create.mockResolvedValueOnce(buildCoach({ billingCurrency: "gbp" }));
+        prismaMock.coach.create.mockResolvedValueOnce(buildCoach({ billingCurrency: "usd" }));
 
         const { req, res, next } = createMockReqRes({
             headers: {
@@ -102,7 +102,7 @@ describe("authenticate middleware", () => {
         expect(prismaMock.coach.create).toHaveBeenCalledWith(
             expect.objectContaining({
                 data: expect.objectContaining({
-                    billingCurrency: "gbp",
+                    billingCurrency: "usd",
                 }),
             })
         );

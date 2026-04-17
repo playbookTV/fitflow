@@ -1,18 +1,24 @@
 import "dotenv/config";
+import { z } from "zod";
 
-export const env = {
-    DATABASE_URL: process.env.DATABASE_URL!,
-    DIRECT_URL: process.env.DIRECT_URL!,
-    SUPABASE_URL: process.env.SUPABASE_URL!,
-    SUPABASE_SERVICE_KEY: process.env.SUPABASE_SERVICE_KEY!,
-    META_WHATSAPP_ACCESS_TOKEN: process.env.META_WHATSAPP_ACCESS_TOKEN!,
-    META_WHATSAPP_PHONE_NUMBER_ID: process.env.META_WHATSAPP_PHONE_NUMBER_ID!,
-    META_WHATSAPP_BUSINESS_ACCOUNT_ID: process.env.META_WHATSAPP_BUSINESS_ACCOUNT_ID!,
-    META_WHATSAPP_VERIFY_TOKEN: process.env.META_WHATSAPP_VERIFY_TOKEN!,
-    STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY!,
-    STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET!,
-    REDIS_URL: process.env.REDIS_URL || "redis://localhost:6379",
-    WEB_URL: process.env.WEB_URL || "http://localhost:3000",
-    PORT: Number.parseInt(process.env.PORT || "3001", 10),
-    NODE_ENV: process.env.NODE_ENV || "development",
-} as const;
+const envSchema = z.object({
+    DATABASE_URL: z.string().min(1),
+    DIRECT_URL: z.string().min(1),
+    SUPABASE_URL: z.string().min(1),
+    SUPABASE_SERVICE_KEY: z.string().min(1),
+    META_WHATSAPP_ACCESS_TOKEN: z.string().min(1),
+    META_WHATSAPP_PHONE_NUMBER_ID: z.string().min(1),
+    META_WHATSAPP_BUSINESS_ACCOUNT_ID: z.string().min(1),
+    META_WHATSAPP_VERIFY_TOKEN: z.string().min(1),
+    META_APP_SECRET: z.string().min(1),
+    STRIPE_SECRET_KEY: z.string().min(1),
+    STRIPE_WEBHOOK_SECRET: z.string().min(1),
+    ANTHROPIC_API_KEY: z.string().min(1),
+    REDIS_URL: z.string().default("redis://localhost:6379"),
+    WEB_URL: z.string().default("http://localhost:3000"),
+    PREVIEW_URL: z.string().url().optional(),
+    PORT: z.coerce.number().int().default(3001),
+    NODE_ENV: z.string().default("development"),
+});
+
+export const env = envSchema.parse(process.env);

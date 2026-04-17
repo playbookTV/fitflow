@@ -57,9 +57,8 @@ export const authenticate = async (
                     // Append random suffix to guarantee uniqueness
                     const slug = `${baseSlug}-${Math.random().toString(36).slice(2, 6)}`;
 
-                    // Detect billing currency from Accept-Language header
-                    const acceptLang = req.headers["accept-language"] || "";
-                    const billingCurrency = /en-GB|en-NG/i.test(acceptLang) ? "gbp" : "usd";
+                    // TODO: Allow coach to set currency via settings endpoint
+                    const billingCurrency = "usd";
 
                     await prisma.coach.create({
                         data: {
