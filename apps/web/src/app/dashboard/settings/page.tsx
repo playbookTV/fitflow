@@ -25,6 +25,7 @@ import {
     EyeOff,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { AvatarUpload } from "@/components/ui/AvatarUpload";
 
 interface CoachProfile {
     id: string;
@@ -489,38 +490,32 @@ function SettingsContent() {
                                             <User className="w-5 h-5 text-brand-green" />
                                             Profile Page
                                         </h3>
-                                        <div className="space-y-5">
-                                            <div className="form-field">
-                                                <label className="label">Bio</label>
-                                                <textarea
-                                                    value={profile.bio || ""}
-                                                    onChange={(e) => {
-                                                        if (e.target.value.length <= 200) {
-                                                            updateProfile({ bio: e.target.value });
-                                                        }
-                                                    }}
-                                                    className="textarea"
-                                                    placeholder="Tell potential clients about yourself..."
-                                                    rows={3}
+                                        <div className="flex flex-col sm:flex-row gap-6 items-start">
+                                            <div className="flex-shrink-0 self-center sm:self-start">
+                                                <AvatarUpload
+                                                    currentUrl={profile.avatarUrl || null}
+                                                    name={profile.name || profile.slug || "Coach"}
+                                                    onUploaded={(url) => updateProfile({ avatarUrl: url || undefined })}
                                                 />
-                                                <p className="text-xs text-text-faint mt-1 text-right">
-                                                    {(profile.bio || "").length} / 200
-                                                </p>
                                             </div>
-                                            <div className="form-field">
-                                                <label className="label">Avatar URL</label>
-                                                <input
-                                                    type="url"
-                                                    value={profile.avatarUrl || ""}
-                                                    onChange={(e) =>
-                                                        updateProfile({ avatarUrl: e.target.value })
-                                                    }
-                                                    className="input"
-                                                    placeholder="https://..."
-                                                />
-                                                <p className="text-xs text-text-faint mt-1">
-                                                    Upload your photo to Supabase Storage and paste the URL here
-                                                </p>
+                                            <div className="flex-1 min-w-0 w-full">
+                                                <div className="form-field">
+                                                    <label className="label">Bio</label>
+                                                    <textarea
+                                                        value={profile.bio || ""}
+                                                        onChange={(e) => {
+                                                            if (e.target.value.length <= 200) {
+                                                                updateProfile({ bio: e.target.value });
+                                                            }
+                                                        }}
+                                                        className="textarea"
+                                                        placeholder="Tell potential clients about yourself..."
+                                                        rows={3}
+                                                    />
+                                                    <p className="text-xs text-text-faint mt-1 text-right">
+                                                        {(profile.bio || "").length} / 200
+                                                    </p>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
