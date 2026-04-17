@@ -3,6 +3,7 @@ import { authenticate, AuthRequest } from "../middleware/auth";
 import { prisma } from "../lib/prisma";
 import { getSharedBotUsername } from "../lib/bot-provisioner";
 import { createConnectAccount, createAccountLink, createLoginLink } from "../lib/stripe";
+import { logEvent, EventType } from "../lib/event-logger";
 
 const router: Router = Router();
 
@@ -32,6 +33,11 @@ router.get("/me", authenticate, async (req: AuthRequest, res: Response) => {
             businessName: coach.businessName,
             timezone: coach.timezone,
             defaultChannel: coach.defaultChannel,
+            specialities: coach.specialities,
+            defaultPaymentModel: coach.defaultPaymentModel,
+            activeClientRange: coach.activeClientRange,
+            onboardingCompleted: coach.onboardingCompleted,
+            onboardingStep: coach.onboardingStep,
             stripeConnected: !!coach.stripeAccountId,
             whatsappConnected: true, // Managed at platform level for now
             telegramConnected: !!botUsername,
@@ -49,7 +55,11 @@ router.patch("/me", authenticate, async (req: AuthRequest, res: Response) => {
     const coachId = req.user?.id as string;
     if (!coachId) return res.status(401).json({ error: "Unauthorized" });
 
-    const { name, slug, phone, businessName, timezone, defaultChannel } = req.body;
+    const {
+        name, slug, phone, businessName, timezone, defaultChannel,
+        specialities, defaultPaymentModel, activeClientRange,
+        onboardingStep, onboardingCompleted,
+    } = req.body;
 
     try {
         const coach = await prisma.coach.update({
@@ -61,6 +71,11 @@ router.patch("/me", authenticate, async (req: AuthRequest, res: Response) => {
                 ...(businessName !== undefined && { businessName }),
                 ...(timezone !== undefined && { timezone }),
                 ...(defaultChannel !== undefined && { defaultChannel }),
+                ...(specialities !== undefined && { specialities }),
+                ...(defaultPaymentModel !== undefined && { defaultPaymentModel }),
+                ...(activeClientRange !== undefined && { activeClientRange }),
+                ...(onboardingStep !== undefined && { onboardingStep }),
+                ...(onboardingCompleted !== undefined && { onboardingCompleted }),
             },
         });
 
@@ -71,6 +86,29 @@ router.patch("/me", authenticate, async (req: AuthRequest, res: Response) => {
         }
         console.error("[PATCH /coaches/me]", error);
         res.status(500).json({ error: "Failed to update profile" });
+    }
+});
+
+// POST /coaches/onboarding/complete - Mark onboarding as done
+router.post("/onboarding/complete", authenticate, async (req: AuthRequest, res: Response) => {
+    const coachId = req.user?.id as string;
+    if (!coachId) return res.status(401).json({ error: "Unauthorized" });
+
+    try {
+        const coach = await prisma.coach.update({
+            where: { id: coachId },
+            data: {
+                onboardingCompleted: true,
+                onboardingStep: 5,
+            },
+        });
+
+        await logEvent(EventType.COACH_ONBOARDING_COMPLETED, { coachId });
+
+        res.json({ success: true, coach });
+    } catch (error) {
+        console.error("[POST /coaches/onboarding/complete]", error);
+        res.status(500).json({ error: "Failed to complete onboarding" });
     }
 });
 

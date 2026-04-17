@@ -34,29 +34,51 @@ router.get("/", authenticate, async (req: AuthRequest, res: Response) => {
 // POST /clients - Create a new client
 router.post("/", authenticate, enforceLimit("clients"), validate(createClientSchema), async (req: AuthRequest, res: Response) => {
     const coachId = req.user?.id as string;
-    const { name, phone, email, goals, notes, preferredChannel } = req.body;
+    const { name, phone, email, goals, notes, preferredChannel, sessionBlock, monthlyRate, source } = req.body;
 
     if (!coachId) return res.status(401).json({ error: "Unauthorized" });
 
     try {
-        const client = await prisma.client.create({
-            data: {
-                coachId,
-                name,
-                phone,
-                email,
-                goals,
-                notes,
-                ...(preferredChannel && { preferredChannel }),
-            },
+        const result = await prisma.$transaction(async (tx) => {
+            const client = await tx.client.create({
+                data: {
+                    coachId,
+                    name,
+                    phone,
+                    email,
+                    goals,
+                    notes,
+                    ...(preferredChannel && { preferredChannel }),
+                    ...(monthlyRate !== undefined && { monthlyRate }),
+                },
+            });
+
+            let createdBlock = null;
+            if (sessionBlock) {
+                createdBlock = await tx.sessionBlock.create({
+                    data: {
+                        clientId: client.id,
+                        totalSessions: sessionBlock.totalSessions,
+                        pricePerSession: sessionBlock.pricePerSession,
+                    },
+                });
+            }
+
+            return { client, sessionBlock: createdBlock };
         });
 
         await logEvent(EventType.CLIENT_CREATED, {
             coachId,
-            clientId: client.id,
-            channel: client.preferredChannel,
+            clientId: result.client.id,
+            channel: result.client.preferredChannel,
+            metadata: source ? { source } : undefined,
         });
-        res.status(201).json(client);
+
+        if (source === "onboarding") {
+            await logEvent(EventType.TRAINER_ACTIVATED, { coachId });
+        }
+
+        res.status(201).json(result);
     } catch (error) {
         console.error("[POST /clients]", error);
         res.status(500).json({ error: "Failed to create client" });

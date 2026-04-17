@@ -10,6 +10,13 @@ export const createClientSchema = z.object({
     notes: z.string().max(2000).optional().nullable(),
     preferredChannel: z.enum(["WHATSAPP", "TELEGRAM"]).optional(),
     // status intentionally omitted — always PENDING_PAYMENT on creation
+    // Onboarding-specific fields
+    sessionBlock: z.object({
+        totalSessions: z.number().int().min(1).max(200),
+        pricePerSession: z.number().int().min(0),
+    }).optional(),
+    monthlyRate: z.number().int().min(0).optional(),
+    source: z.string().max(50).optional(),
 });
 
 export const updateClientSchema = z.object({

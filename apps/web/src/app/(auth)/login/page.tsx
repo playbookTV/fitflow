@@ -4,6 +4,7 @@ import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { getAuthHeaders } from "@/lib/auth";
 import { Logo } from "@/components/ui";
 import { CheckCircle2 } from "lucide-react";
 
@@ -30,7 +31,23 @@ function LoginContent() {
             setError(error.message);
             setLoading(false);
         } else {
-            window.location.href = "/dashboard";
+            try {
+                const headers = await getAuthHeaders();
+                const res = await fetch(
+                    `${process.env.NEXT_PUBLIC_API_URL}/coaches/me`,
+                    { headers }
+                );
+                if (res.ok) {
+                    const coach = await res.json();
+                    window.location.href = coach.onboardingCompleted
+                        ? "/dashboard"
+                        : "/setup";
+                } else {
+                    window.location.href = "/setup";
+                }
+            } catch {
+                window.location.href = "/dashboard";
+            }
         }
     };
 

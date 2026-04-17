@@ -20,6 +20,11 @@ model Coach {
   stripeCustomerId  String?   @unique @map("stripe_customer_id")
   billingCurrency   String    @default("usd") @map("billing_currency")
   defaultChannel    MessageChannel? @map("default_channel")
+  specialities      String[]  @default([])
+  defaultPaymentModel PaymentModel? @map("default_payment_model")
+  activeClientRange String?   @map("active_client_range")
+  onboardingCompleted Boolean @default(false) @map("onboarding_completed")
+  onboardingStep    Int       @default(0) @map("onboarding_step")
   clients           Client[]
   subscription      Subscription?
   plans             WorkoutPlan[]
@@ -50,6 +55,7 @@ model Client {
   intakeToken       String?   @unique @map("intake_token")
   timezone          String    @default("Europe/London")
   preferredChannel  MessageChannel @default(WHATSAPP) @map("preferred_channel")
+  monthlyRate       Int?          @map("monthly_rate")
 
   assignments       PlanAssignment[]
   mealAssignments   MealAssignment[]
@@ -58,6 +64,7 @@ model Client {
   mealLogs          MealLog[]
   payments          Payment[]
   messages          Message[]
+  sessionBlocks     SessionBlock[]
 
   createdAt         DateTime  @default(now()) @map("created_at")
   updatedAt         DateTime  @updatedAt @map("updated_at")
@@ -68,6 +75,12 @@ model Client {
 enum MessageChannel {
   WHATSAPP
   TELEGRAM
+}
+
+enum PaymentModel {
+  SESSION_BLOCKS
+  PER_SESSION
+  MONTHLY_RETAINER
 }
 
 enum ClientStatus {
@@ -215,6 +228,20 @@ enum PaymentStatus {
 enum PaymentMethod {
   STRIPE
   BANK_TRANSFER
+}
+
+model SessionBlock {
+  id              String   @id @default(uuid())
+  clientId        String   @map("client_id")
+  client          Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  totalSessions   Int      @map("total_sessions")
+  usedSessions    Int      @default(0) @map("used_sessions")
+  pricePerSession Int      @map("price_per_session")
+  currency        String   @default("usd")
+  isActive        Boolean  @default(true) @map("is_active")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@map("session_blocks")
 }
 
 model Message {

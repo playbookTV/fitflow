@@ -61,6 +61,12 @@ export const EventType = {
     EXERCISE_VIDEO_FAILED: "exercise.video_failed",
     EXERCISE_COMMAND_PARSED: "exercise.command_parsed",
 
+    // Coach onboarding
+    COACH_ONBOARDING_STEP_COMPLETED: "coach_onboarding.step_completed",
+    COACH_ONBOARDING_STEP_SKIPPED: "coach_onboarding.step_skipped",
+    COACH_ONBOARDING_COMPLETED: "coach_onboarding.completed",
+    TRAINER_ACTIVATED: "trainer.activated",
+
     // Coach subscription
     SUBSCRIPTION_CREATED: "subscription.created",
     SUBSCRIPTION_UPGRADED: "subscription.upgraded",

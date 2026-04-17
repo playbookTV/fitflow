@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { DashboardStats } from "@/components/DashboardStats";
 import { ClientGrid } from "@/components/ClientGrid";
 import { DashboardLayout } from "@/components/DashboardLayout";
@@ -44,18 +45,31 @@ export default function DashboardPage() {
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
 
+    const router = useRouter();
+
     const fetchData = async () => {
         setLoading(true);
         try {
             const headers = await getAuthHeaders();
-            const [statsRes, clientsRes] = await Promise.all([
+            const [statsRes, clientsRes, coachRes] = await Promise.all([
                 fetch(`${process.env.NEXT_PUBLIC_API_URL}/analytics/summary`, {
                     headers,
                 }),
                 fetch(`${process.env.NEXT_PUBLIC_API_URL}/clients`, {
                     headers,
                 }),
+                fetch(`${process.env.NEXT_PUBLIC_API_URL}/coaches/me`, {
+                    headers,
+                }),
             ]);
+
+            if (coachRes.ok) {
+                const coach = await coachRes.json();
+                if (!coach.onboardingCompleted) {
+                    router.replace("/setup");
+                    return;
+                }
+            }
 
             if (statsRes.ok) setStats(await statsRes.json());
             if (clientsRes.ok) setClients(await clientsRes.json());
