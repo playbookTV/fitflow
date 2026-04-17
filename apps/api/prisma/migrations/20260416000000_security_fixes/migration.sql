@@ -11,3 +11,4 @@ CREATE UNIQUE INDEX "plan_assignments_client_active_unique"
 CREATE UNIQUE INDEX "meal_assignments_client_active_unique"
   ON "meal_assignments" ("client_id")
   WHERE "is_active" = true;
+
