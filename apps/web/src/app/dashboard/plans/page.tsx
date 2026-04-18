@@ -135,10 +135,10 @@ export default function PlansPage() {
                     <div className="empty-state-icon">
                         <Dumbbell className="w-6 h-6" />
                     </div>
-                    <h3 className="text-lg font-bold text-white mb-1">
+                    <h3 className="text-lg font-bold text-white mb-1 text-balance">
                         {searchQuery ? "No plans found" : "No workout plans yet"}
                     </h3>
-                    <p className="text-text-secondary text-sm mb-6">
+                    <p className="text-text-secondary text-sm mb-6 text-pretty">
                         {searchQuery
                             ? "Try a different search term"
                             : "Create your first workout plan template"}
@@ -205,13 +205,13 @@ export default function PlansPage() {
                                 </div>
 
                                 {/* Title */}
-                                <h3 className="text-lg font-semibold text-white mb-1 group-hover:text-brand-green transition-colors">
+                                <h3 className="text-lg font-semibold text-white mb-1 group-hover:text-brand-green transition-colors text-balance">
                                     {plan.title}
                                 </h3>
 
                                 {/* Description */}
                                 {plan.description && (
-                                    <p className="text-sm text-text-faint mb-4 line-clamp-2">
+                                    <p className="text-sm text-text-faint mb-4 line-clamp-2 text-pretty">
                                         {plan.description}
                                     </p>
                                 )}

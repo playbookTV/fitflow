@@ -42,7 +42,7 @@ export default function RegisterPage() {
 
     if (emailSent) {
         return (
-            <div className="flex min-h-screen items-center justify-center p-6 sm:p-12">
+            <div className="flex min-h-dvh items-center justify-center p-6 sm:p-12">
                 <div className="w-full max-w-[400px] animate-fade-in text-center">
                     <Logo size="sm" showText className="mb-12" />
 
@@ -50,16 +50,16 @@ export default function RegisterPage() {
                         <Mail className="h-8 w-8 text-brand-green" />
                     </div>
 
-                    <h1 className="mb-2 font-display text-2xl font-semibold text-text-primary">
+                    <h1 className="mb-2 font-display text-2xl font-semibold text-text-primary text-balance">
                         Check your email
                     </h1>
-                    <p className="mb-2 text-sm text-text-secondary">
+                    <p className="mb-2 text-sm text-text-secondary text-pretty">
                         We sent a verification link to
                     </p>
                     <p className="mb-8 text-sm font-medium text-text-primary">
                         {email}
                     </p>
-                    <p className="text-xs text-text-faint">
+                    <p className="text-xs text-text-faint text-pretty">
                         Click the link in your email to verify your account, then log in.
                     </p>
 
@@ -78,15 +78,15 @@ export default function RegisterPage() {
     }
 
     return (
-        <div className="flex min-h-screen items-center justify-center p-6 sm:p-12">
+        <div className="flex min-h-dvh items-center justify-center p-6 sm:p-12">
             <div className="w-full max-w-[400px] animate-fade-in">
                 {/* Logo */}
                 <Logo size="sm" showText className="mb-12" />
 
-                <h1 className="mb-2 font-display text-3xl font-semibold text-text-primary">
+                <h1 className="mb-2 font-display text-3xl font-semibold text-text-primary text-balance">
                     Start your clinic
                 </h1>
-                <p className="mb-10 text-sm text-text-secondary">
+                <p className="mb-10 text-sm text-text-secondary text-pretty">
                     Join 500+ coaches managing their clients on WhatsApp.
                 </p>
 

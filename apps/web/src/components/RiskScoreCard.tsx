@@ -61,7 +61,7 @@ export function RiskScoreCard({ client }: RiskScoreCardProps) {
                 <div className="flex-1 min-w-0">
                     <p className="font-bold text-white text-sm truncate">{client.name}</p>
                     {hasRiskData ? (
-                        <span className={`inline-block mt-1 text-[9px] font-bold tracking-widest px-2 py-0.5 rounded-full ${style.badge}`}>
+                        <span className={`inline-block mt-1 text-[9px] font-bold tracking-widest px-2 py-0.5 rounded-full tabular-nums ${style.badge}`}>
                             {style.label} — {client.score}
                         </span>
                     ) : (

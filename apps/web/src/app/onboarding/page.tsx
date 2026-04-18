@@ -57,7 +57,7 @@ function OnboardingContent() {
 
     if (!clientId || !token) {
         return (
-            <div className="min-h-screen bg-black text-white flex items-center justify-center p-4">
+            <div className="min-h-dvh bg-black text-white flex items-center justify-center p-4">
                 <div className="card max-w-md w-full p-8 border-border bg-bg-card/50">
                     <p className="text-center text-text-secondary">Invalid onboarding link. Please check your message.</p>
                 </div>
@@ -67,7 +67,7 @@ function OnboardingContent() {
 
     if (submitted) {
         return (
-            <div className="min-h-screen bg-black text-white flex items-center justify-center p-4">
+            <div className="min-h-dvh bg-black text-white flex items-center justify-center p-4">
                 <motion.div
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
@@ -77,8 +77,8 @@ function OnboardingContent() {
                         <div className="h-16 w-16 bg-brand-green rounded-full flex items-center justify-center mb-6">
                             <CheckCircle2 className="h-10 w-10 text-black" />
                         </div>
-                        <h2 className="text-2xl font-bold mb-2">You&apos;re All Set!</h2>
-                        <p className="text-text-secondary mb-8">
+                        <h2 className="text-2xl font-bold mb-2 text-balance">You&apos;re All Set!</h2>
+                        <p className="text-text-secondary mb-8 text-pretty">
                             Thanks {clientName || "there"}! Your goals and info have been sent to your coach.
                             They will notify you once your custom plan is ready.
                         </p>
@@ -92,7 +92,7 @@ function OnboardingContent() {
     }
 
     return (
-        <div className="min-h-screen bg-mesh-gradient text-white flex flex-col items-center justify-center p-4">
+        <div className="min-h-dvh bg-mesh-gradient text-white flex flex-col items-center justify-center p-4">
             {/* Background Decorative Elements */}
             <div className="fixed inset-0 overflow-hidden pointer-events-none">
                 <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-brand-blue/10 rounded-full blur-[120px]" />
@@ -101,8 +101,8 @@ function OnboardingContent() {
 
             <div className="w-full max-w-xl relative z-10">
                 <div className="mb-8 text-center animation-fade-in">
-                    <h1 className="text-3xl font-bold tracking-tight mb-2">Welcome to FitFlow</h1>
-                    <p className="text-text-secondary">Let&apos;s personalize your fitness journey, {clientName || "there"}.</p>
+                    <h1 className="text-3xl font-bold tracking-tight mb-2 text-balance">Welcome to FitFlow</h1>
+                    <p className="text-text-secondary text-pretty">Let&apos;s personalize your fitness journey, {clientName || "there"}.</p>
                 </div>
 
                 <div className="flex gap-2 mb-8 justify-center">
@@ -131,7 +131,7 @@ function OnboardingContent() {
                                     <div className="space-y-6">
                                         <div className="flex items-center gap-3 mb-2">
                                             <Heart className="h-5 w-5 text-brand-red" />
-                                            <h2 className="text-xl font-semibold">Your Goals</h2>
+                                            <h2 className="text-xl font-semibold text-balance">Your Goals</h2>
                                         </div>
                                         <div className="space-y-4">
                                             <div className="space-y-2">
@@ -164,7 +164,7 @@ function OnboardingContent() {
                                     <div className="space-y-6">
                                         <div className="flex items-center gap-3 mb-2">
                                             <Dumbbell className="h-5 w-5 text-brand-blue" />
-                                            <h2 className="text-xl font-semibold">Environment</h2>
+                                            <h2 className="text-xl font-semibold text-balance">Environment</h2>
                                         </div>
                                         <div className="space-y-4">
                                             <div className="space-y-2">
@@ -247,7 +247,7 @@ function OnboardingContent() {
 export default function OnboardingPage() {
     return (
         <Suspense fallback={
-            <div className="min-h-screen bg-black text-white flex items-center justify-center">
+            <div className="min-h-dvh bg-black text-white flex items-center justify-center">
                 <Loader2 className="h-10 w-10 animate-spin text-brand-blue" />
             </div>
         }>

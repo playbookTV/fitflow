@@ -52,15 +52,15 @@ function LoginContent() {
     };
 
     return (
-        <div className="flex min-h-screen items-center justify-center p-6 sm:p-12">
+        <div className="flex min-h-dvh items-center justify-center p-6 sm:p-12">
             <div className="w-full max-w-[400px] animate-fade-in">
                 {/* Logo */}
                 <Logo size="sm" showText className="mb-12" />
 
-                <h1 className="mb-2 font-display text-3xl font-semibold text-text-primary">
+                <h1 className="mb-2 font-display text-3xl font-semibold text-text-primary text-balance">
                     Welcome back
                 </h1>
-                <p className="mb-10 text-sm text-text-secondary">
+                <p className="mb-10 text-sm text-text-secondary text-pretty">
                     Enter your details to access your coaching dashboard.
                 </p>
 

@@ -1,6 +1,6 @@
 export default function ProfileLoading() {
     return (
-        <div className="min-h-screen bg-bg-primary text-white">
+        <div className="min-h-dvh bg-bg-primary text-white">
             <div className="flex flex-col items-center px-4 py-12 max-w-md mx-auto animate-pulse">
                 {/* Avatar skeleton */}
                 <div className="w-24 h-24 rounded-full skeleton mb-5" />

@@ -152,10 +152,10 @@ export default function SubscriptionPage() {
                     <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-brand-blue/10 border border-brand-blue/20">
                         <Clock className="w-5 h-5 text-brand-blue shrink-0" />
                         <div>
-                            <p className="text-sm text-white font-medium">
+                            <p className="text-sm text-white font-medium text-balance">
                                 Trial ends in {sub.trialDaysLeft} day{sub.trialDaysLeft !== 1 ? "s" : ""}
                             </p>
-                            <p className="text-xs text-text-faint">
+                            <p className="text-xs text-text-faint text-pretty">
                                 Your card will be charged when the trial ends. Manage billing to cancel anytime.
                             </p>
                         </div>
@@ -167,10 +167,10 @@ export default function SubscriptionPage() {
                     <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-brand-orange/10 border border-brand-orange/20">
                         <AlertTriangle className="w-5 h-5 text-brand-orange shrink-0" />
                         <div>
-                            <p className="text-sm text-white font-medium">
+                            <p className="text-sm text-white font-medium text-balance">
                                 Your subscription will cancel at the end of this billing period
                             </p>
-                            <p className="text-xs text-text-faint">
+                            <p className="text-xs text-text-faint text-pretty">
                                 Access continues until {sub.currentPeriodEnd ? formatDate(sub.currentPeriodEnd) : "period end"}.
                                 Reactivate from the billing portal.
                             </p>
@@ -186,7 +186,7 @@ export default function SubscriptionPage() {
                                 <Crown className="w-5 h-5 text-brand-green" />
                             </div>
                             <div>
-                                <h2 className="text-lg font-bold text-white capitalize">
+                                <h2 className="text-lg font-bold text-white capitalize text-balance">
                                     {(sub.tier || "").toLowerCase()} Plan
                                 </h2>
                                 <div className="flex items-center gap-2 mt-0.5">
@@ -250,7 +250,7 @@ export default function SubscriptionPage() {
                 {/* Plan Comparison (toggle) */}
                 {showPricing && tiers.length > 0 && (
                     <div className="rounded-2xl border border-border bg-bg-secondary p-6">
-                        <h3 className="text-lg font-bold text-white mb-6">Change Plan</h3>
+                        <h3 className="text-lg font-bold text-white mb-6 text-balance">Change Plan</h3>
                         <PricingTiers
                             tiers={tiers}
                             currentTier={sub.tier}
@@ -265,7 +265,7 @@ export default function SubscriptionPage() {
                 {/* Invoice History */}
                 {invoices.length > 0 && (
                     <div className="rounded-2xl border border-border bg-bg-secondary p-6">
-                        <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                        <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2 text-balance">
                             <FileText className="w-5 h-5 text-text-faint" />
                             Invoices
                         </h3>

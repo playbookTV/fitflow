@@ -146,7 +146,7 @@ export default function OffersPage() {
         >
             {showCreate && (
                 <div className="card p-6 mb-8 animate-fade-in">
-                    <h3 className="text-lg font-semibold text-white mb-4">Create Offer Link</h3>
+                    <h3 className="text-lg font-semibold text-white mb-4 text-balance">Create Offer Link</h3>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                         <div className="form-field">
                             <label htmlFor="offer-name" className="label">Offer Name</label>
@@ -198,8 +198,8 @@ export default function OffersPage() {
             ) : offers.length === 0 ? (
                 <div className="empty-state">
                     <Link2 className="w-12 h-12 text-text-faint mx-auto mb-4" />
-                    <p className="text-text-secondary mb-2">No offer links yet</p>
-                    <p className="text-text-faint text-sm">
+                    <p className="text-text-secondary mb-2 text-balance">No offer links yet</p>
+                    <p className="text-text-faint text-sm text-pretty">
                         Create your first offer link to start capturing leads.
                     </p>
                 </div>
@@ -295,7 +295,7 @@ export default function OffersPage() {
                         <ModalClose />
                     </ModalHeader>
                     <div className="p-6">
-                        <p className="text-text-secondary text-sm">Are you sure you want to delete this offer? This action cannot be undone.</p>
+                        <p className="text-text-secondary text-sm text-pretty">Are you sure you want to delete this offer? This action cannot be undone.</p>
                     </div>
                     <ModalFooter>
                         <button className="btn-secondary" onClick={() => setConfirmDeleteId(null)}>Cancel</button>

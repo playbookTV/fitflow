@@ -78,7 +78,7 @@ export default function ProfilePage({ data }: { data: ProfileData }) {
     };
 
     return (
-        <div className="min-h-screen bg-bg-primary text-white">
+        <div className="min-h-dvh bg-bg-primary text-white">
             {/* Background accents */}
             <div className="fixed inset-0 overflow-hidden pointer-events-none">
                 <div className="absolute top-[-15%] left-[-10%] w-[40%] h-[40%] bg-brand-green/5 rounded-full blur-[120px]" />

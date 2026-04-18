@@ -353,7 +353,7 @@ function SettingsContent() {
                             {activeTab === "profile" && (
                                 <div className="space-y-8 animate-fade-in">
                                     <div className="card p-6">
-                                        <h3 className="text-lg font-semibold text-white mb-6 flex items-center gap-2">
+                                        <h3 className="text-lg font-semibold text-white mb-6 flex items-center gap-2 text-balance">
                                             <User className="w-5 h-5 text-brand-blue" />
                                             Personal Information
                                         </h3>
@@ -384,7 +384,7 @@ function SettingsContent() {
                                                     disabled
                                                     className="input opacity-60 cursor-not-allowed"
                                                 />
-                                                <p className="text-xs text-text-faint mt-1">
+                                                <p className="text-xs text-text-faint mt-1 text-pretty">
                                                     Contact support to change your email
                                                 </p>
                                             </div>
@@ -425,7 +425,7 @@ function SettingsContent() {
                                     </div>
 
                                     <div className="card p-6">
-                                        <h3 className="text-lg font-semibold text-white mb-6 flex items-center gap-2">
+                                        <h3 className="text-lg font-semibold text-white mb-6 flex items-center gap-2 text-balance">
                                             <Building2 className="w-5 h-5 text-brand-violet" />
                                             Business Details
                                         </h3>
@@ -465,7 +465,7 @@ function SettingsContent() {
                                                         </option>
                                                     ))}
                                                 </select>
-                                                <p className="text-xs text-text-faint mt-1">
+                                                <p className="text-xs text-text-faint mt-1 text-pretty">
                                                     Used for scheduling workout deliveries
                                                 </p>
                                             </div>
@@ -503,7 +503,7 @@ function SettingsContent() {
 
                                     {/* Bio & Avatar */}
                                     <div className="card p-6">
-                                        <h3 className="text-lg font-semibold text-white mb-6 flex items-center gap-2">
+                                        <h3 className="text-lg font-semibold text-white mb-6 flex items-center gap-2 text-balance">
                                             <User className="w-5 h-5 text-brand-green" />
                                             Profile Page
                                         </h3>
@@ -541,11 +541,11 @@ function SettingsContent() {
 
                                     {/* Default Rates */}
                                     <div className="card p-6">
-                                        <h3 className="text-lg font-semibold text-white mb-6 flex items-center gap-2">
+                                        <h3 className="text-lg font-semibold text-white mb-6 flex items-center gap-2 text-balance">
                                             <CreditCard className="w-5 h-5 text-brand-cyan" />
                                             Default Rates
                                         </h3>
-                                        <p className="text-xs text-text-faint mb-5">
+                                        <p className="text-xs text-text-faint mb-5 text-pretty">
                                             These are displayed on your public profile. Per-client rates may differ.
                                         </p>
                                         <div className="space-y-5">
@@ -598,7 +598,7 @@ function SettingsContent() {
                                                 </div>
                                             )}
                                             {!profile.defaultPaymentModel && (
-                                                <p className="text-sm text-text-secondary">
+                                                <p className="text-sm text-text-secondary text-pretty">
                                                     Set a payment model in Setup to configure rates.
                                                 </p>
                                             )}
@@ -607,7 +607,7 @@ function SettingsContent() {
 
                                     {/* Visibility Toggles */}
                                     <div className="card p-6">
-                                        <h3 className="text-lg font-semibold text-white mb-6 flex items-center gap-2">
+                                        <h3 className="text-lg font-semibold text-white mb-6 flex items-center gap-2 text-balance">
                                             <Eye className="w-5 h-5 text-brand-violet" />
                                             Visibility
                                         </h3>
@@ -615,7 +615,7 @@ function SettingsContent() {
                                             <label className="flex items-center justify-between p-4 rounded-xl bg-bg-hover cursor-pointer">
                                                 <div>
                                                     <p className="font-medium text-white">Profile page live</p>
-                                                    <p className="text-sm text-text-faint">
+                                                    <p className="text-sm text-text-faint text-pretty">
                                                         Make your profile visible at ftfw.fit/{profile.slug || "your-slug"}
                                                     </p>
                                                 </div>
@@ -634,7 +634,7 @@ function SettingsContent() {
                                             <label className="flex items-center justify-between p-4 rounded-xl bg-bg-hover cursor-pointer">
                                                 <div>
                                                     <p className="font-medium text-white">Show rates publicly</p>
-                                                    <p className="text-sm text-text-faint">
+                                                    <p className="text-sm text-text-faint text-pretty">
                                                         Display your pricing on the profile page
                                                     </p>
                                                 </div>
@@ -653,7 +653,7 @@ function SettingsContent() {
                                             <label className="flex items-center justify-between p-4 rounded-xl bg-bg-hover cursor-pointer">
                                                 <div>
                                                     <p className="font-medium text-white">Show WhatsApp button</p>
-                                                    <p className="text-sm text-text-faint">
+                                                    <p className="text-sm text-text-faint text-pretty">
                                                         Display WhatsApp contact button on profile
                                                     </p>
                                                 </div>
@@ -672,7 +672,7 @@ function SettingsContent() {
                                             <label className="flex items-center justify-between p-4 rounded-xl bg-bg-hover cursor-pointer">
                                                 <div>
                                                     <p className="font-medium text-white">Show Telegram button</p>
-                                                    <p className="text-sm text-text-faint">
+                                                    <p className="text-sm text-text-faint text-pretty">
                                                         {profile.telegramConnected
                                                             ? "Display Telegram contact button on profile"
                                                             : "Connect Telegram first to enable this"}
@@ -702,7 +702,7 @@ function SettingsContent() {
                                     {/* Share Links */}
                                     {profile.slug && (
                                         <div className="card p-6">
-                                            <h3 className="text-lg font-semibold text-white mb-6 flex items-center gap-2">
+                                            <h3 className="text-lg font-semibold text-white mb-6 flex items-center gap-2 text-balance">
                                                 <Link2 className="w-5 h-5 text-brand-blue" />
                                                 Share Your Profile
                                             </h3>
@@ -720,7 +720,7 @@ function SettingsContent() {
                             {activeTab === "notifications" && (
                                 <div className="space-y-6 animate-fade-in">
                                     <div className="card p-6">
-                                        <h3 className="text-lg font-semibold text-white mb-6 flex items-center gap-2">
+                                        <h3 className="text-lg font-semibold text-white mb-6 flex items-center gap-2 text-balance">
                                             <Bell className="w-5 h-5 text-brand-orange" />
                                             Notification Preferences
                                         </h3>
@@ -728,7 +728,7 @@ function SettingsContent() {
                                             <label className="flex items-center justify-between p-4 rounded-xl bg-bg-hover cursor-pointer group">
                                                 <div>
                                                     <p className="font-medium text-white">Email Alerts</p>
-                                                    <p className="text-sm text-text-faint">
+                                                    <p className="text-sm text-text-faint text-pretty">
                                                         Receive alerts when clients miss check-ins
                                                     </p>
                                                 </div>
@@ -745,7 +745,7 @@ function SettingsContent() {
                                             <label className="flex items-center justify-between p-4 rounded-xl bg-bg-hover cursor-pointer group">
                                                 <div>
                                                     <p className="font-medium text-white">SMS Reminders</p>
-                                                    <p className="text-sm text-text-faint">
+                                                    <p className="text-sm text-text-faint text-pretty">
                                                         Get text reminders for important events
                                                     </p>
                                                 </div>
@@ -762,7 +762,7 @@ function SettingsContent() {
                                             <label className="flex items-center justify-between p-4 rounded-xl bg-bg-hover cursor-pointer group">
                                                 <div>
                                                     <p className="font-medium text-white">Weekly Digest</p>
-                                                    <p className="text-sm text-text-faint">
+                                                    <p className="text-sm text-text-faint text-pretty">
                                                         Summary of client progress every Sunday
                                                     </p>
                                                 </div>
@@ -784,7 +784,7 @@ function SettingsContent() {
                             {activeTab === "integrations" && (
                                 <div className="space-y-6 animate-fade-in">
                                     <div className="card p-6">
-                                        <h3 className="text-lg font-semibold text-white mb-6 flex items-center gap-2">
+                                        <h3 className="text-lg font-semibold text-white mb-6 flex items-center gap-2 text-balance">
                                             <Smartphone className="w-5 h-5 text-brand-green" />
                                             WhatsApp Business
                                         </h3>

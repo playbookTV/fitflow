@@ -293,14 +293,14 @@ export default function PlanBuilder({ planId }: PlanBuilderProps) {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-mesh-gradient flex items-center justify-center">
+            <div className="min-h-dvh bg-mesh-gradient flex items-center justify-center">
                 <div className="skeleton h-96 w-full max-w-4xl rounded-2xl" />
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-mesh-gradient">
+        <div className="min-h-dvh bg-mesh-gradient">
             <div className="max-w-4xl mx-auto px-6 py-10 animate-fade-in">
                 {/* Header */}
                 <div className="flex items-center justify-between mb-10">

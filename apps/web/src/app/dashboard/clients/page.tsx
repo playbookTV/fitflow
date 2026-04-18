@@ -132,10 +132,10 @@ export default function ClientsPage() {
                     <div className="empty-state-icon">
                         <Search className="w-6 h-6" aria-hidden="true" />
                     </div>
-                    <h3 className="text-lg font-bold text-white mb-1">
+                    <h3 className="text-lg font-bold text-white mb-1 text-balance">
                         {searchQuery ? "No matches found" : "No clients yet"}
                     </h3>
-                    <p className="text-text-secondary text-sm mb-6">
+                    <p className="text-text-secondary text-sm mb-6 text-pretty">
                         {searchQuery
                             ? "Try a different search term"
                             : "Add your first client to get started"}

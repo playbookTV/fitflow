@@ -332,7 +332,7 @@ function SetupContent() {
 
     if (loading || step === 0) {
         return (
-            <div className="min-h-screen bg-black text-white flex items-center justify-center">
+            <div className="min-h-dvh bg-black text-white flex items-center justify-center">
                 <Loader2 className="h-10 w-10 animate-spin text-brand-green" />
             </div>
         );
@@ -341,7 +341,7 @@ function SetupContent() {
     // Success state (step 5)
     if (step > TOTAL_STEPS) {
         return (
-            <div className="min-h-screen bg-mesh-gradient text-white flex items-center justify-center p-4">
+            <div className="min-h-dvh bg-mesh-gradient text-white flex items-center justify-center p-4">
                 <div className="fixed inset-0 overflow-hidden pointer-events-none">
                     <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-brand-green/10 rounded-full blur-[120px]" />
                     <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-brand-blue/10 rounded-full blur-[120px]" />
@@ -470,7 +470,7 @@ function SetupContent() {
     }
 
     return (
-        <div className="min-h-screen bg-mesh-gradient text-white flex flex-col items-center justify-center p-4">
+        <div className="min-h-dvh bg-mesh-gradient text-white flex flex-col items-center justify-center p-4">
             {/* Background decorations */}
             <div className="fixed inset-0 overflow-hidden pointer-events-none">
                 <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-brand-blue/10 rounded-full blur-[120px]" />
@@ -828,7 +828,7 @@ export default function SetupPage() {
     return (
         <Suspense
             fallback={
-                <div className="min-h-screen bg-black text-white flex items-center justify-center">
+                <div className="min-h-dvh bg-black text-white flex items-center justify-center">
                     <Loader2 className="h-10 w-10 animate-spin text-brand-green" />
                 </div>
             }

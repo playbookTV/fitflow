@@ -326,7 +326,7 @@ function MessagesPageContent() {
             subtitle="Conversations with clients across all channels"
             notifications={totalUnread}
         >
-            <div className="flex h-[calc(100vh-180px)] rounded-2xl overflow-hidden border border-border bg-bg-card">
+            <div className="flex h-[calc(100dvh-180px)] rounded-2xl overflow-hidden border border-border bg-bg-card">
                 {/* Conversations List */}
                 <div className={cn(
                     "w-full md:w-80 lg:w-96 border-r border-border flex flex-col bg-bg-primary",
@@ -567,10 +567,10 @@ function MessagesPageContent() {
                             <div className="w-16 h-16 rounded-2xl bg-brand-green/10 border border-brand-green/20 flex items-center justify-center mb-4">
                                 <MessageSquare className="w-8 h-8 text-brand-green" />
                             </div>
-                            <h3 className="text-lg font-semibold text-white mb-2">
+                            <h3 className="text-lg font-semibold text-white mb-2 text-balance">
                                 Select a conversation
                             </h3>
-                            <p className="text-text-secondary text-sm max-w-xs">
+                            <p className="text-text-secondary text-sm max-w-xs text-pretty">
                                 Choose a client from the list to view and send messages.
                             </p>
                         </div>
@@ -584,7 +584,7 @@ function MessagesPageContent() {
                         <ModalClose />
                     </ModalHeader>
                     <div className="p-6">
-                        <p className="text-text-secondary text-sm">Are you sure you want to delete this conversation? This action cannot be undone.</p>
+                        <p className="text-text-secondary text-sm text-pretty">Are you sure you want to delete this conversation? This action cannot be undone.</p>
                     </div>
                     <ModalFooter>
                         <button className="btn-secondary" onClick={() => setConfirmDelete(null)}>Cancel</button>

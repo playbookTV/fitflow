@@ -84,7 +84,7 @@ function IntakeContent() {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-black text-white flex items-center justify-center">
+            <div className="min-h-dvh bg-black text-white flex items-center justify-center">
                 <Loader2 className="w-8 h-8 animate-spin text-brand-blue" />
             </div>
         );
@@ -92,7 +92,7 @@ function IntakeContent() {
 
     if (error && !offerData) {
         return (
-            <div className="min-h-screen bg-black text-white flex items-center justify-center p-4">
+            <div className="min-h-dvh bg-black text-white flex items-center justify-center p-4">
                 <div className="card max-w-md w-full p-8 text-center">
                     <p className="text-text-secondary">{error}</p>
                 </div>
@@ -102,7 +102,7 @@ function IntakeContent() {
 
     if (submitted) {
         return (
-            <div className="min-h-screen bg-black text-white flex items-center justify-center p-4">
+            <div className="min-h-dvh bg-black text-white flex items-center justify-center p-4">
                 <motion.div
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
@@ -124,7 +124,7 @@ function IntakeContent() {
     }
 
     return (
-        <div className="min-h-screen bg-mesh-gradient text-white flex flex-col items-center justify-center p-4">
+        <div className="min-h-dvh bg-mesh-gradient text-white flex flex-col items-center justify-center p-4">
             <div className="fixed inset-0 overflow-hidden pointer-events-none">
                 <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-brand-blue/10 rounded-full blur-[120px]" />
                 <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-brand-violet/10 rounded-full blur-[120px]" />
@@ -239,7 +239,7 @@ export default function PublicIntakePage() {
     return (
         <Suspense
             fallback={
-                <div className="min-h-screen bg-black text-white flex items-center justify-center">
+                <div className="min-h-dvh bg-black text-white flex items-center justify-center">
                     <Loader2 className="w-8 h-8 animate-spin text-brand-blue" />
                 </div>
             }

@@ -259,14 +259,14 @@ export default function MealPlanBuilder({ planId }: MealPlanBuilderProps) {
 
     if (loading) {
         return (
-            <div className="min-h-screen bg-bg-primary flex items-center justify-center">
+            <div className="min-h-dvh bg-bg-primary flex items-center justify-center">
                 <div className="skeleton h-96 w-full max-w-4xl rounded-2xl" />
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-bg-primary">
+        <div className="min-h-dvh bg-bg-primary">
             <div className="max-w-4xl mx-auto px-4 py-8">
                 {/* Header */}
                 <div className="flex items-center justify-between mb-8">

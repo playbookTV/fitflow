@@ -155,13 +155,13 @@ export default function DashboardPage() {
                                 <div className="flex items-center gap-2 text-sm">
                                     <MessageSquare className="w-4 h-4 text-brand-green" aria-hidden="true" />
                                     <span className="text-text-secondary">WhatsApp</span>
-                                    <span className="font-bold text-white">{stats.channels.whatsapp}</span>
+                                    <span className="font-bold text-white tabular-nums">{stats.channels.whatsapp}</span>
                                 </div>
                                 <div className="w-px h-6 bg-border" />
                                 <div className="flex items-center gap-2 text-sm">
                                     <Send className="w-4 h-4 text-brand-blue" aria-hidden="true" />
                                     <span className="text-text-secondary">Telegram</span>
-                                    <span className="font-bold text-white">{stats.channels.telegram}</span>
+                                    <span className="font-bold text-white tabular-nums">{stats.channels.telegram}</span>
                                 </div>
                             </div>
                         )}
@@ -182,7 +182,7 @@ export default function DashboardPage() {
                 {stats.atRiskClients?.length > 0 && (
                     <div className="mb-10 animate-fade-in">
                         <div className="section-header">
-                            <h2 className="section-title flex items-center gap-2">
+                            <h2 className="section-title flex items-center gap-2 text-balance">
                                 <div className="w-2 h-2 rounded-full bg-brand-red animate-pulse-glow" />
                                 Needs Attention
                             </h2>
@@ -198,7 +198,7 @@ export default function DashboardPage() {
                 {/* Client Roster */}
                 <div className="mb-6">
                     <div className="section-header">
-                        <h2 className="section-title">Active Roster</h2>
+                        <h2 className="section-title text-balance">Active Roster</h2>
                         <span className="badge badge-blue">
                             {filteredClients.length} Clients
                         </span>
@@ -215,10 +215,10 @@ export default function DashboardPage() {
                             <div className="empty-state-icon">
                                 <Search className="w-6 h-6" />
                             </div>
-                            <h3 className="text-lg font-bold text-white mb-1">
+                            <h3 className="text-lg font-bold text-white mb-1 text-balance">
                                 {searchQuery ? "No matches found" : "No clients yet"}
                             </h3>
-                            <p className="text-text-secondary text-sm mb-6">
+                            <p className="text-text-secondary text-sm mb-6 text-pretty">
                                 {searchQuery
                                     ? "Try a different search term"
                                     : "Add your first client to get started"}

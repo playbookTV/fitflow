@@ -223,7 +223,7 @@ export default function LeadsPage() {
                 ))}
             </div>
 
-            <div className="flex h-[calc(100vh-220px)] rounded-2xl overflow-hidden border border-border bg-bg-card">
+            <div className="flex h-[calc(100dvh-220px)] rounded-2xl overflow-hidden border border-border bg-bg-card">
                 {/* Lead List */}
                 <div className={cn(
                     "w-full md:w-80 lg:w-96 border-r border-border flex flex-col bg-bg-primary",
@@ -240,7 +240,7 @@ export default function LeadsPage() {
                             <div className="p-8 text-center">
                                 <UserPlus className="w-8 h-8 text-text-muted mx-auto mb-3" />
                                 <p className="text-text-secondary text-sm">No leads yet</p>
-                                <p className="text-text-faint text-xs mt-1">
+                                <p className="text-text-faint text-xs mt-1 text-pretty">
                                     Share your offer links to start capturing leads.
                                 </p>
                             </div>
@@ -391,7 +391,7 @@ export default function LeadsPage() {
                                     <div className="flex-1 flex flex-col items-center justify-center text-center py-16">
                                         <MessageSquare className="w-8 h-8 text-text-muted mb-3" />
                                         <p className="text-text-secondary text-sm">No messages yet</p>
-                                        <p className="text-text-faint text-xs mt-1">
+                                        <p className="text-text-faint text-xs mt-1 text-pretty">
                                             Send a message to start the conversation.
                                         </p>
                                     </div>
@@ -465,10 +465,10 @@ export default function LeadsPage() {
                             <div className="w-16 h-16 rounded-2xl bg-brand-green/10 border border-brand-green/20 flex items-center justify-center mb-4">
                                 <UserPlus className="w-8 h-8 text-brand-green" />
                             </div>
-                            <h3 className="text-lg font-semibold text-white mb-2">
+                            <h3 className="text-lg font-semibold text-white mb-2 text-balance">
                                 Select a lead
                             </h3>
-                            <p className="text-text-secondary text-sm max-w-xs">
+                            <p className="text-text-secondary text-sm max-w-xs text-pretty">
                                 Choose a lead from the list to view messages and respond.
                             </p>
                         </div>

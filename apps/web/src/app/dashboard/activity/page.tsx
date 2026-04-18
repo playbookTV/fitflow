@@ -93,8 +93,8 @@ export default function ActivityPage() {
             ) : events.length === 0 ? (
                 <div className="empty-state">
                     <Activity className="w-12 h-12 text-text-faint mx-auto mb-4" />
-                    <p className="text-text-secondary mb-2">No activity yet</p>
-                    <p className="text-text-faint text-sm">
+                    <p className="text-text-secondary mb-2 text-balance">No activity yet</p>
+                    <p className="text-text-faint text-sm text-pretty">
                         Events will appear here as clients interact with your coaching system.
                     </p>
                 </div>

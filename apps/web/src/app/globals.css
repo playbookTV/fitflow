@@ -16,7 +16,7 @@
 
   body {
     @apply bg-bg-primary text-text-primary font-sans;
-    min-height: 100vh;
+    min-height: 100dvh;
   }
 
   /* Scrollbar styling */

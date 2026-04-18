@@ -2,7 +2,7 @@ import Link from "next/link";
 
 export default function ProfileNotFound() {
     return (
-        <div className="min-h-screen bg-bg-primary text-white flex items-center justify-center p-4">
+        <div className="min-h-dvh bg-bg-primary text-white flex items-center justify-center p-4">
             <div className="text-center max-w-sm">
                 <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center mx-auto mb-6">
                     <span className="text-3xl text-text-faint">?</span>

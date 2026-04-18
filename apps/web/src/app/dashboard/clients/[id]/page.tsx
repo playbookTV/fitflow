@@ -713,7 +713,7 @@ export default function ClientProfilePage() {
                     </div>
                     <div>
                         <div className="flex items-center gap-3 mb-1">
-                            <h1 className="text-3xl font-bold text-white tracking-tight">
+                            <h1 className="text-3xl font-bold text-white tracking-tight text-balance">
                                 {client.name}
                             </h1>
                             <StatusBadge status={client.status} />
@@ -741,7 +741,7 @@ export default function ClientProfilePage() {
                         {weightData.length > 0 && (
                             <div className="chart-container">
                                 <div className="flex items-center justify-between mb-8">
-                                    <h3 className="section-title flex items-center gap-2">
+                                    <h3 className="section-title flex items-center gap-2 text-balance">
                                         <TrendingUp className="w-5 h-5 text-brand-blue" />
                                         Weight Trend
                                     </h3>
@@ -801,22 +801,22 @@ export default function ClientProfilePage() {
                                         <Calendar className="w-3 h-3" />
                                         Active Program
                                     </div>
-                                    <h2 className="text-2xl font-bold text-white mb-2">
+                                    <h2 className="text-2xl font-bold text-white mb-2 text-balance">
                                         {activeAssignment.plan.title}
                                     </h2>
-                                    <p className="text-text-secondary text-sm mb-6 max-w-md">
+                                    <p className="text-text-secondary text-sm mb-6 max-w-md text-pretty">
                                         Started on {formatDate(activeAssignment.startDate)}
                                     </p>
                                     <div className="flex gap-6">
                                         <div className="stat-card">
                                             <p className="label-mono mb-1">Compliance</p>
-                                            <p className="text-xl font-bold text-white">
+                                            <p className="text-xl font-bold text-white tabular-nums">
                                                 {activeAssignment.compliance}%
                                             </p>
                                         </div>
                                         <div className="stat-card">
                                             <p className="label-mono mb-1">Days/Week</p>
-                                            <p className="text-xl font-bold text-white">
+                                            <p className="text-xl font-bold text-white tabular-nums">
                                                 {activeAssignment.scheduleDays.length}
                                             </p>
                                         </div>
@@ -828,8 +828,8 @@ export default function ClientProfilePage() {
                                 <div className="empty-state-icon mb-4">
                                     <Target className="w-6 h-6" />
                                 </div>
-                                <h3 className="text-lg font-bold text-white mb-1">No Active Plan</h3>
-                                <p className="text-text-secondary text-sm mb-6">
+                                <h3 className="text-lg font-bold text-white mb-1 text-balance">No Active Plan</h3>
+                                <p className="text-text-secondary text-sm mb-6 text-pretty">
                                     This client hasn&apos;t been assigned a workout plan yet.
                                 </p>
                                 <button
@@ -854,22 +854,22 @@ export default function ClientProfilePage() {
                                             <UtensilsCrossed className="w-3 h-3" />
                                             Active Meal Plan
                                         </div>
-                                        <h2 className="text-2xl font-bold text-white mb-2">
+                                        <h2 className="text-2xl font-bold text-white mb-2 text-balance">
                                             {activeMealAssignment.plan.title}
                                         </h2>
-                                        <p className="text-text-secondary text-sm mb-6 max-w-md">
+                                        <p className="text-text-secondary text-sm mb-6 max-w-md text-pretty">
                                             Started on {formatDate(activeMealAssignment.startDate)}
                                         </p>
                                         <div className="flex gap-6">
                                             <div className="stat-card">
                                                 <p className="label-mono mb-1">Compliance</p>
-                                                <p className="text-xl font-bold text-white">
+                                                <p className="text-xl font-bold text-white tabular-nums">
                                                     {activeMealAssignment.compliance}%
                                                 </p>
                                             </div>
                                             <div className="stat-card">
                                                 <p className="label-mono mb-1">Days/Week</p>
-                                                <p className="text-xl font-bold text-white">
+                                                <p className="text-xl font-bold text-white tabular-nums">
                                                     {activeMealAssignment.scheduleDays.length}
                                                 </p>
                                             </div>
@@ -881,8 +881,8 @@ export default function ClientProfilePage() {
                                     <div className="empty-state-icon mb-4">
                                         <UtensilsCrossed className="w-6 h-6" />
                                     </div>
-                                    <h3 className="text-lg font-bold text-white mb-1">No Meal Plan</h3>
-                                    <p className="text-text-secondary text-sm mb-6">
+                                    <h3 className="text-lg font-bold text-white mb-1 text-balance">No Meal Plan</h3>
+                                    <p className="text-text-secondary text-sm mb-6 text-pretty">
                                         This client hasn&apos;t been assigned a meal plan yet.
                                     </p>
                                     <button
@@ -898,7 +898,7 @@ export default function ClientProfilePage() {
                         {/* Check-ins */}
                         <div>
                             <div className="section-header">
-                                <h3 className="section-title">Recent Check-ins</h3>
+                                <h3 className="section-title text-balance">Recent Check-ins</h3>
                                 <span className="badge badge-blue">{client.checkIns.length} total</span>
                             </div>
                             {client.checkIns.length === 0 ? (
@@ -1029,11 +1029,11 @@ export default function ClientProfilePage() {
                                         {riskScore.level}
                                     </span>
                                 </div>
-                                <p className="text-xs text-text-secondary mb-3">{riskScore.summary}</p>
+                                <p className="text-xs text-text-secondary mb-3 text-pretty">{riskScore.summary}</p>
                                 {riskScore.suggestion && (
                                     <div className="bg-bg-secondary/50 rounded-lg p-3 border border-border">
                                         <p className="text-[9px] font-mono text-text-faint uppercase tracking-wider mb-1">Suggested Action</p>
-                                        <p className="text-xs text-text-primary">{riskScore.suggestion}</p>
+                                        <p className="text-xs text-text-primary text-pretty">{riskScore.suggestion}</p>
                                     </div>
                                 )}
                                 <div className="mt-3 space-y-1.5">

@@ -101,7 +101,7 @@ export default function NewClientPage() {
                 <form onSubmit={handleSubmit} className="space-y-8">
                     {/* Basic Info Card */}
                     <div className="card p-6">
-                        <h2 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
+                        <h2 className="text-lg font-bold text-white mb-6 flex items-center gap-2 text-balance">
                             <User className="w-5 h-5 text-brand-blue" aria-hidden="true" />
                             Basic Information
                         </h2>
@@ -166,7 +166,7 @@ export default function NewClientPage() {
 
                     {/* Goals & Notes Card */}
                     <div className="card p-6">
-                        <h2 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
+                        <h2 className="text-lg font-bold text-white mb-6 flex items-center gap-2 text-balance">
                             <Target className="w-5 h-5 text-brand-green" aria-hidden="true" />
                             Goals & Notes
                         </h2>
@@ -205,7 +205,7 @@ export default function NewClientPage() {
 
                     {/* Onboarding Settings Card */}
                     <div className="card p-6">
-                        <h2 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
+                        <h2 className="text-lg font-bold text-white mb-6 flex items-center gap-2 text-balance">
                             <Send className="w-5 h-5 text-brand-violet" aria-hidden="true" />
                             Onboarding
                         </h2>
@@ -248,7 +248,7 @@ export default function NewClientPage() {
                                         <p className="text-sm font-medium text-white">
                                             Send intake form immediately
                                         </p>
-                                        <p className="text-xs text-text-faint">
+                                        <p className="text-xs text-text-faint text-pretty">
                                             Client will receive a WhatsApp Flow to collect their details
                                         </p>
                                     </div>

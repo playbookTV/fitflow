@@ -249,7 +249,7 @@ export default function BillingPage() {
             {/* Bank Transfer Confirmation Form */}
             {showBankTransfer && (
                 <div className="card p-6 mb-8 animate-fade-in">
-                    <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                    <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2 text-balance">
                         <Landmark className="w-5 h-5 text-brand-violet" />
                         Confirm Bank Transfer
                     </h3>
@@ -315,13 +315,13 @@ export default function BillingPage() {
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                     <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowCreateInvoice(false)} />
                     <div className="relative w-full max-w-lg card-elevated p-6 animate-scale-in">
-                        <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                        <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2 text-balance">
                             <CreditCard className="w-5 h-5 text-brand-green" />
                             Create Payment Link
                         </h3>
                         {generatedUrl ? (
                             <div className="space-y-4">
-                                <p className="text-sm text-text-secondary">
+                                <p className="text-sm text-text-secondary text-pretty">
                                     Share this link with your client to collect payment:
                                 </p>
                                 <div className="flex gap-3">
@@ -479,7 +479,7 @@ export default function BillingPage() {
             {/* Payments Table */}
             <div className="mb-6">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
-                    <h2 className="section-title">Recent Payments</h2>
+                    <h2 className="section-title text-balance">Recent Payments</h2>
                     <div className="tabs">
                         {[
                             { value: null, label: "All" },
@@ -512,8 +512,8 @@ export default function BillingPage() {
                         <div className="empty-state-icon">
                             <CreditCard className="w-6 h-6" />
                         </div>
-                        <h3 className="text-lg font-bold text-white mb-1">No payments found</h3>
-                        <p className="text-text-secondary text-sm">
+                        <h3 className="text-lg font-bold text-white mb-1 text-balance">No payments found</h3>
+                        <p className="text-text-secondary text-sm text-pretty">
                             {statusFilter ? "Try a different filter" : "No payment history yet"}
                         </p>
                     </div>
@@ -611,8 +611,8 @@ export default function BillingPage() {
                         <CreditCard className="w-6 h-6 text-brand-violet" />
                     </div>
                     <div>
-                        <h3 className="font-semibold text-white mb-1">Stripe Connect</h3>
-                        <p className="text-sm text-text-secondary">
+                        <h3 className="font-semibold text-white mb-1 text-balance">Stripe Connect</h3>
+                        <p className="text-sm text-text-secondary text-pretty">
                             {stripeConnected
                                 ? "View your full payment dashboard and manage payouts"
                                 : "Connect your Stripe account to receive client payments"}

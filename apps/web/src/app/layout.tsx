@@ -44,7 +44,7 @@ export default function RootLayout({
             className={`dark ${dmSans.variable} ${ibmPlexMono.variable} ${newsreader.variable}`}
             style={{ colorScheme: "dark" }}
         >
-            <body className="min-h-screen bg-bg-primary antialiased">
+            <body className="min-h-dvh bg-bg-primary antialiased">
                 <SkipNav />
                 <ToastProvider>{children}</ToastProvider>
             </body>
