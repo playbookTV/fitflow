@@ -330,7 +330,7 @@ export default function MealPlanBuilder({ planId }: MealPlanBuilderProps) {
                                         </span>
                                     </div>
                                     <div className="flex items-center gap-4">
-                                        <span className="text-xs text-brand-green font-mono">
+                                        <span className="text-xs text-brand-green font-mono tabular-nums">
                                             {macros.calories} cal | P:{Math.round(macros.protein)}g C:{Math.round(macros.carbs)}g F:{Math.round(macros.fat)}g
                                         </span>
                                         {days.length > 1 && (
@@ -368,7 +368,7 @@ export default function MealPlanBuilder({ planId }: MealPlanBuilderProps) {
                                                                     {entry.name}
                                                                 </span>
                                                             </div>
-                                                            <div className="text-xs text-text-faint mt-1 font-mono">
+                                                            <div className="text-xs text-text-faint mt-1 font-mono tabular-nums">
                                                                 {entry.calories || 0} cal | P:{Math.round(entry.protein || 0)}g C:{Math.round(entry.carbs || 0)}g F:{Math.round(entry.fat || 0)}g
                                                             </div>
                                                         </div>

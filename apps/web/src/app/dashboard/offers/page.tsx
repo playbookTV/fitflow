@@ -234,7 +234,7 @@ export default function OffersPage() {
                                 </div>
                             </div>
                             <div className="flex items-center gap-4">
-                                <div className="flex items-center gap-1.5 text-text-secondary text-sm">
+                                <div className="flex items-center gap-1.5 text-text-secondary text-sm tabular-nums">
                                     <Users className="w-4 h-4" />
                                     {offer._count.leads}
                                 </div>

@@ -7,8 +7,8 @@ export default function ProfileNotFound() {
                 <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center mx-auto mb-6">
                     <span className="text-3xl text-text-faint">?</span>
                 </div>
-                <h1 className="text-xl font-bold mb-2">Profile not found</h1>
-                <p className="text-sm text-text-secondary mb-8">
+                <h1 className="text-xl font-bold mb-2 text-balance">Profile not found</h1>
+                <p className="text-sm text-text-secondary mb-8 text-pretty">
                     This trainer profile doesn&apos;t exist or is no longer available.
                 </p>
                 <Link

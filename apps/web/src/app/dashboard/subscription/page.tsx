@@ -153,7 +153,7 @@ export default function SubscriptionPage() {
                         <Clock className="w-5 h-5 text-brand-blue shrink-0" />
                         <div>
                             <p className="text-sm text-white font-medium text-balance">
-                                Trial ends in {sub.trialDaysLeft} day{sub.trialDaysLeft !== 1 ? "s" : ""}
+                                Trial ends in <span className="tabular-nums">{sub.trialDaysLeft}</span> day{sub.trialDaysLeft !== 1 ? "s" : ""}
                             </p>
                             <p className="text-xs text-text-faint text-pretty">
                                 Your card will be charged when the trial ends. Manage billing to cancel anytime.
@@ -285,7 +285,7 @@ export default function SubscriptionPage() {
                                             <td className="py-3 pr-4 text-white">
                                                 {formatDate(inv.created)}
                                             </td>
-                                            <td className="py-3 pr-4 text-white font-medium">
+                                            <td className="py-3 pr-4 text-white font-medium tabular-nums">
                                                 {formatCurrency(inv.amount, inv.currency)}
                                             </td>
                                             <td className="py-3 pr-4">
@@ -356,7 +356,7 @@ function UsageBar({
                     <Icon className="w-4 h-4" />
                     {label}
                 </div>
-                <span className={cn("text-sm font-medium", isNearLimit ? "text-brand-orange" : "text-white")}>
+                <span className={cn("text-sm font-medium tabular-nums", isNearLimit ? "text-brand-orange" : "text-white")}>
                     {current} / {isUnlimited ? "\u221e" : limit}
                 </span>
             </div>

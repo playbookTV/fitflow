@@ -204,12 +204,12 @@ export default function MealPlansPage() {
                                 )}
 
                                 <div className="flex items-center gap-4 text-xs text-text-faint">
-                                    <span className="flex items-center gap-1">
+                                    <span className="flex items-center gap-1 tabular-nums">
                                         <Calendar className="w-3.5 h-3.5" />
                                         {plan.daysPerWeek} days/week
                                     </span>
                                     {plan._count?.assignments !== undefined && (
-                                        <span className="flex items-center gap-1">
+                                        <span className="flex items-center gap-1 tabular-nums">
                                             <Users className="w-3.5 h-3.5" />
                                             {plan._count.assignments} assigned
                                         </span>

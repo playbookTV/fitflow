@@ -366,7 +366,7 @@ export default function PlanBuilder({ planId }: PlanBuilderProps) {
                                     className="bg-transparent border-none text-sm font-semibold text-text-primary focus-visible:outline-transparent focus-visible:ring-2 focus-visible:ring-brand-green/50 flex-1"
                                     aria-label={`Title for Day ${day.dayNumber}`}
                                 />
-                                <span className="badge badge-blue">
+                                <span className="badge badge-blue tabular-nums">
                                     {day.exercises.length} exercises
                                 </span>
                                 <button

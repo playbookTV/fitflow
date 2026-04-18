@@ -186,7 +186,7 @@ function OnboardingContent() {
                                     <div className="space-y-6">
                                         <div className="flex items-center gap-3 mb-2">
                                             <Activity className="h-5 w-5 text-brand-orange" />
-                                            <h2 className="text-xl font-semibold">Health & Readiness</h2>
+                                            <h2 className="text-xl font-semibold text-balance">Health & Readiness</h2>
                                         </div>
                                         <div className="space-y-4">
                                             <div className="space-y-2">

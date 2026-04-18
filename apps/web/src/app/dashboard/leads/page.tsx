@@ -287,7 +287,7 @@ export default function LeadsPage() {
                                                 )}
                                             </div>
                                             {lead.unreadCount > 0 && (
-                                                <span className="w-5 h-5 rounded-full bg-brand-green text-[10px] font-bold flex items-center justify-center text-white shrink-0">
+                                                <span className="w-5 h-5 rounded-full bg-brand-green text-[10px] font-bold flex items-center justify-center text-white shrink-0 tabular-nums">
                                                     {lead.unreadCount}
                                                 </span>
                                             )}

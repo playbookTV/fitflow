@@ -105,7 +105,7 @@ export default function ProfilePage({ data }: { data: ProfileData }) {
                 </div>
 
                 {/* Name */}
-                <h1 className="text-2xl font-bold tracking-tight text-center" style={{ fontFamily: "var(--font-newsreader)" }}>
+                <h1 className="text-2xl font-bold tracking-tight text-center text-balance" style={{ fontFamily: "var(--font-newsreader)" }}>
                     {coach.name || coach.slug}
                 </h1>
 
@@ -133,7 +133,7 @@ export default function ProfilePage({ data }: { data: ProfileData }) {
 
                 {/* Bio */}
                 {coach.bio && (
-                    <p className="mt-6 text-sm text-text-secondary text-center leading-relaxed max-w-sm">
+                    <p className="mt-6 text-sm text-text-secondary text-center leading-relaxed max-w-sm text-pretty">
                         {coach.bio}
                     </p>
                 )}
@@ -209,12 +209,12 @@ function RatesDisplay({ rates }: { rates: NonNullable<ProfileData["rates"]> }) {
             <div className="space-y-2">
                 <div className="flex items-baseline justify-between">
                     <span className="text-sm text-text-secondary">Per session</span>
-                    <span className="text-lg font-bold text-white">{formatCurrency(pricePerSession, currency)}</span>
+                    <span className="text-lg font-bold text-white tabular-nums">{formatCurrency(pricePerSession, currency)}</span>
                 </div>
                 {sessionsPerBlock && (
                     <div className="flex items-baseline justify-between">
                         <span className="text-sm text-text-secondary">Block of {sessionsPerBlock}</span>
-                        <span className="text-lg font-bold text-white">
+                        <span className="text-lg font-bold text-white tabular-nums">
                             {formatCurrency(pricePerSession * sessionsPerBlock, currency)}
                         </span>
                     </div>
@@ -227,7 +227,7 @@ function RatesDisplay({ rates }: { rates: NonNullable<ProfileData["rates"]> }) {
         return (
             <div className="flex items-baseline justify-between">
                 <span className="text-sm text-text-secondary">Per session</span>
-                <span className="text-lg font-bold text-white">{formatCurrency(pricePerSession, currency)}</span>
+                <span className="text-lg font-bold text-white tabular-nums">{formatCurrency(pricePerSession, currency)}</span>
             </div>
         );
     }
@@ -236,7 +236,7 @@ function RatesDisplay({ rates }: { rates: NonNullable<ProfileData["rates"]> }) {
         return (
             <div className="flex items-baseline justify-between">
                 <span className="text-sm text-text-secondary">Monthly</span>
-                <span className="text-lg font-bold text-white">{formatCurrency(monthlyRate, currency)}</span>
+                <span className="text-lg font-bold text-white tabular-nums">{formatCurrency(monthlyRate, currency)}</span>
             </div>
         );
     }

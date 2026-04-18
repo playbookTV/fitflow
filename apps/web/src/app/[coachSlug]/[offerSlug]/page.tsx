@@ -112,8 +112,8 @@ function IntakeContent() {
                         <div className="h-16 w-16 bg-brand-green rounded-full flex items-center justify-center mb-6">
                             <CheckCircle2 className="h-10 w-10 text-black" />
                         </div>
-                        <h2 className="text-2xl font-bold mb-2">Application Received!</h2>
-                        <p className="text-text-secondary">
+                        <h2 className="text-2xl font-bold mb-2 text-balance">Application Received!</h2>
+                        <p className="text-text-secondary text-pretty">
                             Thanks {form.name}! {offerData?.coach.name} will reach out to you
                             via {offerData?.channel === "TELEGRAM" ? "Telegram" : "WhatsApp"} shortly.
                         </p>
@@ -135,10 +135,10 @@ function IntakeContent() {
                     <p className="text-xs text-text-faint font-mono uppercase tracking-widest mb-2">
                         {offerData?.coach.name}
                     </p>
-                    <h1 className="text-3xl font-bold tracking-tight mb-2">
+                    <h1 className="text-3xl font-bold tracking-tight mb-2 text-balance">
                         {offerData?.offer.name}
                     </h1>
-                    <p className="text-text-secondary text-sm">
+                    <p className="text-text-secondary text-sm text-pretty">
                         Fill in your details to get started
                     </p>
                 </div>

@@ -356,10 +356,10 @@ function SetupContent() {
                         <div className="h-16 w-16 bg-brand-green rounded-full flex items-center justify-center mb-6">
                             <CheckCircle2 className="h-10 w-10 text-black" />
                         </div>
-                        <h2 className="text-2xl font-bold mb-2">
+                        <h2 className="text-2xl font-bold mb-2 text-balance">
                             You&apos;re all set, Coach {form.coachingName || "there"}!
                         </h2>
-                        <p className="text-text-secondary mb-8">
+                        <p className="text-text-secondary mb-8 text-pretty">
                             Your coaching dashboard is ready.
                         </p>
 
@@ -388,13 +388,13 @@ function SetupContent() {
                                         <>
                                             <div className="flex justify-between">
                                                 <span className="text-text-secondary text-sm">Sessions</span>
-                                                <span className="text-white text-sm font-medium">
+                                                <span className="text-white text-sm font-medium tabular-nums">
                                                     {createdClient.sessionBlock.totalSessions}
                                                 </span>
                                             </div>
                                             <div className="flex justify-between">
                                                 <span className="text-text-secondary text-sm">Block value</span>
-                                                <span className="text-brand-green text-sm font-medium">
+                                                <span className="text-brand-green text-sm font-medium tabular-nums">
                                                     {formatCurrency(
                                                         (createdClient.sessionBlock.totalSessions *
                                                             createdClient.sessionBlock.pricePerSession) /
@@ -481,8 +481,8 @@ function SetupContent() {
                 {/* Header */}
                 <div className="mb-8 text-center animation-fade-in">
                     <Logo size="sm" showText className="mb-8 justify-center" />
-                    <h1 className="text-3xl font-bold tracking-tight mb-2">Set up your coaching</h1>
-                    <p className="text-text-secondary">
+                    <h1 className="text-3xl font-bold tracking-tight mb-2 text-balance">Set up your coaching</h1>
+                    <p className="text-text-secondary text-pretty">
                         {step === 1 && "Tell us about yourself so we can personalise your experience."}
                         {step === 2 && "How do you charge your clients?"}
                         {step === 3 && "Add your first client to activate your dashboard."}
@@ -519,7 +519,7 @@ function SetupContent() {
                                     <>
                                         <div className="flex items-center gap-3 mb-2">
                                             <User className="h-5 w-5 text-brand-blue" />
-                                            <h2 className="text-xl font-semibold">Profile</h2>
+                                            <h2 className="text-xl font-semibold text-balance">Profile</h2>
                                         </div>
 
                                         <div className="form-field">
@@ -574,7 +574,7 @@ function SetupContent() {
                                     <>
                                         <div className="flex items-center gap-3 mb-2">
                                             <CreditCard className="h-5 w-5 text-brand-violet" />
-                                            <h2 className="text-xl font-semibold">Payment model</h2>
+                                            <h2 className="text-xl font-semibold text-balance">Payment model</h2>
                                         </div>
 
                                         <ChipSelect
@@ -597,7 +597,7 @@ function SetupContent() {
                                     <>
                                         <div className="flex items-center gap-3 mb-2">
                                             <UserPlus className="h-5 w-5 text-brand-green" />
-                                            <h2 className="text-xl font-semibold">Add your first client</h2>
+                                            <h2 className="text-xl font-semibold text-balance">Add your first client</h2>
                                         </div>
 
                                         <div className="form-field">
@@ -744,7 +744,7 @@ function SetupContent() {
                                     <>
                                         <div className="flex items-center gap-3 mb-2">
                                             <MessageSquare className="h-5 w-5 text-brand-orange" />
-                                            <h2 className="text-xl font-semibold">Connect messaging</h2>
+                                            <h2 className="text-xl font-semibold text-balance">Connect messaging</h2>
                                         </div>
 
                                         <ChipSelect

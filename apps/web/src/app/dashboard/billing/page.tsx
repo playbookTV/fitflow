@@ -425,7 +425,7 @@ export default function BillingPage() {
                         </div>
                         <span className="label-mono">Total Revenue</span>
                     </div>
-                    <p className="text-2xl font-bold text-white">
+                    <p className="text-2xl font-bold text-white tabular-nums">
                         {formatPaymentCurrency(stats.totalRevenue)}
                     </p>
                     <p className="text-xs text-text-faint mt-1">All time</p>
@@ -438,7 +438,7 @@ export default function BillingPage() {
                         </div>
                         <span className="label-mono">This Month</span>
                     </div>
-                    <p className="text-2xl font-bold text-white">
+                    <p className="text-2xl font-bold text-white tabular-nums">
                         {formatPaymentCurrency(stats.monthlyRevenue)}
                     </p>
                     {stats.previousMonthRevenue > 0 ? (
@@ -460,7 +460,7 @@ export default function BillingPage() {
                         </div>
                         <span className="label-mono">Pending</span>
                     </div>
-                    <p className="text-2xl font-bold text-white">{stats.pendingPayments}</p>
+                    <p className="text-2xl font-bold text-white tabular-nums">{stats.pendingPayments}</p>
                     <p className="text-xs text-text-faint mt-1">Awaiting payment</p>
                 </div>
 
@@ -471,7 +471,7 @@ export default function BillingPage() {
                         </div>
                         <span className="label-mono">Active</span>
                     </div>
-                    <p className="text-2xl font-bold text-white">{stats.activeSubscriptions}</p>
+                    <p className="text-2xl font-bold text-white tabular-nums">{stats.activeSubscriptions}</p>
                     <p className="text-xs text-text-faint mt-1">Paying clients</p>
                 </div>
             </div>
@@ -551,7 +551,7 @@ export default function BillingPage() {
                                         </span>
                                     </div>
 
-                                    <span className="text-sm font-mono text-white">
+                                    <span className="text-sm font-mono text-white tabular-nums">
                                         {formatPaymentCurrency(payment.amount, payment.currency)}
                                     </span>
 

@@ -531,7 +531,7 @@ function SettingsContent() {
                                                         placeholder="Tell potential clients about yourself\u2026"
                                                         rows={3}
                                                     />
-                                                    <p className="text-xs text-text-faint mt-1 text-right">
+                                                    <p className="text-xs text-text-faint mt-1 text-right tabular-nums">
                                                         {(profile.bio || "").length} / 200
                                                     </p>
                                                 </div>
@@ -986,7 +986,7 @@ function SettingsContent() {
                                                                 </p>
                                                             </div>
                                                             <div className="flex items-center gap-2">
-                                                                <span className="flex items-center gap-1 text-xs text-text-faint">
+                                                                <span className="flex items-center gap-1 text-xs text-text-faint tabular-nums">
                                                                     <MousePointerClick className="w-3 h-3" />
                                                                     {link.clicks}
                                                                 </span>
