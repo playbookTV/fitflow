@@ -176,4 +176,35 @@ router.post("/:id/send-intake", authenticate, async (req: AuthRequest, res: Resp
     }
 });
 
+// GET /clients/:id/risk-score - Get AI risk score for a client
+router.get("/:id/risk-score", authenticate, async (req: AuthRequest, res: Response) => {
+    const coachId = req.user?.id as string;
+    const { id } = req.params;
+
+    if (!coachId) return res.status(401).json({ error: "Unauthorized" });
+
+    try {
+        const riskScore = await prisma.clientRiskScore.findFirst({
+            where: {
+                clientId: id as string,
+                coachId,
+            },
+        });
+
+        if (!riskScore) return res.status(404).json({ error: "No risk score available" });
+
+        res.json({
+            score: riskScore.score,
+            level: riskScore.level,
+            summary: riskScore.summary,
+            suggestion: riskScore.suggestion,
+            factors: riskScore.factors,
+            updatedAt: riskScore.updatedAt,
+        });
+    } catch (error) {
+        console.error(`[GET /clients/${id}/risk-score]`, error);
+        res.status(500).json({ error: "Failed to fetch risk score" });
+    }
+});
+
 export default router;

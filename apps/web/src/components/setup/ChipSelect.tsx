@@ -51,7 +51,7 @@ export function ChipSelect({
                         type="button"
                         onClick={() => handleClick(option.value)}
                         className={cn(
-                            "p-4 rounded-xl border text-left transition-all",
+                            "p-4 rounded-xl border text-left transition-[color,background-color,border-color] duration-200",
                             isSelected(option.value)
                                 ? "border-brand-green/40 bg-brand-green/10"
                                 : "border-border bg-bg-hover hover:border-border-hover"
@@ -98,7 +98,7 @@ export function ChipSelect({
                     type="button"
                     onClick={() => handleClick(option.value)}
                     className={cn(
-                        "px-3.5 py-1.5 rounded-full text-sm font-medium border transition-all",
+                        "px-3.5 py-1.5 rounded-full text-sm font-medium border transition-[color,background-color,border-color] duration-200",
                         isSelected(option.value)
                             ? "border-brand-green/40 bg-brand-green/10 text-brand-green"
                             : "border-border bg-bg-hover text-text-secondary hover:border-border-hover hover:text-white"

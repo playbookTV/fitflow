@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Plus, Link2, Users, Trash2, Copy, MessageCircle, QrCode } from "lucide-react";
+import { Modal, ModalContent, ModalHeader, ModalTitle, ModalFooter, ModalClose } from "@/components/ui/Modal";
 import { cn } from "@/lib/utils";
 import { getAuthHeaders } from "@/lib/auth";
 
@@ -28,6 +29,7 @@ export default function OffersPage() {
     const [showQrOffer, setShowQrOffer] = useState<string | null>(null);
     const [shortLinks, setShortLinks] = useState<Record<string, { id: string; shortUrl: string }>>({});
     const [coachSlug, setCoachSlug] = useState<string | null>(null);
+    const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
     const fetchOffers = async () => {
         try {
@@ -147,9 +149,11 @@ export default function OffersPage() {
                     <h3 className="text-lg font-semibold text-white mb-4">Create Offer Link</h3>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                         <div className="form-field">
-                            <label className="label">Offer Name</label>
+                            <label htmlFor="offer-name" className="label">Offer Name</label>
                             <input
+                                id="offer-name"
                                 type="text"
+                                name="offerName"
                                 value={newOffer.name}
                                 onChange={(e) => setNewOffer({ ...newOffer, name: e.target.value })}
                                 className="input"
@@ -157,9 +161,11 @@ export default function OffersPage() {
                             />
                         </div>
                         <div className="form-field">
-                            <label className="label">URL Slug</label>
+                            <label htmlFor="offer-slug" className="label">URL Slug</label>
                             <input
+                                id="offer-slug"
                                 type="text"
+                                name="offerSlug"
                                 value={newOffer.slug}
                                 onChange={(e) =>
                                     setNewOffer({
@@ -235,7 +241,7 @@ export default function OffersPage() {
                                 <button
                                     onClick={() => copyLink(offer.slug)}
                                     className="btn-ghost p-2"
-                                    title="Copy intake link"
+                                    aria-label="Copy intake link"
                                 >
                                     <Copy className="w-4 h-4" />
                                 </button>
@@ -243,7 +249,7 @@ export default function OffersPage() {
                                     <button
                                         onClick={() => copyWaLink(offer.name)}
                                         className="btn-ghost p-2 text-brand-green hover:text-brand-green"
-                                        title="Copy WhatsApp link"
+                                        aria-label="Copy WhatsApp link"
                                     >
                                         <MessageCircle className="w-4 h-4" />
                                     </button>
@@ -252,15 +258,15 @@ export default function OffersPage() {
                                     <button
                                         onClick={() => setShowQrOffer(showQrOffer === offer.id ? null : offer.id)}
                                         className="btn-ghost p-2 text-brand-cyan hover:text-brand-cyan"
-                                        title="Show QR code"
+                                        aria-label="Show QR code"
                                     >
                                         <QrCode className="w-4 h-4" />
                                     </button>
                                 )}
                                 <button
-                                    onClick={() => handleDelete(offer.id)}
+                                    onClick={() => setConfirmDeleteId(offer.id)}
                                     className="btn-ghost p-2 text-brand-red hover:text-brand-red"
-                                    title="Delete"
+                                    aria-label="Delete offer"
                                 >
                                     <Trash2 className="w-4 h-4" />
                                 </button>
@@ -282,6 +288,25 @@ export default function OffersPage() {
                     ))}
                 </div>
             )}
+            <Modal open={!!confirmDeleteId} onOpenChange={(open) => { if (!open) setConfirmDeleteId(null); }}>
+                <ModalContent size="sm">
+                    <ModalHeader>
+                        <ModalTitle>Delete Offer</ModalTitle>
+                        <ModalClose />
+                    </ModalHeader>
+                    <div className="p-6">
+                        <p className="text-text-secondary text-sm">Are you sure you want to delete this offer? This action cannot be undone.</p>
+                    </div>
+                    <ModalFooter>
+                        <button className="btn-secondary" onClick={() => setConfirmDeleteId(null)}>Cancel</button>
+                        <button className="btn-primary !bg-brand-red hover:!shadow-glow-red" onClick={async () => {
+                            if (!confirmDeleteId) return;
+                            await handleDelete(confirmDeleteId);
+                            setConfirmDeleteId(null);
+                        }}>Delete</button>
+                    </ModalFooter>
+                </ModalContent>
+            </Modal>
         </DashboardLayout>
     );
 }

@@ -22,6 +22,7 @@ import {
     Check,
 } from "lucide-react";
 import { cn, formatDate } from "@/lib/utils";
+import { formatCurrency } from "@/lib/tokens";
 
 interface Payment {
     id: string;
@@ -51,12 +52,8 @@ const statusConfig: Record<string, { label: string; className: string; icon: Rea
     refunded: { label: "Refunded", className: "badge-blue", icon: ArrowUpRight },
 };
 
-function formatCurrency(amount: number, currency: string = "GBP") {
-    return new Intl.NumberFormat("en-GB", {
-        style: "currency",
-        currency,
-        minimumFractionDigits: 0,
-    }).format(amount / 100);
+function formatPaymentCurrency(amount: number, currency: string = "GBP") {
+    return formatCurrency(amount / 100, currency);
 }
 
 export default function BillingPage() {
@@ -258,8 +255,10 @@ export default function BillingPage() {
                     </h3>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                         <div className="form-field">
-                            <label className="label">Client</label>
+                            <label htmlFor="billing-bank-client" className="label">Client</label>
                             <select
+                                id="billing-bank-client"
+                                name="clientId"
                                 value={bankTransferForm.clientId}
                                 onChange={(e) =>
                                     setBankTransferForm({ ...bankTransferForm, clientId: e.target.value })
@@ -273,9 +272,11 @@ export default function BillingPage() {
                             </select>
                         </div>
                         <div className="form-field">
-                            <label className="label">Amount (GBP)</label>
+                            <label htmlFor="billing-bank-amount" className="label">Amount (GBP)</label>
                             <input
+                                id="billing-bank-amount"
                                 type="number"
+                                name="amount"
                                 step="0.01"
                                 min="0"
                                 value={bankTransferForm.amount}
@@ -329,6 +330,8 @@ export default function BillingPage() {
                                         value={generatedUrl}
                                         readOnly
                                         className="input flex-1 text-xs"
+                                        aria-label="Payment link URL"
+                                        name="paymentUrl"
                                     />
                                     <button
                                         className="btn-primary"
@@ -354,8 +357,10 @@ export default function BillingPage() {
                         ) : (
                             <div className="space-y-4">
                                 <div className="form-field">
-                                    <label className="label">Client</label>
+                                    <label htmlFor="billing-invoice-client" className="label">Client</label>
                                     <select
+                                        id="billing-invoice-client"
+                                        name="invoiceClientId"
                                         value={invoiceClientId}
                                         onChange={(e) => setInvoiceClientId(e.target.value)}
                                         className="select"
@@ -421,7 +426,7 @@ export default function BillingPage() {
                         <span className="label-mono">Total Revenue</span>
                     </div>
                     <p className="text-2xl font-bold text-white">
-                        {formatCurrency(stats.totalRevenue)}
+                        {formatPaymentCurrency(stats.totalRevenue)}
                     </p>
                     <p className="text-xs text-text-faint mt-1">All time</p>
                 </div>
@@ -434,7 +439,7 @@ export default function BillingPage() {
                         <span className="label-mono">This Month</span>
                     </div>
                     <p className="text-2xl font-bold text-white">
-                        {formatCurrency(stats.monthlyRevenue)}
+                        {formatPaymentCurrency(stats.monthlyRevenue)}
                     </p>
                     {stats.previousMonthRevenue > 0 ? (
                         <p className={cn("text-xs mt-1", stats.monthlyRevenue >= stats.previousMonthRevenue ? "text-brand-green" : "text-brand-red")}>
@@ -547,7 +552,7 @@ export default function BillingPage() {
                                     </div>
 
                                     <span className="text-sm font-mono text-white">
-                                        {formatCurrency(payment.amount, payment.currency)}
+                                        {formatPaymentCurrency(payment.amount, payment.currency)}
                                     </span>
 
                                     <span className="text-[10px] font-bold text-text-faint uppercase tracking-wider">
@@ -571,7 +576,7 @@ export default function BillingPage() {
                                                 onClick={() => handleSendReminder(payment.id)}
                                                 disabled={sendingReminderId === payment.id}
                                                 className="btn-icon !p-1.5 opacity-0 group-hover:opacity-100 transition-opacity"
-                                                title="Send reminder"
+                                                aria-label="Send reminder"
                                             >
                                                 {sendingReminderId === payment.id ? (
                                                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -586,7 +591,7 @@ export default function BillingPage() {
                                             <button
                                                 onClick={() => handleDownloadReceipt(payment.id)}
                                                 className="btn-icon !p-1.5 opacity-0 group-hover:opacity-100 transition-opacity"
-                                                title="Download receipt"
+                                                aria-label="Download receipt"
                                             >
                                                 <Download className="w-3.5 h-3.5" />
                                             </button>

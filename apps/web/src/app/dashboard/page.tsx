@@ -5,10 +5,27 @@ import { useRouter } from "next/navigation";
 import { DashboardStats } from "@/components/DashboardStats";
 import { ClientGrid } from "@/components/ClientGrid";
 import { DashboardLayout } from "@/components/DashboardLayout";
+import { RiskScoreCard } from "@/components/RiskScoreCard";
 import { Search, Filter, RefreshCcw, MessageSquare, Plus, Send, UserPlus } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { getAuthHeaders } from "@/lib/auth";
+
+interface AtRiskClient {
+    id: string;
+    name: string;
+    score?: number;
+    level?: string;
+    summary?: string;
+    suggestion?: string;
+    factors?: {
+        compliance: number;
+        engagement: number;
+        activity: number;
+        behavioral: number;
+        payment: number;
+    };
+}
 
 interface Stats {
     totalClients: number;
@@ -16,7 +33,7 @@ interface Stats {
     totalWorkouts: number;
     averageCompliance: number;
     revenue: number;
-    atRiskClients: Array<{ id: string; name: string }>;
+    atRiskClients: AtRiskClient[];
     channels?: { whatsapp: number; telegram: number };
     newLeads?: number;
 }
@@ -96,27 +113,31 @@ export default function DashboardPage() {
             actions={
                 <div className="flex items-center gap-3">
                     <div className="relative hidden md:block">
-                        <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-faint" />
+                        <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-faint" aria-hidden="true" />
                         <input
                             type="text"
-                            placeholder="Search clients..."
+                            placeholder="Search clients\u2026"
+                            name="search"
+                            autoComplete="off"
+                            aria-label="Search clients"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             className="input-with-icon w-48"
                         />
                     </div>
-                    <button className="btn-icon hidden sm:flex">
-                        <Filter className="w-4 h-4" />
+                    <button className="btn-icon hidden sm:flex" aria-label="Filter">
+                        <Filter className="w-4 h-4" aria-hidden="true" />
                     </button>
                     <button
                         onClick={fetchData}
                         className="btn-icon"
                         disabled={loading}
+                        aria-label="Refresh"
                     >
-                        <RefreshCcw className={cn("w-4 h-4", loading && "animate-spin")} />
+                        <RefreshCcw className={cn("w-4 h-4", loading && "animate-spin")} aria-hidden="true" />
                     </button>
                     <Link href="/dashboard/clients/new" className="btn-primary">
-                        <Plus className="w-4 h-4" />
+                        <Plus className="w-4 h-4" aria-hidden="true" />
                         <span className="hidden sm:inline">ADD CLIENT</span>
                     </Link>
                 </div>
@@ -132,13 +153,13 @@ export default function DashboardPage() {
                         {stats.channels && (
                             <div className="card p-4 flex items-center gap-4">
                                 <div className="flex items-center gap-2 text-sm">
-                                    <MessageSquare className="w-4 h-4 text-brand-green" />
+                                    <MessageSquare className="w-4 h-4 text-brand-green" aria-hidden="true" />
                                     <span className="text-text-secondary">WhatsApp</span>
                                     <span className="font-bold text-white">{stats.channels.whatsapp}</span>
                                 </div>
                                 <div className="w-px h-6 bg-border" />
                                 <div className="flex items-center gap-2 text-sm">
-                                    <Send className="w-4 h-4 text-brand-blue" />
+                                    <Send className="w-4 h-4 text-brand-blue" aria-hidden="true" />
                                     <span className="text-text-secondary">Telegram</span>
                                     <span className="font-bold text-white">{stats.channels.telegram}</span>
                                 </div>
@@ -149,7 +170,7 @@ export default function DashboardPage() {
                                 href="/dashboard/leads"
                                 className="card p-4 flex items-center gap-3 hover:border-brand-orange/30 transition-colors"
                             >
-                                <UserPlus className="w-4 h-4 text-brand-orange" />
+                                <UserPlus className="w-4 h-4 text-brand-orange" aria-hidden="true" />
                                 <span className="text-sm text-text-secondary">New Leads</span>
                                 <span className="badge badge-orange">{stats.newLeads}</span>
                             </Link>
@@ -168,21 +189,7 @@ export default function DashboardPage() {
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                             {stats.atRiskClients.map((client) => (
-                                <Link
-                                    key={client.id}
-                                    href={`/dashboard/clients/${client.id}`}
-                                    className="alert-danger group cursor-pointer hover:border-brand-red/40 transition-all"
-                                >
-                                    <div>
-                                        <p className="font-bold text-white text-sm">{client.name}</p>
-                                        <p className="text-brand-red/70 text-[10px] uppercase tracking-widest font-bold">
-                                            No check-in (7 days)
-                                        </p>
-                                    </div>
-                                    <button className="btn-icon border-brand-red/20 text-brand-red hover:bg-brand-red hover:text-white transition-all">
-                                        <MessageSquare className="w-4 h-4" />
-                                    </button>
-                                </Link>
+                                <RiskScoreCard key={client.id} client={client} />
                             ))}
                         </div>
                     </div>
@@ -218,7 +225,7 @@ export default function DashboardPage() {
                             </p>
                             {!searchQuery && (
                                 <Link href="/dashboard/clients/new" className="btn-primary">
-                                    <Plus className="w-4 h-4" />
+                                    <Plus className="w-4 h-4" aria-hidden="true" />
                                     ADD CLIENT
                                 </Link>
                             )}

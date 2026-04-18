@@ -94,7 +94,7 @@ export default function NewClientPage() {
                     href="/dashboard"
                     className="inline-flex items-center gap-2 text-text-faint hover:text-white transition-colors mb-8 group"
                 >
-                    <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
+                    <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" aria-hidden="true" />
                     Back to Dashboard
                 </Link>
 
@@ -102,17 +102,19 @@ export default function NewClientPage() {
                     {/* Basic Info Card */}
                     <div className="card p-6">
                         <h2 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
-                            <User className="w-5 h-5 text-brand-blue" />
+                            <User className="w-5 h-5 text-brand-blue" aria-hidden="true" />
                             Basic Information
                         </h2>
 
                         <div className="space-y-5">
                             <div className="form-field">
-                                <label className="label-mono">Full Name *</label>
+                                <label htmlFor="name" className="label-mono">Full Name *</label>
                                 <input
                                     type="text"
+                                    id="name"
                                     name="name"
                                     required
+                                    autoComplete="name"
                                     value={formData.name}
                                     onChange={handleChange}
                                     className="input w-full"
@@ -122,14 +124,16 @@ export default function NewClientPage() {
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                                 <div className="form-field">
-                                    <label className="label-mono flex items-center gap-2">
-                                        <Phone className="w-3 h-3" />
+                                    <label htmlFor="phone" className="label-mono flex items-center gap-2">
+                                        <Phone className="w-3 h-3" aria-hidden="true" />
                                         WhatsApp Number *
                                     </label>
                                     <input
                                         type="tel"
+                                        id="phone"
                                         name="phone"
                                         required
+                                        autoComplete="tel"
                                         value={formData.phone}
                                         onChange={handleChange}
                                         className="input w-full"
@@ -141,13 +145,15 @@ export default function NewClientPage() {
                                 </div>
 
                                 <div className="form-field">
-                                    <label className="label-mono flex items-center gap-2">
-                                        <Mail className="w-3 h-3" />
+                                    <label htmlFor="email" className="label-mono flex items-center gap-2">
+                                        <Mail className="w-3 h-3" aria-hidden="true" />
                                         Email (Optional)
                                     </label>
                                     <input
                                         type="email"
+                                        id="email"
                                         name="email"
+                                        autoComplete="email"
                                         value={formData.email}
                                         onChange={handleChange}
                                         className="input w-full"
@@ -161,34 +167,36 @@ export default function NewClientPage() {
                     {/* Goals & Notes Card */}
                     <div className="card p-6">
                         <h2 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
-                            <Target className="w-5 h-5 text-brand-green" />
+                            <Target className="w-5 h-5 text-brand-green" aria-hidden="true" />
                             Goals & Notes
                         </h2>
 
                         <div className="space-y-5">
                             <div className="form-field">
-                                <label className="label-mono">Client Goals</label>
+                                <label htmlFor="goals" className="label-mono">Client Goals</label>
                                 <textarea
+                                    id="goals"
                                     name="goals"
                                     value={formData.goals}
                                     onChange={handleChange}
                                     className="textarea w-full"
-                                    placeholder="e.g. Lose 10kg, build muscle, improve energy levels..."
+                                    placeholder="e.g. Lose 10kg, build muscle, improve energy levels\u2026"
                                     rows={3}
                                 />
                             </div>
 
                             <div className="form-field">
-                                <label className="label-mono flex items-center gap-2">
-                                    <FileText className="w-3 h-3" />
+                                <label htmlFor="notes" className="label-mono flex items-center gap-2">
+                                    <FileText className="w-3 h-3" aria-hidden="true" />
                                     Coach Notes (Private)
                                 </label>
                                 <textarea
+                                    id="notes"
                                     name="notes"
                                     value={formData.notes}
                                     onChange={handleChange}
                                     className="textarea w-full"
-                                    placeholder="Any notes about this client (only visible to you)..."
+                                    placeholder="Any notes about this client (only visible to you)\u2026"
                                     rows={3}
                                 />
                             </div>
@@ -198,14 +206,15 @@ export default function NewClientPage() {
                     {/* Onboarding Settings Card */}
                     <div className="card p-6">
                         <h2 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
-                            <Send className="w-5 h-5 text-brand-violet" />
+                            <Send className="w-5 h-5 text-brand-violet" aria-hidden="true" />
                             Onboarding
                         </h2>
 
                         <div className="space-y-5">
                             <div className="form-field">
-                                <label className="label-mono">Initial Status</label>
+                                <label htmlFor="status" className="label-mono">Initial Status</label>
                                 <select
+                                    id="status"
                                     name="status"
                                     value={formData.status}
                                     onChange={handleChange}
@@ -226,9 +235,10 @@ export default function NewClientPage() {
                             </div>
 
                             {formData.status === "INTAKE_SENT" && (
-                                <label className="flex items-center gap-3 p-4 rounded-xl bg-brand-violet/5 border border-brand-violet/20 cursor-pointer hover:bg-brand-violet/10 transition-colors">
+                                <label htmlFor="sendIntake" className="flex items-center gap-3 p-4 rounded-xl bg-brand-violet/5 border border-brand-violet/20 cursor-pointer hover:bg-brand-violet/10 transition-colors">
                                     <input
                                         type="checkbox"
+                                        id="sendIntake"
                                         name="sendIntake"
                                         checked={formData.sendIntake}
                                         onChange={handleChange}

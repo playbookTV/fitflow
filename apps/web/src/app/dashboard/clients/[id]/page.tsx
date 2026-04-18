@@ -8,11 +8,12 @@ import {
 } from "recharts";
 import {
     ArrowLeft, Mail, Phone, MessageSquare, Calendar, Dumbbell,
-    TrendingUp, Target, Info, ChevronRight, Edit3, Check, X,
-    Loader2, UtensilsCrossed
+    TrendingUp, Target, Info, ChevronRight, Edit3, Check,
+    Loader2, UtensilsCrossed, ShieldAlert
 } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import { StatusBadge } from "@/components/ui";
+import { Modal, ModalContent, ModalHeader, ModalTitle, ModalClose } from "@/components/ui/Modal";
 import { getAuthHeaders } from "@/lib/auth";
 import { DashboardLayout } from "@/components/DashboardLayout";
 
@@ -158,19 +159,16 @@ function AssignPlanModal({
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-            <div className="relative w-full max-w-lg card-elevated p-6 animate-scale-in">
-                <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                        <Dumbbell className="w-5 h-5 text-brand-green" />
+        <Modal open={true} onOpenChange={(open) => { if (!open) onClose(); }}>
+            <ModalContent>
+                <ModalHeader>
+                    <ModalTitle className="flex items-center gap-2">
+                        <Dumbbell className="w-5 h-5 text-brand-green" aria-hidden="true" />
                         Assign Workout Plan
-                    </h2>
-                    <button onClick={onClose} className="btn-icon !p-1.5">
-                        <X className="w-4 h-4" />
-                    </button>
-                </div>
-
+                    </ModalTitle>
+                    <ModalClose />
+                </ModalHeader>
+                <div className="p-6">
                 {loading ? (
                     <div className="flex justify-center py-12">
                         <Loader2 className="w-6 h-6 text-text-faint animate-spin" />
@@ -186,8 +184,9 @@ function AssignPlanModal({
                     <div className="space-y-5">
                         {/* Plan select */}
                         <div className="form-field">
-                            <label className="label-mono">Workout Plan</label>
+                            <label className="label-mono" htmlFor="workoutPlan">Workout Plan</label>
                             <select
+                                id="workoutPlan"
                                 value={selectedPlanId}
                                 onChange={(e) => setSelectedPlanId(e.target.value)}
                                 className="select w-full"
@@ -202,8 +201,9 @@ function AssignPlanModal({
 
                         {/* Start date */}
                         <div className="form-field">
-                            <label className="label-mono">Start Date</label>
+                            <label className="label-mono" htmlFor="startDate">Start Date</label>
                             <input
+                                id="startDate"
                                 type="date"
                                 value={startDate}
                                 onChange={(e) => setStartDate(e.target.value)}
@@ -213,8 +213,8 @@ function AssignPlanModal({
 
                         {/* Schedule days */}
                         <div className="form-field">
-                            <label className="label-mono">Training Days</label>
-                            <div className="flex gap-2 mt-1">
+                            <label className="label-mono" htmlFor="trainingDays">Training Days</label>
+                            <div id="trainingDays" className="flex gap-2 mt-1">
                                 {DAY_LABELS.map((label, idx) => {
                                     const dayNum = idx + 1;
                                     const isSelected = scheduleDays.includes(dayNum);
@@ -223,7 +223,7 @@ function AssignPlanModal({
                                             key={dayNum}
                                             type="button"
                                             onClick={() => toggleDay(dayNum)}
-                                            className={`w-10 h-10 rounded-lg text-xs font-semibold transition-all ${
+                                            className={`w-10 h-10 rounded-lg text-xs font-semibold transition-colors ${
                                                 isSelected
                                                     ? "bg-brand-green text-black"
                                                     : "bg-bg-secondary border border-border text-text-faint hover:border-text-faint"
@@ -259,8 +259,9 @@ function AssignPlanModal({
                         </div>
                     </div>
                 )}
-            </div>
-        </div>
+                </div>
+            </ModalContent>
+        </Modal>
     );
 }
 
@@ -342,19 +343,16 @@ function AssignMealPlanModal({
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-            <div className="relative w-full max-w-lg card-elevated p-6 animate-scale-in">
-                <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                        <UtensilsCrossed className="w-5 h-5 text-brand-orange" />
+        <Modal open={true} onOpenChange={(open) => { if (!open) onClose(); }}>
+            <ModalContent>
+                <ModalHeader>
+                    <ModalTitle className="flex items-center gap-2">
+                        <UtensilsCrossed className="w-5 h-5 text-brand-orange" aria-hidden="true" />
                         Assign Meal Plan
-                    </h2>
-                    <button onClick={onClose} className="btn-icon !p-1.5">
-                        <X className="w-4 h-4" />
-                    </button>
-                </div>
-
+                    </ModalTitle>
+                    <ModalClose />
+                </ModalHeader>
+                <div className="p-6">
                 {loading ? (
                     <div className="flex justify-center py-12">
                         <Loader2 className="w-6 h-6 text-text-faint animate-spin" />
@@ -369,8 +367,9 @@ function AssignMealPlanModal({
                 ) : (
                     <div className="space-y-5">
                         <div className="form-field">
-                            <label className="label-mono">Meal Plan</label>
+                            <label className="label-mono" htmlFor="mealPlan">Meal Plan</label>
                             <select
+                                id="mealPlan"
                                 value={selectedPlanId}
                                 onChange={(e) => setSelectedPlanId(e.target.value)}
                                 className="select w-full"
@@ -384,8 +383,9 @@ function AssignMealPlanModal({
                         </div>
 
                         <div className="form-field">
-                            <label className="label-mono">Start Date</label>
+                            <label className="label-mono" htmlFor="mealStartDate">Start Date</label>
                             <input
+                                id="mealStartDate"
                                 type="date"
                                 value={startDate}
                                 onChange={(e) => setStartDate(e.target.value)}
@@ -394,8 +394,8 @@ function AssignMealPlanModal({
                         </div>
 
                         <div className="form-field">
-                            <label className="label-mono">Meal Days</label>
-                            <div className="flex gap-2 mt-1">
+                            <label className="label-mono" htmlFor="mealDays">Meal Days</label>
+                            <div id="mealDays" className="flex gap-2 mt-1">
                                 {DAY_LABELS.map((label, idx) => {
                                     const dayNum = idx + 1;
                                     const isSelected = scheduleDays.includes(dayNum);
@@ -404,7 +404,7 @@ function AssignMealPlanModal({
                                             key={dayNum}
                                             type="button"
                                             onClick={() => toggleDay(dayNum)}
-                                            className={`w-10 h-10 rounded-lg text-xs font-semibold transition-all ${
+                                            className={`w-10 h-10 rounded-lg text-xs font-semibold transition-colors ${
                                                 isSelected
                                                     ? "bg-brand-orange text-black"
                                                     : "bg-bg-secondary border border-border text-text-faint hover:border-text-faint"
@@ -440,8 +440,9 @@ function AssignMealPlanModal({
                         </div>
                     </div>
                 )}
-            </div>
-        </div>
+                </div>
+            </ModalContent>
+        </Modal>
     );
 }
 
@@ -475,8 +476,9 @@ function EditableField({
 
     if (!editing) {
         return (
-            <div
-                className="group cursor-pointer"
+            <button
+                type="button"
+                className="group cursor-pointer text-left w-full"
                 onClick={() => {
                     setDraft(value);
                     setEditing(true);
@@ -492,9 +494,9 @@ function EditableField({
                     </p>
                 )}
                 <span className="inline-flex items-center gap-1 text-[10px] text-text-muted mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Edit3 className="w-2.5 h-2.5" /> Click to edit
+                    <Edit3 className="w-2.5 h-2.5" aria-hidden="true" /> Click to edit
                 </span>
-            </div>
+            </button>
         );
     }
 
@@ -545,6 +547,13 @@ export default function ClientProfilePage() {
     const [showAssignModal, setShowAssignModal] = useState(false);
     const [showMealAssignModal, setShowMealAssignModal] = useState(false);
     const [mealAssignments, setMealAssignments] = useState<MealAssignment[]>([]);
+    const [riskScore, setRiskScore] = useState<{
+        score: number;
+        level: string;
+        summary: string;
+        suggestion: string | null;
+        factors: { compliance: number; engagement: number; activity: number; behavioral: number; payment: number };
+    } | null>(null);
     const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
 
     useEffect(() => {
@@ -576,6 +585,17 @@ export default function ClientProfilePage() {
             } catch { /* silent */ }
         };
         fetchMealAssignments();
+
+        const fetchRiskScore = async () => {
+            try {
+                const res = await fetch(
+                    `${process.env.NEXT_PUBLIC_API_URL}/clients/${id}/risk-score`,
+                    { headers: await getAuthHeaders() }
+                );
+                if (res.ok) setRiskScore(await res.json());
+            } catch { /* silent */ }
+        };
+        fetchRiskScore();
     }, [id, router]);
 
     const updateField = useCallback(
@@ -630,7 +650,7 @@ export default function ClientProfilePage() {
     if (!client) return null;
 
     const weightData = [...client.checkIns].reverse().map((c) => ({
-        date: new Date(c.createdAt).toLocaleDateString("en-GB", { day: "numeric", month: "short" }),
+        date: formatDate(c.createdAt),
         weight: c.weight,
     }));
 
@@ -668,6 +688,7 @@ export default function ClientProfilePage() {
                     </button>
                     <button
                         className="btn-icon"
+                        aria-label="Message client"
                         onClick={() => router.push(`/dashboard/messages?client=${client.id}`)}
                     >
                         <MessageSquare className="w-5 h-5" />
@@ -724,9 +745,9 @@ export default function ClientProfilePage() {
                                         <TrendingUp className="w-5 h-5 text-brand-blue" />
                                         Weight Trend
                                     </h3>
-                                    <div className="tabs">
-                                        <button className="tab">7D</button>
-                                        <button className="tab-active">30D</button>
+                                    <div className="tabs" role="tablist">
+                                        <button className="tab" role="tab" aria-selected="false">7D</button>
+                                        <button className="tab-active" role="tab" aria-selected="true">30D</button>
                                     </div>
                                 </div>
                                 <div className="h-[300px] w-full">
@@ -887,7 +908,7 @@ export default function ClientProfilePage() {
                                     {client.checkIns.slice(0, 5).map((checkIn) => (
                                         <div
                                             key={checkIn.id}
-                                            className="card p-4 flex items-start justify-between group hover:bg-bg-hover transition-colors cursor-pointer"
+                                            className="card p-4 flex items-start justify-between group hover:bg-bg-hover transition-colors"
                                         >
                                             <div>
                                                 <p className="label-mono mb-2">
@@ -925,7 +946,7 @@ export default function ClientProfilePage() {
                                     onSave={(val) => updateField("email", val)}
                                     label="Email"
                                     type="email"
-                                    placeholder="Add email address..."
+                                    placeholder="Add email address\u2026"
                                 />
                             </div>
                             <div className="divider !my-4" />
@@ -938,7 +959,7 @@ export default function ClientProfilePage() {
                                     onSave={(val) => updateField("phone", val)}
                                     label="Phone"
                                     type="tel"
-                                    placeholder="Add phone number..."
+                                    placeholder="Add phone number\u2026"
                                 />
                             </div>
                         </div>
@@ -954,7 +975,7 @@ export default function ClientProfilePage() {
                                     onSave={(val) => updateField("goals", val)}
                                     label="Goals"
                                     multiline
-                                    placeholder="Add client goals..."
+                                    placeholder="Add client goals\u2026"
                                 />
                             </div>
                             <div className="divider !my-4" />
@@ -967,7 +988,7 @@ export default function ClientProfilePage() {
                                     onSave={(val) => updateField("notes", val)}
                                     label="Notes"
                                     multiline
-                                    placeholder="Add private notes..."
+                                    placeholder="Add private notes\u2026"
                                 />
                             </div>
                         </div>
@@ -983,6 +1004,60 @@ export default function ClientProfilePage() {
                                 <p className="text-2xl font-bold text-white">{client.workoutLogs.length}</p>
                             </div>
                         </div>
+
+                        {/* Risk Assessment */}
+                        {riskScore && (
+                            <div className="card-elevated p-5">
+                                <h4 className="label-mono mb-3 flex items-center gap-2">
+                                    <ShieldAlert className="w-3 h-3" /> Risk Assessment
+                                </h4>
+                                <div className="flex items-center gap-3 mb-3">
+                                    <span className={`text-2xl font-bold ${
+                                        riskScore.level === "CRITICAL" ? "text-brand-red" :
+                                        riskScore.level === "HIGH" ? "text-brand-orange" :
+                                        riskScore.level === "MODERATE" ? "text-yellow-500" :
+                                        "text-brand-green"
+                                    }`}>
+                                        {riskScore.score}
+                                    </span>
+                                    <span className={`text-[9px] font-bold tracking-widest px-2 py-0.5 rounded-full ${
+                                        riskScore.level === "CRITICAL" ? "bg-brand-red text-white" :
+                                        riskScore.level === "HIGH" ? "bg-brand-orange text-white" :
+                                        riskScore.level === "MODERATE" ? "bg-yellow-500 text-black" :
+                                        "bg-brand-green text-black"
+                                    }`}>
+                                        {riskScore.level}
+                                    </span>
+                                </div>
+                                <p className="text-xs text-text-secondary mb-3">{riskScore.summary}</p>
+                                {riskScore.suggestion && (
+                                    <div className="bg-bg-secondary/50 rounded-lg p-3 border border-border">
+                                        <p className="text-[9px] font-mono text-text-faint uppercase tracking-wider mb-1">Suggested Action</p>
+                                        <p className="text-xs text-text-primary">{riskScore.suggestion}</p>
+                                    </div>
+                                )}
+                                <div className="mt-3 space-y-1.5">
+                                    {[
+                                        { label: "Compliance", value: riskScore.factors.compliance },
+                                        { label: "Engagement", value: riskScore.factors.engagement },
+                                        { label: "Activity", value: riskScore.factors.activity },
+                                        { label: "Behavioral", value: riskScore.factors.behavioral },
+                                    ].map(({ label, value }) => (
+                                        <div key={label} className="flex items-center gap-2">
+                                            <span className="text-[9px] font-mono text-text-faint w-20 uppercase tracking-wider">{label}</span>
+                                            <div className="flex-1 h-1.5 bg-bg-secondary rounded-full overflow-hidden">
+                                                <div
+                                                    className={`h-full rounded-full transition-[width] ${
+                                                        value >= 70 ? "bg-brand-red" : value >= 40 ? "bg-yellow-500" : "bg-brand-green"
+                                                    }`}
+                                                    style={{ width: `${Math.max(2, value)}%` }}
+                                                />
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
 
                         {/* Member Since */}
                         <div className="card p-4">

@@ -259,14 +259,14 @@ export function DashboardLayout({
             <Link
                 href={item.href}
                 className={cn(
-                    "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group",
+                    "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors duration-200 group",
                     isActive
                         ? "bg-brand-green/10 text-brand-green"
                         : "text-text-faint hover:text-white hover:bg-white/5"
                 )}
                 onClick={() => setMobileMenuOpen(false)}
             >
-                <Icon className={cn(
+                <Icon aria-hidden="true" className={cn(
                     "w-5 h-5 shrink-0",
                     isActive ? "text-brand-green" : "text-text-faint group-hover:text-white"
                 )} />
@@ -286,16 +286,17 @@ export function DashboardLayout({
         <div className="min-h-screen bg-mesh-gradient flex">
             {/* Mobile menu overlay */}
             {mobileMenuOpen && (
-                <div
+                <button
                     className="fixed inset-0 bg-black/60 z-40 lg:hidden"
                     onClick={() => setMobileMenuOpen(false)}
+                    aria-label="Close menu"
                 />
             )}
 
             {/* Sidebar */}
             <aside
                 className={cn(
-                    "fixed lg:sticky top-0 left-0 z-50 h-screen bg-bg-primary border-r border-border flex flex-col transition-all duration-300",
+                    "fixed lg:sticky top-0 left-0 z-50 h-screen bg-bg-primary border-r border-border flex flex-col transition-[transform] duration-300",
                     sidebarCollapsed ? "w-[72px]" : "w-64",
                     mobileMenuOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
                 )}
@@ -315,6 +316,7 @@ export function DashboardLayout({
                         <button
                             onClick={() => setSidebarCollapsed(true)}
                             className="p-1.5 rounded-lg text-text-faint hover:text-white hover:bg-white/5 transition-colors hidden lg:flex"
+                            aria-label="Collapse sidebar"
                         >
                             <ChevronLeft className="w-4 h-4" />
                         </button>
@@ -336,11 +338,11 @@ export function DashboardLayout({
                     <button
                         onClick={handleLogout}
                         className={cn(
-                            "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 w-full",
+                            "flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors duration-200 w-full",
                             "text-text-faint hover:text-brand-red hover:bg-brand-red/5"
                         )}
                     >
-                        <LogOut className="w-5 h-5 shrink-0" />
+                        <LogOut aria-hidden="true" className="w-5 h-5 shrink-0" />
                         {!sidebarCollapsed && (
                             <span className="text-sm font-medium">Log out</span>
                         )}
@@ -353,6 +355,7 @@ export function DashboardLayout({
                         <button
                             onClick={() => setSidebarCollapsed(false)}
                             className="p-2.5 rounded-xl text-text-faint hover:text-white hover:bg-white/5 transition-colors w-full flex justify-center"
+                            aria-label="Expand sidebar"
                         >
                             <Menu className="w-5 h-5" />
                         </button>
@@ -369,6 +372,7 @@ export function DashboardLayout({
                         <button
                             onClick={() => setMobileMenuOpen(true)}
                             className="p-2 rounded-xl text-text-faint hover:text-white hover:bg-white/5 transition-colors lg:hidden"
+                            aria-label="Open menu"
                         >
                             <Menu className="w-5 h-5" />
                         </button>
@@ -389,6 +393,7 @@ export function DashboardLayout({
                         <div className="relative" ref={notifRef}>
                             <button
                                 className="btn-icon relative"
+                                aria-label="Notifications"
                                 onClick={() => {
                                     const opening = !notifOpen;
                                     setNotifOpen(opening);
@@ -422,7 +427,7 @@ export function DashboardLayout({
                                             </div>
                                         ) : notifEvents.length === 0 ? (
                                             <div className="flex flex-col items-center justify-center py-8 text-text-faint">
-                                                <Bell className="w-6 h-6 mb-2 opacity-40" />
+                                                <Bell aria-hidden="true" className="w-6 h-6 mb-2 opacity-40" />
                                                 <span className="text-sm">No recent activity</span>
                                             </div>
                                         ) : (
@@ -459,7 +464,7 @@ export function DashboardLayout({
                 </header>
 
                 {/* Page Content */}
-                <main className="flex-1 p-6">
+                <main id="main-content" className="flex-1 p-6">
                     {children}
                 </main>
             </div>

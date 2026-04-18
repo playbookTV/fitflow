@@ -95,10 +95,11 @@ export function AvatarUpload({ currentUrl, name, onUploaded }: AvatarUploadProps
                 <button
                     type="button"
                     onClick={handleClick}
+                    aria-label="Upload avatar"
                     className={cn(
                         "relative w-24 h-24 rounded-full overflow-hidden border-2 border-white/10",
                         "focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-green focus-visible:ring-offset-2 focus-visible:ring-offset-bg-primary",
-                        "transition-all",
+                        "transition-shadow transition-colors",
                         !uploading && "cursor-pointer hover:border-white/20"
                     )}
                 >
@@ -106,6 +107,8 @@ export function AvatarUpload({ currentUrl, name, onUploaded }: AvatarUploadProps
                         <img
                             src={currentUrl}
                             alt={name}
+                            width={96}
+                            height={96}
                             className="w-full h-full object-cover"
                         />
                     ) : (
@@ -137,16 +140,17 @@ export function AvatarUpload({ currentUrl, name, onUploaded }: AvatarUploadProps
                     <button
                         type="button"
                         onClick={handleRemove}
+                        aria-label="Remove avatar"
                         className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-bg-secondary border border-border-primary flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-brand-red/20 hover:border-brand-red/40"
                     >
-                        <X className="w-3 h-3 text-text-secondary" />
+                        <X aria-hidden="true" className="w-3 h-3 text-text-secondary" />
                     </button>
                 )}
             </div>
 
             {/* Error message */}
             {error && (
-                <p className="text-xs text-brand-red text-center">{error}</p>
+                <p role="alert" className="text-xs text-brand-red text-center">{error}</p>
             )}
 
             {/* Hidden file input */}
@@ -155,6 +159,7 @@ export function AvatarUpload({ currentUrl, name, onUploaded }: AvatarUploadProps
                 type="file"
                 accept="image/jpeg,image/png,image/webp"
                 onChange={handleFileChange}
+                aria-label="Choose avatar image"
                 className="hidden"
             />
         </div>

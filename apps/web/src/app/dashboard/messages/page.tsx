@@ -17,7 +17,9 @@ import {
     Trash2,
 } from "lucide-react";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
+import { Modal, ModalContent, ModalHeader, ModalTitle, ModalFooter, ModalClose } from "@/components/ui/Modal";
 import { cn, formatRelative } from "@/lib/utils";
+import { formatTime } from "@/lib/tokens";
 
 interface Message {
     id: string;
@@ -113,6 +115,7 @@ function MessagesPageContent() {
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
     const [newMessage, setNewMessage] = useState("");
+    const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
     const fetchConversations = useCallback(async () => {
         try {
@@ -315,21 +318,6 @@ function MessagesPageContent() {
         }
     };
 
-    const handleDeleteConversation = async () => {
-        if (!selectedConversation) return;
-        const clientId = selectedConversation.clientId;
-        try {
-            await fetch(
-                `${process.env.NEXT_PUBLIC_API_URL}/messages/${clientId}`,
-                { method: "DELETE", headers: await getAuthHeaders() }
-            );
-            setConversations((prev) => prev.filter((c) => c.clientId !== clientId));
-            setSelectedConversation(null);
-        } catch {
-            console.error("Failed to delete conversation");
-        }
-    };
-
     const totalUnread = conversations.reduce((sum, c) => sum + c.unreadCount, 0);
 
     return (
@@ -350,10 +338,13 @@ function MessagesPageContent() {
                             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-faint" />
                             <input
                                 type="text"
-                                placeholder="Search conversations..."
+                                placeholder="Search conversations\u2026"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 className="input-with-icon w-full"
+                                aria-label="Search conversations"
+                                name="search"
+                                autoComplete="off"
                             />
                         </div>
                     </div>
@@ -436,6 +427,7 @@ function MessagesPageContent() {
                                     <button
                                         onClick={() => setSelectedConversation(null)}
                                         className="md:hidden p-2 -ml-2 text-text-faint hover:text-white"
+                                        aria-label="Back to conversations"
                                     >
                                         ←
                                     </button>
@@ -464,7 +456,7 @@ function MessagesPageContent() {
                                 </div>
                                 <DropdownMenu.Root>
                                     <DropdownMenu.Trigger asChild>
-                                        <button className="btn-icon !p-2">
+                                        <button className="btn-icon !p-2" aria-label="More options">
                                             <MoreVertical className="w-4 h-4" />
                                         </button>
                                     </DropdownMenu.Trigger>
@@ -491,7 +483,7 @@ function MessagesPageContent() {
                                             <DropdownMenu.Separator className="h-px bg-border my-1" />
                                             <DropdownMenu.Item
                                                 className="flex items-center gap-2.5 px-3 py-2 text-sm text-red-400 rounded-lg cursor-pointer outline-none hover:bg-red-500/10 transition-colors"
-                                                onSelect={handleDeleteConversation}
+                                                onSelect={() => setConfirmDelete(selectedConversation.clientId)}
                                             >
                                                 <Trash2 className="w-4 h-4" />
                                                 Delete
@@ -525,7 +517,7 @@ function MessagesPageContent() {
                                                 msg.direction === "outbound" ? "text-white/60" : "text-text-faint"
                                             )}>
                                                 <span className="text-[10px]">
-                                                    {new Date(msg.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                                                    {formatTime(msg.createdAt)}
                                                 </span>
                                                 {msg.direction === "outbound" && (
                                                     <CheckCheck className={cn(
@@ -542,24 +534,28 @@ function MessagesPageContent() {
                             {/* Message Input */}
                             <div className="p-4 border-t border-border bg-bg-secondary">
                                 <div className="flex items-center gap-3">
-                                    <button className="btn-icon !p-2">
+                                    <button className="btn-icon !p-2" aria-label="Attach file">
                                         <Paperclip className="w-4 h-4" />
                                     </button>
-                                    <button className="btn-icon !p-2">
+                                    <button className="btn-icon !p-2" aria-label="Attach image">
                                         <ImageIcon className="w-4 h-4" />
                                     </button>
                                     <input
                                         type="text"
-                                        placeholder="Type a message..."
+                                        placeholder="Type a message\u2026"
                                         value={newMessage}
                                         onChange={(e) => setNewMessage(e.target.value)}
                                         onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
                                         className="input flex-1"
+                                        aria-label="Message input"
+                                        name="message"
+                                        autoComplete="off"
                                     />
                                     <button
                                         onClick={handleSendMessage}
                                         disabled={!newMessage.trim()}
                                         className="btn-primary !px-4"
+                                        aria-label="Send message"
                                     >
                                         <Send className="w-4 h-4" />
                                     </button>
@@ -581,6 +577,37 @@ function MessagesPageContent() {
                     )}
                 </div>
             </div>
+            <Modal open={!!confirmDelete} onOpenChange={(open) => { if (!open) setConfirmDelete(null); }}>
+                <ModalContent size="sm">
+                    <ModalHeader>
+                        <ModalTitle>Delete Conversation</ModalTitle>
+                        <ModalClose />
+                    </ModalHeader>
+                    <div className="p-6">
+                        <p className="text-text-secondary text-sm">Are you sure you want to delete this conversation? This action cannot be undone.</p>
+                    </div>
+                    <ModalFooter>
+                        <button className="btn-secondary" onClick={() => setConfirmDelete(null)}>Cancel</button>
+                        <button className="btn-primary !bg-brand-red hover:!shadow-glow-red" onClick={async () => {
+                            if (!confirmDelete) return;
+                            try {
+                                await fetch(
+                                    `${process.env.NEXT_PUBLIC_API_URL}/messages/${confirmDelete}`,
+                                    { method: "DELETE", headers: await getAuthHeaders() }
+                                );
+                                setConversations((prev) => prev.filter((c) => c.clientId !== confirmDelete));
+                                if (selectedConversation?.clientId === confirmDelete) {
+                                    setSelectedConversation(null);
+                                }
+                            } catch {
+                                console.error("Failed to delete conversation");
+                            } finally {
+                                setConfirmDelete(null);
+                            }
+                        }}>Delete</button>
+                    </ModalFooter>
+                </ModalContent>
+            </Modal>
         </DashboardLayout>
     );
 }

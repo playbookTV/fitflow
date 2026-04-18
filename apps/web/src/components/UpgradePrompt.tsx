@@ -36,14 +36,15 @@ export function UpgradePrompt({ resource, limit, tier }: UpgradePromptProps) {
                     className="inline-flex items-center gap-1 text-sm text-brand-orange hover:underline mt-1"
                 >
                     Upgrade to {nextTier}
-                    <ArrowUpRight className="w-3.5 h-3.5" />
+                    <ArrowUpRight className="w-3.5 h-3.5" aria-hidden="true" />
                 </Link>
             </div>
             <button
+                aria-label="Dismiss"
                 onClick={() => setDismissed(true)}
                 className="p-1 rounded-lg text-text-faint hover:text-white hover:bg-white/5 transition-colors"
             >
-                <X className="w-4 h-4" />
+                <X className="w-4 h-4" aria-hidden="true" />
             </button>
         </div>
     );

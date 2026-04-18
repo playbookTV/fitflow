@@ -55,3 +55,8 @@ export const createPlanSchema = z.object({
     isTemplate: z.boolean().optional(),
     days: z.array(daySchema).min(1).max(14),
 });
+
+export const generatePlanSchema = z.object({
+    clientId: z.string().uuid().optional(),
+    instructions: z.string().max(1000).optional(),
+});

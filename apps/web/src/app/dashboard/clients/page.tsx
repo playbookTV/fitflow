@@ -68,7 +68,7 @@ export default function ClientsPage() {
             subtitle="Manage your roster and track progress"
             actions={
                 <Link href="/dashboard/clients/new" className="btn-primary">
-                    <Plus size={16} />
+                    <Plus size={16} aria-hidden="true" />
                     <span className="hidden sm:inline">ADD CLIENT</span>
                 </Link>
             }
@@ -77,10 +77,13 @@ export default function ClientsPage() {
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
                 {/* Search */}
                 <div className="relative flex-1 max-w-md">
-                    <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-faint" />
+                    <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-faint" aria-hidden="true" />
                     <input
                         type="text"
-                        placeholder="Search clients..."
+                        placeholder="Search clients\u2026"
+                        name="search"
+                        autoComplete="off"
+                        aria-label="Search clients"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="input-with-icon w-full"
@@ -127,7 +130,7 @@ export default function ClientsPage() {
             ) : filteredClients.length === 0 ? (
                 <div className="empty-state">
                     <div className="empty-state-icon">
-                        <Search className="w-6 h-6" />
+                        <Search className="w-6 h-6" aria-hidden="true" />
                     </div>
                     <h3 className="text-lg font-bold text-white mb-1">
                         {searchQuery ? "No matches found" : "No clients yet"}
@@ -139,7 +142,7 @@ export default function ClientsPage() {
                     </p>
                     {!searchQuery && (
                         <Link href="/dashboard/clients/new" className="btn-primary">
-                            <Plus className="w-4 h-4" />
+                            <Plus className="w-4 h-4" aria-hidden="true" />
                             ADD CLIENT
                         </Link>
                     )}
@@ -175,12 +178,12 @@ export default function ClientsPage() {
                             <div className="flex items-center">
                                 {client.preferredChannel === "TELEGRAM" ? (
                                     <span className="inline-flex items-center gap-1 text-[10px] font-bold text-brand-blue">
-                                        <Send className="w-3 h-3" />
+                                        <Send className="w-3 h-3" aria-hidden="true" />
                                         TG
                                     </span>
                                 ) : (
                                     <span className="inline-flex items-center gap-1 text-[10px] font-bold text-brand-green">
-                                        <MessageSquare className="w-3 h-3" />
+                                        <MessageSquare className="w-3 h-3" aria-hidden="true" />
                                         WA
                                     </span>
                                 )}
@@ -196,7 +199,7 @@ export default function ClientsPage() {
                                 {client.lastCheckIn ? formatRelative(client.lastCheckIn) : "Never"}
                             </span>
 
-                            <ArrowUpRight className="w-4 h-4 text-text-muted group-hover:text-brand-green transition-all transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                            <ArrowUpRight className="w-4 h-4 text-text-muted group-hover:text-brand-green transition-[color,transform] transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" aria-hidden="true" />
                         </Link>
                     ))}
                 </div>

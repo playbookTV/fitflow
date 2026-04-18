@@ -34,25 +34,45 @@ router.get("/summary", authenticate, requireTier("PRO", "STUDIO"), async (req: A
             }),
         ]);
 
-        // At-risk logic: Active clients with no check-ins in last 7 days
-        const sevenDaysAgo = new Date();
-        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        // At-risk logic: prefer AI risk scores if available, fall back to 7-day check-in rule
+        const riskScores = await prisma.clientRiskScore.findMany({
+            where: { coachId, score: { gte: 26 } },
+            include: { client: { select: { id: true, name: true } } },
+            orderBy: { score: "desc" },
+            take: 20,
+        });
 
-        // phone deliberately omitted — it is PII and not needed for the dashboard risk widget.
-        const atRiskClients = await prisma.client.findMany({
-            where: {
-                coachId,
-                status: "ACTIVE",
-                NOT: {
-                    checkIns: {
-                        some: {
-                            createdAt: { gte: sevenDaysAgo }
+        let atRiskClients;
+        if (riskScores.length > 0) {
+            atRiskClients = riskScores.map((rs) => ({
+                id: rs.client.id,
+                name: rs.client.name,
+                score: rs.score,
+                level: rs.level,
+                summary: rs.summary,
+                suggestion: rs.suggestion,
+                factors: rs.factors,
+            }));
+        } else {
+            // Fallback: basic 7-day check-in rule (before risk scores are populated)
+            const sevenDaysAgo = new Date();
+            sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+            atRiskClients = await prisma.client.findMany({
+                where: {
+                    coachId,
+                    status: "ACTIVE",
+                    NOT: {
+                        checkIns: {
+                            some: {
+                                createdAt: { gte: sevenDaysAgo }
+                            }
                         }
                     }
-                }
-            },
-            select: { id: true, name: true }
-        });
+                },
+                select: { id: true, name: true }
+            });
+        }
 
         // Calculate aggregate compliance
         const assignments = await prisma.planAssignment.findMany({

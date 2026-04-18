@@ -138,7 +138,8 @@ function OnboardingContent() {
                                                 <label className="label-mono" htmlFor="goals">What are you hoping to achieve?</label>
                                                 <textarea
                                                     id="goals"
-                                                    placeholder="Example: Lose 5kg, build muscle, improve flexibility..."
+                                                    name="goals"
+                                                    placeholder="Example: Lose 5kg, build muscle, improve flexibility\u2026"
                                                     className="textarea w-full"
                                                     value={formData.goals}
                                                     onChange={e => setFormData({ ...formData, goals: e.target.value })}
@@ -148,6 +149,7 @@ function OnboardingContent() {
                                                 <label className="label-mono" htmlFor="experience">Fitness Experience</label>
                                                 <input
                                                     id="experience"
+                                                    name="experience"
                                                     placeholder="Example: Beginner, 2 years lifting, etc."
                                                     className="input w-full"
                                                     value={formData.experience}
@@ -169,7 +171,8 @@ function OnboardingContent() {
                                                 <label className="label-mono" htmlFor="equipment">What equipment do you have access to?</label>
                                                 <textarea
                                                     id="equipment"
-                                                    placeholder="Full gym, dumbbells only, bodyweight..."
+                                                    name="equipment"
+                                                    placeholder="Full gym, dumbbells only, bodyweight\u2026"
                                                     className="textarea w-full"
                                                     value={formData.equipment}
                                                     onChange={e => setFormData({ ...formData, equipment: e.target.value })}
@@ -190,7 +193,8 @@ function OnboardingContent() {
                                                 <label className="label-mono" htmlFor="medical">Any injuries or medical conditions?</label>
                                                 <textarea
                                                     id="medical"
-                                                    placeholder="Previous knee surgery, lower back pain, none..."
+                                                    name="medicalNotes"
+                                                    placeholder="Previous knee surgery, lower back pain, none\u2026"
                                                     className="textarea w-full"
                                                     value={formData.medicalNotes}
                                                     onChange={e => setFormData({ ...formData, medicalNotes: e.target.value })}

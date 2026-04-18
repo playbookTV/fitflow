@@ -112,10 +112,13 @@ export default function PlansPage() {
                     <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-faint" />
                     <input
                         type="text"
-                        placeholder="Search plans..."
+                        placeholder="Search plans\u2026"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="input-with-icon w-full"
+                        aria-label="Search plans"
+                        name="search"
+                        autoComplete="off"
                     />
                 </div>
             </div>
@@ -162,6 +165,7 @@ export default function PlansPage() {
                                         setActiveMenu(activeMenu === plan.id ? null : plan.id);
                                     }}
                                     className="btn-icon !p-2 !rounded-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                                    aria-label="More options"
                                 >
                                     <MoreHorizontal className="w-4 h-4" />
                                 </button>
@@ -237,9 +241,9 @@ export default function PlansPage() {
                     {/* Create new card */}
                     <Link
                         href="/dashboard/plans/new"
-                        className="flex flex-col items-center justify-center p-5 rounded-2xl border border-dashed border-border-hover bg-transparent hover:bg-bg-hover hover:border-brand-green/30 transition-all group min-h-[200px]"
+                        className="flex flex-col items-center justify-center p-5 rounded-2xl border border-dashed border-border-hover bg-transparent hover:bg-bg-hover hover:border-brand-green/30 transition-[color,background-color,border-color] duration-200 group min-h-[200px]"
                     >
-                        <div className="w-12 h-12 rounded-xl bg-bg-card border border-border flex items-center justify-center text-text-faint mb-3 group-hover:border-brand-green/30 group-hover:text-brand-green group-hover:scale-110 transition-all">
+                        <div className="w-12 h-12 rounded-xl bg-bg-card border border-border flex items-center justify-center text-text-faint mb-3 group-hover:border-brand-green/30 group-hover:text-brand-green group-hover:scale-110 transition-[color,border-color,transform] duration-200">
                             <Plus className="w-5 h-5" />
                         </div>
                         <p className="text-sm font-medium text-text-faint group-hover:text-text-secondary transition-colors">

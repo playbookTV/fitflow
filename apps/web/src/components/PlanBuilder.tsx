@@ -2,10 +2,18 @@
 
 import { useState, useEffect } from "react";
 import {
-    Plus, Search, GripVertical, Save, Trash2, ChevronDown, ChevronRight
+    Plus, Search, GripVertical, Save, Trash2, ChevronDown, ChevronRight, Sparkles, Loader2
 } from "lucide-react";
 import Image from "next/image";
 import { getAuthHeaders } from "@/lib/auth";
+import { useToast } from "@/components/ui/Toast";
+import { Modal, ModalContent, ModalHeader, ModalTitle, ModalClose } from "@/components/ui/Modal";
+
+interface AiClient {
+    id: string;
+    name: string;
+    goals?: string;
+}
 
 interface UnifiedResult {
     id: string;
@@ -41,6 +49,7 @@ interface PlanBuilderProps {
 }
 
 export default function PlanBuilder({ planId }: PlanBuilderProps) {
+    const { toast } = useToast();
     const [title, setTitle] = useState("New Workout Plan");
     const [description, setDescription] = useState("");
     const [days, setDays] = useState<PlanDay[]>([
@@ -51,6 +60,14 @@ export default function PlanBuilder({ planId }: PlanBuilderProps) {
     const [activeDayIdx, setActiveDayIdx] = useState<number | null>(0);
     const [isSaving, setIsSaving] = useState(false);
     const [loading, setLoading] = useState(!!planId);
+
+    // AI generation state
+    const [showAiModal, setShowAiModal] = useState(false);
+    const [isGenerating, setIsGenerating] = useState(false);
+    const [aiClients, setAiClients] = useState<AiClient[]>([]);
+    const [aiClientId, setAiClientId] = useState("");
+    const [aiInstructions, setAiInstructions] = useState("");
+    const [aiError, setAiError] = useState("");
 
     // Load existing plan data when editing
     useEffect(() => {
@@ -174,6 +191,67 @@ export default function PlanBuilder({ planId }: PlanBuilderProps) {
         setDays(newDays);
     };
 
+    const openAiModal = async () => {
+        setShowAiModal(true);
+        setAiError("");
+        setAiClientId("");
+        setAiInstructions("");
+        try {
+            const headers = await getAuthHeaders();
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/clients`, { headers });
+            if (res.ok) setAiClients(await res.json());
+        } catch {
+            // Non-critical — client list is optional
+        }
+    };
+
+    const handleGenerate = async () => {
+        setIsGenerating(true);
+        setAiError("");
+        try {
+            const headers = await getAuthHeaders();
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/plans/generate`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", ...headers },
+                body: JSON.stringify({
+                    ...(aiClientId ? { clientId: aiClientId } : {}),
+                    ...(aiInstructions ? { instructions: aiInstructions } : {}),
+                }),
+            });
+
+            if (!res.ok) {
+                const data = await res.json().catch(() => ({}));
+                throw new Error(data.error || "Failed to generate plan");
+            }
+
+            const plan = await res.json();
+            setTitle(plan.title || "AI Generated Plan");
+            setDescription(plan.description || "");
+            setDays(
+                plan.days.map((day: { dayNumber: number; title: string; exercises: { exerciseId: string; exerciseName: string; sets: number; reps: string; rest: string; notes: string }[] }) => ({
+                    id: crypto.randomUUID(),
+                    dayNumber: day.dayNumber,
+                    title: day.title,
+                    isOpen: true,
+                    exercises: day.exercises.map((ex: { exerciseId: string; exerciseName: string; sets: number; reps: string; rest: string; notes: string }) => ({
+                        id: crypto.randomUUID(),
+                        exerciseId: ex.exerciseId,
+                        name: ex.exerciseName,
+                        sets: ex.sets,
+                        reps: ex.reps,
+                        rest: ex.rest,
+                        notes: ex.notes || "",
+                    })),
+                }))
+            );
+            setShowAiModal(false);
+        } catch (err) {
+            setAiError(err instanceof Error ? err.message : "Something went wrong");
+        } finally {
+            setIsGenerating(false);
+        }
+    };
+
     const savePlan = async () => {
         setIsSaving(true);
         try {
@@ -204,10 +282,10 @@ export default function PlanBuilder({ planId }: PlanBuilderProps) {
             });
 
             if (!response.ok) throw new Error("Failed to save plan");
-            alert("Plan saved successfully!");
+            toast({ variant: "success", title: "Plan Saved" });
         } catch (error) {
             console.error(error);
-            alert("Error saving plan. Please try again.");
+            toast({ variant: "error", title: "Save Failed", description: "Please try again." });
         } finally {
             setIsSaving(false);
         }
@@ -230,25 +308,32 @@ export default function PlanBuilder({ planId }: PlanBuilderProps) {
                         <input
                             value={title}
                             onChange={(e) => setTitle(e.target.value)}
-                            className="w-full bg-transparent border-none font-display text-4xl font-semibold text-text-primary outline-none focus:ring-0 placeholder:opacity-30"
+                            className="w-full bg-transparent border-none font-display text-4xl font-semibold text-text-primary focus-visible:outline-transparent focus-visible:ring-2 focus-visible:ring-brand-green/50 placeholder:opacity-30"
                             placeholder="Untitled Plan"
                             aria-label="Plan Title"
                         />
                         <textarea
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
-                            className="w-full bg-transparent border-none text-text-secondary outline-none focus:ring-0 resize-none h-8 mt-2 placeholder:opacity-30"
-                            placeholder="Add a description..."
+                            className="w-full bg-transparent border-none text-text-secondary focus-visible:outline-transparent focus-visible:ring-2 focus-visible:ring-brand-green/50 resize-none h-8 mt-2 placeholder:opacity-30"
+                            placeholder="Add a description\u2026"
                             aria-label="Plan Description"
                         />
                     </div>
+                    <button
+                        onClick={openAiModal}
+                        className="btn-secondary"
+                    >
+                        <Sparkles size={14} />
+                        GENERATE WITH AI
+                    </button>
                     <button
                         onClick={savePlan}
                         disabled={isSaving}
                         className="btn-primary disabled:opacity-50"
                     >
                         <Save size={14} />
-                        {isSaving ? "SAVING..." : planId ? "UPDATE PLAN" : "SAVE PLAN"}
+                        {isSaving ? "SAVING\u2026" : planId ? "UPDATE PLAN" : "SAVE PLAN"}
                     </button>
                 </div>
 
@@ -278,7 +363,7 @@ export default function PlanBuilder({ planId }: PlanBuilderProps) {
                                         newDays[dayIdx].title = e.target.value;
                                         setDays(newDays);
                                     }}
-                                    className="bg-transparent border-none text-sm font-semibold text-text-primary outline-none focus:ring-0 flex-1"
+                                    className="bg-transparent border-none text-sm font-semibold text-text-primary focus-visible:outline-transparent focus-visible:ring-2 focus-visible:ring-brand-green/50 flex-1"
                                     aria-label={`Title for Day ${day.dayNumber}`}
                                 />
                                 <span className="badge badge-blue">
@@ -321,7 +406,8 @@ export default function PlanBuilder({ planId }: PlanBuilderProps) {
                                                             newDays[dayIdx].exercises[exIdx].sets = Number.parseInt(e.target.value) || 0;
                                                             setDays(newDays);
                                                         }}
-                                                        className="w-12 bg-bg-secondary border border-border rounded px-2 py-1 text-xs text-text-primary outline-none focus:border-brand-green/30"
+                                                        className="w-12 bg-bg-secondary border border-border rounded px-2 py-1 text-xs text-text-primary focus-visible:outline-transparent focus-visible:ring-2 focus-visible:ring-brand-green/50 focus:border-brand-green/30"
+                                                        aria-label="Sets"
                                                     />
                                                 </div>
                                                 <div className="flex flex-col gap-0.5">
@@ -333,7 +419,8 @@ export default function PlanBuilder({ planId }: PlanBuilderProps) {
                                                             newDays[dayIdx].exercises[exIdx].reps = e.target.value;
                                                             setDays(newDays);
                                                         }}
-                                                        className="w-16 bg-bg-secondary border border-border rounded px-2 py-1 text-xs text-text-primary outline-none focus:border-brand-green/30"
+                                                        className="w-16 bg-bg-secondary border border-border rounded px-2 py-1 text-xs text-text-primary focus-visible:outline-transparent focus-visible:ring-2 focus-visible:ring-brand-green/50 focus:border-brand-green/30"
+                                                        aria-label="Reps"
                                                     />
                                                 </div>
                                                 <div className="flex flex-col gap-0.5">
@@ -345,14 +432,15 @@ export default function PlanBuilder({ planId }: PlanBuilderProps) {
                                                             newDays[dayIdx].exercises[exIdx].rest = e.target.value;
                                                             setDays(newDays);
                                                         }}
-                                                        className="w-16 bg-bg-secondary border border-border rounded px-2 py-1 text-xs text-text-primary outline-none focus:border-brand-green/30"
+                                                        className="w-16 bg-bg-secondary border border-border rounded px-2 py-1 text-xs text-text-primary focus-visible:outline-transparent focus-visible:ring-2 focus-visible:ring-brand-green/50 focus:border-brand-green/30"
+                                                        aria-label="Rest"
                                                     />
                                                 </div>
                                             </div>
 
                                             <button
                                                 onClick={() => removeExercise(dayIdx, exIdx)}
-                                                className="btn-icon !p-1.5 opacity-0 group-hover:opacity-100 hover:!bg-brand-red-glow hover:!text-brand-red transition-all"
+                                                className="btn-icon !p-1.5 opacity-0 group-hover:opacity-100 hover:!bg-brand-red-glow hover:!text-brand-red transition-[opacity,background-color,color]"
                                                 aria-label={`Remove ${ex.name}`}
                                             >
                                                 <Trash2 size={14} />
@@ -365,22 +453,25 @@ export default function PlanBuilder({ planId }: PlanBuilderProps) {
                                         <div className="flex items-center gap-2 px-3 py-2.5 bg-bg-secondary/30 rounded-xl border border-dashed border-border hover:border-text-faint transition-colors cursor-text">
                                             <Search size={14} className="text-text-faint" />
                                             <input
-                                                placeholder="Search exercises..."
+                                                placeholder="Search exercises\u2026"
                                                 value={activeDayIdx === dayIdx ? searchTerm : ""}
                                                 onFocus={() => setActiveDayIdx(dayIdx)}
                                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                                className="bg-transparent border-none text-sm text-text-primary outline-none focus:ring-0 flex-1 placeholder:text-text-faint"
+                                                className="bg-transparent border-none text-sm text-text-primary focus-visible:outline-transparent focus-visible:ring-2 focus-visible:ring-brand-green/50 flex-1 placeholder:text-text-faint"
                                                 aria-label="Search exercises to add"
                                             />
                                         </div>
 
                                         {activeDayIdx === dayIdx && unifiedResults.length > 0 && (
-                                            <div className="dropdown top-full left-0 right-0 mt-2 animate-scale-in">
+                                            <div className="dropdown top-full left-0 right-0 mt-2 animate-scale-in" role="listbox">
                                                 {unifiedResults.map((result) => (
-                                                    <div
+                                                    <button
+                                                        type="button"
                                                         key={`${result.source}-${result.id}`}
                                                         onClick={() => handleResultClick(dayIdx, result)}
-                                                        className="dropdown-item flex items-center gap-3"
+                                                        className="dropdown-item flex items-center gap-3 w-full text-left"
+                                                        role="option"
+                                                        aria-selected={false}
                                                     >
                                                         {result.thumbnailUrl ? (
                                                             <Image src={result.thumbnailUrl} alt="" width={32} height={32} className="w-8 h-8 rounded-lg object-cover" />
@@ -396,7 +487,7 @@ export default function PlanBuilder({ planId }: PlanBuilderProps) {
                                                         {result.source === "ymove" && (
                                                             <span className="ml-auto badge badge-blue text-[9px]">YMOVE</span>
                                                         )}
-                                                    </div>
+                                                    </button>
                                                 ))}
                                             </div>
                                         )}
@@ -409,12 +500,89 @@ export default function PlanBuilder({ planId }: PlanBuilderProps) {
                     {/* Add Day Button */}
                     <button
                         onClick={addDay}
-                        className="w-full h-14 flex items-center justify-center gap-2 border border-dashed border-border rounded-2xl text-text-faint hover:text-text-secondary hover:border-text-faint transition-all hover:bg-bg-card font-mono text-[10px] tracking-[0.2em]"
+                        className="w-full h-14 flex items-center justify-center gap-2 border border-dashed border-border rounded-2xl text-text-faint hover:text-text-secondary hover:border-text-faint transition-[color,border-color,background-color] hover:bg-bg-card font-mono text-[10px] tracking-[0.2em]"
                     >
                         <Plus size={14} />
                         ADD NEW DAY
                     </button>
                 </div>
+
+                {/* AI Generation Modal */}
+                <Modal open={showAiModal} onOpenChange={(open) => !isGenerating && setShowAiModal(open)}>
+                    <ModalContent>
+                        <ModalHeader>
+                            <ModalTitle className="flex items-center gap-2">
+                                <Sparkles className="w-5 h-5 text-brand-green" aria-hidden="true" />
+                                Generate with AI
+                            </ModalTitle>
+                            <ModalClose disabled={isGenerating} />
+                        </ModalHeader>
+                        <div className="p-6 space-y-5">
+                            <div className="form-field">
+                                <label className="label-mono" htmlFor="aiClient">Client (optional)</label>
+                                <select
+                                    id="aiClient"
+                                    name="aiClient"
+                                    value={aiClientId}
+                                    onChange={(e) => setAiClientId(e.target.value)}
+                                    className="select w-full"
+                                    disabled={isGenerating}
+                                >
+                                    <option value="">No client \u2014 general plan</option>
+                                    {aiClients.map((c) => (
+                                        <option key={c.id} value={c.id}>{c.name}</option>
+                                    ))}
+                                </select>
+                                <p className="text-xs text-text-faint mt-1">
+                                    Selecting a client personalises the plan to their goals and history.
+                                </p>
+                            </div>
+
+                            <div className="form-field">
+                                <label className="label-mono" htmlFor="aiInstructions">Instructions</label>
+                                <textarea
+                                    id="aiInstructions"
+                                    name="aiInstructions"
+                                    value={aiInstructions}
+                                    onChange={(e) => setAiInstructions(e.target.value)}
+                                    placeholder="e.g., 3-day upper/lower split, focus on hypertrophy\u2026"
+                                    className="input w-full resize-none h-24"
+                                    maxLength={1000}
+                                    disabled={isGenerating}
+                                />
+                            </div>
+
+                            {aiError && <p className="text-sm text-brand-red">{aiError}</p>}
+
+                            <div className="flex justify-end gap-3 pt-2">
+                                <button
+                                    onClick={() => setShowAiModal(false)}
+                                    className="btn-secondary"
+                                    disabled={isGenerating}
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleGenerate}
+                                    disabled={isGenerating}
+                                    className="btn-primary disabled:opacity-50"
+                                >
+                                    {isGenerating ? (
+                                        <>
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                            Generating\u2026
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Sparkles className="w-4 h-4" />
+                                            Generate Plan
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+                    </ModalContent>
+                </Modal>
             </div>
         </div>
     );

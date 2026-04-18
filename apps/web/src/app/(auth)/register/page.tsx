@@ -92,9 +92,12 @@ export default function RegisterPage() {
 
                 <form onSubmit={handleRegister} className="space-y-6">
                     <div className="form-field">
-                        <label className="label-mono">Full name</label>
+                        <label htmlFor="name" className="label-mono">Full name</label>
                         <input
+                            id="name"
+                            name="name"
                             type="text"
+                            autoComplete="name"
                             required
                             value={name}
                             onChange={(e) => setName(e.target.value)}
@@ -104,9 +107,12 @@ export default function RegisterPage() {
                     </div>
 
                     <div className="form-field">
-                        <label className="label-mono">Email address</label>
+                        <label htmlFor="email" className="label-mono">Email address</label>
                         <input
+                            id="email"
+                            name="email"
                             type="email"
+                            autoComplete="email"
                             required
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
@@ -116,9 +122,12 @@ export default function RegisterPage() {
                     </div>
 
                     <div className="form-field">
-                        <label className="label-mono">Password</label>
+                        <label htmlFor="password" className="label-mono">Password</label>
                         <input
+                            id="password"
+                            name="password"
                             type="password"
+                            autoComplete="new-password"
                             required
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}

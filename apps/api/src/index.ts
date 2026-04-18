@@ -38,6 +38,7 @@ import { startWeeklySummaryScheduler } from "./jobs/weekly-summary-scheduler";
 import { startMissedCheckinScheduler } from "./jobs/missed-checkin-scheduler";
 import { startYMoveUsageScheduler } from "./jobs/ymove-usage-scheduler";
 import { startDailyMealScheduler } from "./jobs/daily-meal-scheduler";
+import { startRiskScoringScheduler } from "./jobs/risk-scoring-scheduler";
 import { schedulersEnabled, workersEnabled } from "./lib/background-jobs";
 import { ensureSharedBot } from "./lib/bot-provisioner";
 
@@ -45,7 +46,8 @@ if (workersEnabled()) {
     require("./workers/workoutProcessor");
     require("./workers/engagementWorker");
     require("./workers/mealProcessor");
-    console.log("[Startup] Background workers enabled (workout + engagement + meal)");
+    require("./workers/riskScoringWorker");
+    console.log("[Startup] Background workers enabled (workout + engagement + meal + risk-scoring)");
 } else {
     console.log("[Startup] Background workers disabled");
 }
@@ -59,7 +61,8 @@ if (schedulersEnabled()) {
     startMissedCheckinScheduler();
     startYMoveUsageScheduler();
     startDailyMealScheduler();
-    console.log("[Startup] Schedulers enabled (8 active)");
+    startRiskScoringScheduler();
+    console.log("[Startup] Schedulers enabled (9 active)");
 } else {
     console.log("[Startup] Schedulers disabled");
 }

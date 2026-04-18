@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { getAuthHeaders } from "@/lib/auth";
+import { formatCurrency } from "@/lib/tokens";
 import { Check, Loader2 } from "lucide-react";
 
 interface TierInfo {
@@ -60,9 +61,7 @@ const TIER_FEATURES: Record<string, string[]> = {
 };
 
 function formatPrice(cents: number, currency: string): string {
-    const amount = cents / 100;
-    const symbol = currency === "gbp" ? "\u00a3" : "$";
-    return `${symbol}${amount}`;
+    return formatCurrency(cents / 100, currency.toUpperCase());
 }
 
 export function PricingTiers({ tiers, currentTier, onSubscribed }: PricingTiersProps) {
@@ -132,7 +131,7 @@ export function PricingTiers({ tiers, currentTier, onSubscribed }: PricingTiersP
                     <button
                         onClick={() => setInterval("monthly")}
                         className={cn(
-                            "px-4 py-2 rounded-lg text-sm font-medium transition-all",
+                            "px-4 py-2 rounded-lg text-sm font-medium transition-[color,background-color] duration-200",
                             interval === "monthly"
                                 ? "bg-brand-green text-white"
                                 : "text-text-faint hover:text-white"
@@ -143,7 +142,7 @@ export function PricingTiers({ tiers, currentTier, onSubscribed }: PricingTiersP
                     <button
                         onClick={() => setInterval("annual")}
                         className={cn(
-                            "px-4 py-2 rounded-lg text-sm font-medium transition-all",
+                            "px-4 py-2 rounded-lg text-sm font-medium transition-[color,background-color] duration-200",
                             interval === "annual"
                                 ? "bg-brand-green text-white"
                                 : "text-text-faint hover:text-white"
@@ -203,7 +202,7 @@ export function PricingTiers({ tiers, currentTier, onSubscribed }: PricingTiersP
                             <ul className="flex-1 space-y-3 mb-6">
                                 {features.map((f) => (
                                     <li key={f} className="flex items-start gap-2 text-sm text-text-secondary">
-                                        <Check className="w-4 h-4 text-brand-green shrink-0 mt-0.5" />
+                                        <Check className="w-4 h-4 text-brand-green shrink-0 mt-0.5" aria-hidden="true" />
                                         {f}
                                     </li>
                                 ))}
@@ -221,14 +220,14 @@ export function PricingTiers({ tiers, currentTier, onSubscribed }: PricingTiersP
                                     onClick={() => currentTier ? handleChange(t.tier) : handleSubscribe(t.tier)}
                                     disabled={!!loadingTier}
                                     className={cn(
-                                        "w-full py-2.5 rounded-xl text-sm font-medium transition-all",
+                                        "w-full py-2.5 rounded-xl text-sm font-medium transition-[color,background-color] duration-200",
                                         isPro
                                             ? "bg-brand-green text-white hover:bg-brand-green/90"
                                             : "bg-white/10 text-white hover:bg-white/15 border border-border"
                                     )}
                                 >
                                     {loadingTier === t.tier ? (
-                                        <Loader2 className="w-4 h-4 animate-spin mx-auto" />
+                                        <Loader2 className="w-4 h-4 animate-spin mx-auto" aria-hidden="true" />
                                     ) : currentTier ? (
                                         "Switch Plan"
                                     ) : (

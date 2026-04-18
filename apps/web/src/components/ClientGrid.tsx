@@ -20,14 +20,14 @@ const ChannelBadge = ({ channel }: { channel?: "WHATSAPP" | "TELEGRAM" }) => {
     if (channel === "TELEGRAM") {
         return (
             <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-brand-blue bg-brand-blue/10 px-2 py-0.5 rounded-md border border-brand-blue/20">
-                <Send className="w-2.5 h-2.5" />
+                <Send className="w-2.5 h-2.5" aria-hidden="true" />
                 TG
             </span>
         );
     }
     return (
         <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-brand-green bg-brand-green/10 px-2 py-0.5 rounded-md border border-brand-green/20">
-            <MessageSquare className="w-2.5 h-2.5" />
+            <MessageSquare className="w-2.5 h-2.5" aria-hidden="true" />
             WA
         </span>
     );
@@ -68,18 +68,20 @@ export const ClientCard = ({ client }: { client: Client }) => {
                     )}>
                         {Array.from(client.name)[0]}
                     </div>
-                    <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                         <button
                             onClick={(e) => e.preventDefault()}
                             className="btn-icon !p-2 !rounded-lg"
+                            aria-label={`Message ${client.name}`}
                         >
-                            <MessageCircle className="w-3.5 h-3.5" />
+                            <MessageCircle className="w-3.5 h-3.5" aria-hidden="true" />
                         </button>
                         <button
                             onClick={(e) => e.preventDefault()}
                             className="btn-icon !p-2 !rounded-lg"
+                            aria-label="More options"
                         >
-                            <MoreHorizontal className="w-3.5 h-3.5" />
+                            <MoreHorizontal className="w-3.5 h-3.5" aria-hidden="true" />
                         </button>
                     </div>
                 </div>
@@ -96,7 +98,7 @@ export const ClientCard = ({ client }: { client: Client }) => {
                         <StatusBadge status={client.status} />
                         <ChannelBadge channel={client.preferredChannel} />
                     </div>
-                    <ArrowUpRight className="w-4 h-4 text-text-muted group-hover:text-brand-green transition-all transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                    <ArrowUpRight className="w-4 h-4 text-text-muted group-hover:text-brand-green transition-[color,transform] duration-200 transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" aria-hidden="true" />
                 </div>
             </div>
         </Link>
@@ -113,10 +115,10 @@ export const ClientGrid = ({ clients }: { clients: Client[] }) => {
             {/* Add Client Card */}
             <Link
                 href="/dashboard/clients/new"
-                className="flex flex-col items-center justify-center p-5 rounded-2xl border border-dashed border-border-hover bg-transparent hover:bg-bg-hover hover:border-brand-green/30 transition-all group min-h-[180px]"
+                className="flex flex-col items-center justify-center p-5 rounded-2xl border border-dashed border-border-hover bg-transparent hover:bg-bg-hover hover:border-brand-green/30 transition-[color,background-color,border-color,box-shadow,transform] duration-200 group min-h-[180px]"
             >
-                <div className="w-12 h-12 rounded-xl bg-bg-card border border-border flex items-center justify-center text-text-faint mb-3 group-hover:border-brand-green/30 group-hover:text-brand-green group-hover:scale-110 transition-all">
-                    <Plus className="w-5 h-5" />
+                <div className="w-12 h-12 rounded-xl bg-bg-card border border-border flex items-center justify-center text-text-faint mb-3 group-hover:border-brand-green/30 group-hover:text-brand-green group-hover:scale-110 transition-[color,border-color,transform] duration-200">
+                    <Plus className="w-5 h-5" aria-hidden="true" />
                 </div>
                 <p className="text-sm font-medium text-text-faint group-hover:text-text-secondary transition-colors">
                     Add New Client

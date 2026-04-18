@@ -275,15 +275,19 @@ export default function MealPlanBuilder({ planId }: MealPlanBuilderProps) {
                             type="text"
                             value={title}
                             onChange={(e) => setTitle(e.target.value)}
-                            className="text-2xl font-bold bg-transparent text-white border-none outline-none w-full"
+                            name="title"
+                            aria-label="Meal plan title"
+                            className="text-2xl font-bold bg-transparent text-white border-none focus-visible:outline-transparent focus-visible:ring-2 focus-visible:ring-brand-green/50 w-full"
                             placeholder="Meal Plan Title"
                         />
                         <input
                             type="text"
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
-                            className="text-sm text-text-faint bg-transparent border-none outline-none w-full mt-1"
-                            placeholder="Add a description..."
+                            name="description"
+                            aria-label="Meal plan description"
+                            className="text-sm text-text-faint bg-transparent border-none focus-visible:outline-transparent focus-visible:ring-2 focus-visible:ring-brand-green/50 w-full mt-1"
+                            placeholder="Add a description\u2026"
                         />
                     </div>
                     <button
@@ -291,7 +295,7 @@ export default function MealPlanBuilder({ planId }: MealPlanBuilderProps) {
                         disabled={isSaving}
                         className="btn-primary flex items-center gap-2"
                     >
-                        <Save className="w-4 h-4" />
+                        <Save aria-hidden="true" className="w-4 h-4" />
                         {isSaving ? "Saving..." : "Save Plan"}
                     </button>
                 </div>
@@ -311,13 +315,14 @@ export default function MealPlanBuilder({ planId }: MealPlanBuilderProps) {
                                             )
                                         )
                                     }
-                                    className="w-full px-5 py-4 flex items-center justify-between hover:bg-bg-hover transition-colors"
+                                    aria-expanded={day.isOpen}
+                    className="w-full px-5 py-4 flex items-center justify-between hover:bg-bg-hover transition-colors"
                                 >
                                     <div className="flex items-center gap-3">
                                         {day.isOpen ? (
-                                            <ChevronDown className="w-4 h-4 text-text-faint" />
+                                            <ChevronDown aria-hidden="true" className="w-4 h-4 text-text-faint" />
                                         ) : (
-                                            <ChevronRight className="w-4 h-4 text-text-faint" />
+                                            <ChevronRight aria-hidden="true" className="w-4 h-4 text-text-faint" />
                                         )}
                                         <span className="font-semibold text-white">{day.title}</span>
                                         <span className="text-xs text-text-faint">
@@ -334,9 +339,10 @@ export default function MealPlanBuilder({ planId }: MealPlanBuilderProps) {
                                                     e.stopPropagation();
                                                     removeDay(dayIdx);
                                                 }}
+                                                aria-label="Remove day"
                                                 className="text-text-faint hover:text-brand-red transition-colors"
                                             >
-                                                <Trash2 className="w-4 h-4" />
+                                                <Trash2 aria-hidden="true" className="w-4 h-4" />
                                             </button>
                                         )}
                                     </div>
@@ -368,9 +374,10 @@ export default function MealPlanBuilder({ planId }: MealPlanBuilderProps) {
                                                         </div>
                                                         <button
                                                             onClick={() => removeEntry(dayIdx, entryIdx)}
-                                                            className="text-text-faint hover:text-brand-red opacity-0 group-hover:opacity-100 transition-all"
+                                                            aria-label="Remove meal"
+                                                            className="text-text-faint hover:text-brand-red opacity-0 group-hover:opacity-100 transition-opacity"
                                                         >
-                                                            <Trash2 className="w-4 h-4" />
+                                                            <Trash2 aria-hidden="true" className="w-4 h-4" />
                                                         </button>
                                                     </div>
                                                 ))}
@@ -383,6 +390,8 @@ export default function MealPlanBuilder({ planId }: MealPlanBuilderProps) {
                                                 <select
                                                     value={activeCategory}
                                                     onChange={(e) => setActiveCategory(e.target.value)}
+                                                    name="mealCategory"
+                                                    aria-label="Meal category"
                                                     className="input text-xs !py-1.5 !px-2 w-auto"
                                                 >
                                                     {CATEGORIES.map((cat) => (
@@ -394,19 +403,23 @@ export default function MealPlanBuilder({ planId }: MealPlanBuilderProps) {
                                                 <select
                                                     value={searchType}
                                                     onChange={(e) => setSearchType(e.target.value as "ingredients" | "recipes")}
+                                                    name="searchType"
+                                                    aria-label="Search type"
                                                     className="input text-xs !py-1.5 !px-2 w-auto"
                                                 >
                                                     <option value="recipes">Recipes</option>
                                                     <option value="ingredients">Ingredients</option>
                                                 </select>
                                                 <div className="relative flex-1">
-                                                    <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-faint" />
+                                                    <Search aria-hidden="true" className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-faint" />
                                                     <input
                                                         type="text"
-                                                        placeholder={`Search ${searchType}...`}
+                                                        placeholder={`Search ${searchType}\u2026`}
                                                         value={searchTerm}
                                                         onFocus={() => setActiveDayIdx(dayIdx)}
                                                         onChange={(e) => setSearchTerm(e.target.value)}
+                                                        name="mealSearch"
+                                                        aria-label={`Search ${searchType}`}
                                                         className="input-with-icon w-full text-sm"
                                                     />
                                                 </div>
@@ -442,9 +455,9 @@ export default function MealPlanBuilder({ planId }: MealPlanBuilderProps) {
                 {/* Add day button */}
                 <button
                     onClick={addDay}
-                    className="w-full mt-4 py-4 rounded-2xl border border-dashed border-border-hover hover:border-brand-green/30 hover:bg-bg-hover transition-all flex items-center justify-center gap-2 text-text-faint hover:text-brand-green"
+                    className="w-full mt-4 py-4 rounded-2xl border border-dashed border-border-hover hover:border-brand-green/30 hover:bg-bg-hover transition-colors flex items-center justify-center gap-2 text-text-faint hover:text-brand-green"
                 >
-                    <Plus className="w-4 h-4" />
+                    <Plus aria-hidden="true" className="w-4 h-4" />
                     Add Day
                 </button>
             </div>

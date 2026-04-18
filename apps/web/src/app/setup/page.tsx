@@ -2,6 +2,7 @@
 
 import { useState, useEffect, Suspense, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     User, CreditCard, UserPlus, MessageSquare,
@@ -9,6 +10,7 @@ import {
     Clock, Repeat, Settings2, Send, Smartphone,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { formatCurrency } from "@/lib/tokens";
 import { getAuthHeaders } from "@/lib/auth";
 import { ChipSelect } from "@/components/setup/ChipSelect";
 import { Logo } from "@/components/ui";
@@ -393,14 +395,12 @@ function SetupContent() {
                                             <div className="flex justify-between">
                                                 <span className="text-text-secondary text-sm">Block value</span>
                                                 <span className="text-brand-green text-sm font-medium">
-                                                    {(
+                                                    {formatCurrency(
                                                         (createdClient.sessionBlock.totalSessions *
                                                             createdClient.sessionBlock.pricePerSession) /
-                                                        100
-                                                    ).toLocaleString("en", {
-                                                        style: "currency",
-                                                        currency: "USD",
-                                                    })}
+                                                        100,
+                                                        "USD",
+                                                    )}
                                                 </span>
                                             </div>
                                         </>
@@ -436,22 +436,22 @@ function SetupContent() {
                             {createdClient && (
                                 <div className="flex items-center gap-3">
                                     <div className="w-4 h-4 rounded-full border border-text-faint flex-shrink-0" />
-                                    <button
-                                        onClick={() => router.push(`/dashboard/clients/${createdClient.client.id}`)}
+                                    <Link
+                                        href={`/dashboard/clients/${createdClient.client.id}`}
                                         className="text-sm text-brand-blue hover:underline text-left"
                                     >
                                         Assign first training plan
-                                    </button>
+                                    </Link>
                                 </div>
                             )}
                             <div className="flex items-center gap-3">
                                 <div className="w-4 h-4 rounded-full border border-text-faint flex-shrink-0" />
-                                <button
-                                    onClick={() => router.push("/dashboard/settings")}
+                                <Link
+                                    href="/dashboard/settings"
                                     className="text-sm text-brand-blue hover:underline text-left"
                                 >
                                     Connect WhatsApp
-                                </button>
+                                </Link>
                             </div>
                         </div>
 

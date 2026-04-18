@@ -147,9 +147,12 @@ function IntakeContent() {
                     <div className="card-elevated backdrop-blur-xl shadow-card overflow-hidden">
                         <div className="p-8 space-y-5">
                             <div className="form-field">
-                                <label className="label-mono">Full Name *</label>
+                                <label htmlFor="fullName" className="label-mono">Full Name *</label>
                                 <input
+                                    id="fullName"
+                                    name="fullName"
                                     type="text"
+                                    autoComplete="name"
                                     required
                                     value={form.name}
                                     onChange={(e) => setForm({ ...form, name: e.target.value })}
@@ -160,9 +163,12 @@ function IntakeContent() {
 
                             {offerData?.channel === "WHATSAPP" && (
                                 <div className="form-field">
-                                    <label className="label-mono">WhatsApp Number</label>
+                                    <label htmlFor="phone" className="label-mono">WhatsApp Number</label>
                                     <input
+                                        id="phone"
+                                        name="phone"
                                         type="tel"
+                                        autoComplete="tel"
                                         value={form.phone}
                                         onChange={(e) => setForm({ ...form, phone: e.target.value })}
                                         className="input w-full"
@@ -172,9 +178,12 @@ function IntakeContent() {
                             )}
 
                             <div className="form-field">
-                                <label className="label-mono">Email</label>
+                                <label htmlFor="email" className="label-mono">Email</label>
                                 <input
+                                    id="email"
+                                    name="email"
                                     type="email"
+                                    autoComplete="email"
                                     value={form.email}
                                     onChange={(e) => setForm({ ...form, email: e.target.value })}
                                     className="input w-full"
@@ -183,12 +192,14 @@ function IntakeContent() {
                             </div>
 
                             <div className="form-field">
-                                <label className="label-mono">What are your goals?</label>
+                                <label htmlFor="goals" className="label-mono">What are your goals?</label>
                                 <textarea
+                                    id="goals"
+                                    name="goals"
                                     value={form.goals}
                                     onChange={(e) => setForm({ ...form, goals: e.target.value })}
                                     className="textarea w-full"
-                                    placeholder="Lose weight, build muscle, improve fitness..."
+                                    placeholder="Lose weight, build muscle, improve fitness\u2026"
                                 />
                             </div>
 

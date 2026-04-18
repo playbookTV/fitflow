@@ -11,6 +11,7 @@ import {
     ClipboardList,
 } from "lucide-react";
 import { cn, formatRelative } from "@/lib/utils";
+import { formatTime } from "@/lib/tokens";
 import { getAuthHeaders } from "@/lib/auth";
 
 interface IntakeData {
@@ -311,6 +312,7 @@ export default function LeadsPage() {
                                     <button
                                         onClick={() => setSelectedLead(null)}
                                         className="md:hidden p-2 -ml-2 text-text-faint hover:text-white"
+                                        aria-label="Back to leads"
                                     >
                                         ←
                                     </button>
@@ -416,7 +418,7 @@ export default function LeadsPage() {
                                                     msg.direction === "OUTBOUND" ? "text-white/60" : "text-text-faint"
                                                 )}>
                                                     <span className="text-[10px]">
-                                                        {new Date(msg.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                                                        {formatTime(msg.createdAt)}
                                                     </span>
                                                     {msg.direction === "OUTBOUND" && (
                                                         <CheckCheck className={cn(
@@ -437,16 +439,20 @@ export default function LeadsPage() {
                                     <div className="flex items-center gap-3">
                                         <input
                                             type="text"
-                                            placeholder="Type a message..."
+                                            placeholder="Type a message\u2026"
                                             value={newMessage}
                                             onChange={(e) => setNewMessage(e.target.value)}
                                             onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
                                             className="input flex-1"
+                                            aria-label="Message to lead"
+                                            name="message"
+                                            autoComplete="off"
                                         />
                                         <button
                                             onClick={handleSendMessage}
                                             disabled={!newMessage.trim() || sending}
                                             className="btn-primary !px-4"
+                                            aria-label="Send message"
                                         >
                                             <Send className="w-4 h-4" />
                                         </button>

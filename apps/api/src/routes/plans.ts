@@ -3,7 +3,9 @@ import { authenticate, AuthRequest } from "../middleware/auth";
 import { enforceLimit } from "../middleware/subscription";
 import { prisma } from "../lib/prisma";
 import { validate } from "../middleware/validate";
-import { createPlanSchema } from "../lib/schemas";
+import { createPlanSchema, generatePlanSchema } from "../lib/schemas";
+import { generatePlan, PlanGenerationError } from "../services/aiPlanGenerator";
+import { logEvent, EventType } from "../lib/event-logger";
 
 const router: Router = Router();
 
@@ -73,6 +75,32 @@ router.post("/", authenticate, enforceLimit("workoutPlans"), validate(createPlan
     } catch (error) {
         console.error("[POST /plans]", error);
         res.status(500).json({ error: "Failed to create plan" });
+    }
+});
+
+// POST /plans/generate - Generate a workout plan with AI
+router.post("/generate", authenticate, enforceLimit("workoutPlans"), validate(generatePlanSchema), async (req: AuthRequest, res: Response) => {
+    const coachId = req.user?.id as string;
+    const { clientId, instructions } = req.body;
+
+    if (!coachId) return res.status(401).json({ error: "Unauthorized" });
+
+    try {
+        const plan = await generatePlan({ coachId, clientId, instructions });
+
+        logEvent(EventType.AI_PLAN_GENERATED, {
+            coachId,
+            clientId,
+            metadata: { instructionLength: instructions?.length || 0 },
+        });
+
+        res.json(plan);
+    } catch (error) {
+        if (error instanceof PlanGenerationError) {
+            return res.status(error.statusCode).json({ error: error.message });
+        }
+        console.error("[POST /plans/generate]", error);
+        res.status(500).json({ error: "Failed to generate plan" });
     }
 });
 

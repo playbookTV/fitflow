@@ -89,7 +89,7 @@ function ShareLinkRow({ label, url }: { label: string; url: string }) {
                 <p className="text-xs text-text-faint">{label}</p>
                 <code className="text-sm text-brand-green font-mono">{url}</code>
             </div>
-            <button onClick={handleCopy} className="btn-ghost !p-2">
+            <button onClick={handleCopy} className="btn-ghost !p-2" aria-label={`Copy ${label} link`}>
                 {copied ? (
                     <Check className="w-4 h-4 text-brand-green" />
                 ) : (
@@ -325,7 +325,7 @@ function SettingsContent() {
                                     key={tab.id}
                                     onClick={() => setActiveTab(tab.id)}
                                     className={cn(
-                                        "flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all text-left",
+                                        "flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors duration-200 text-left",
                                         activeTab === tab.id
                                             ? "bg-brand-green/10 text-brand-green border border-brand-green/20"
                                             : "text-text-secondary hover:text-white hover:bg-bg-hover"
@@ -359,9 +359,12 @@ function SettingsContent() {
                                         </h3>
                                         <div className="space-y-5">
                                             <div className="form-field">
-                                                <label className="label">Full Name</label>
+                                                <label htmlFor="settings-name" className="label">Full Name</label>
                                                 <input
+                                                    id="settings-name"
                                                     type="text"
+                                                    name="name"
+                                                    autoComplete="name"
                                                     value={profile.name}
                                                     onChange={(e) =>
                                                         updateProfile({ name: e.target.value })
@@ -371,9 +374,12 @@ function SettingsContent() {
                                                 />
                                             </div>
                                             <div className="form-field">
-                                                <label className="label">Email Address</label>
+                                                <label htmlFor="settings-email" className="label">Email Address</label>
                                                 <input
+                                                    id="settings-email"
                                                     type="email"
+                                                    name="email"
+                                                    autoComplete="email"
                                                     value={profile.email}
                                                     disabled
                                                     className="input opacity-60 cursor-not-allowed"
@@ -383,9 +389,12 @@ function SettingsContent() {
                                                 </p>
                                             </div>
                                             <div className="form-field">
-                                                <label className="label">Phone Number</label>
+                                                <label htmlFor="settings-phone" className="label">Phone Number</label>
                                                 <input
+                                                    id="settings-phone"
                                                     type="tel"
+                                                    name="phone"
+                                                    autoComplete="tel"
                                                     value={profile.phone}
                                                     onChange={(e) =>
                                                         updateProfile({ phone: e.target.value })
@@ -395,9 +404,12 @@ function SettingsContent() {
                                                 />
                                             </div>
                                             <div className="form-field">
-                                                <label className="label">Slug</label>
+                                                <label htmlFor="settings-slug" className="label">Slug</label>
                                                 <input
+                                                    id="settings-slug"
                                                     type="text"
+                                                    name="slug"
+                                                    autoComplete="off"
                                                     value={profile.slug}
                                                     onChange={(e) =>
                                                         updateProfile({ slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-") })
@@ -419,9 +431,12 @@ function SettingsContent() {
                                         </h3>
                                         <div className="space-y-5">
                                             <div className="form-field">
-                                                <label className="label">Business Name</label>
+                                                <label htmlFor="settings-business-name" className="label">Business Name</label>
                                                 <input
+                                                    id="settings-business-name"
                                                     type="text"
+                                                    name="businessName"
+                                                    autoComplete="organization"
                                                     value={profile.businessName || ""}
                                                     onChange={(e) =>
                                                         updateProfile({ businessName: e.target.value })
@@ -431,11 +446,13 @@ function SettingsContent() {
                                                 />
                                             </div>
                                             <div className="form-field">
-                                                <label className="label flex items-center gap-2">
+                                                <label htmlFor="settings-timezone" className="label flex items-center gap-2">
                                                     <Globe className="w-3.5 h-3.5" />
                                                     Timezone
                                                 </label>
                                                 <select
+                                                    id="settings-timezone"
+                                                    name="timezone"
                                                     value={profile.timezone}
                                                     onChange={(e) =>
                                                         updateProfile({ timezone: e.target.value })
@@ -500,8 +517,10 @@ function SettingsContent() {
                                             </div>
                                             <div className="flex-1 min-w-0 w-full">
                                                 <div className="form-field">
-                                                    <label className="label">Bio</label>
+                                                    <label htmlFor="settings-bio" className="label">Bio</label>
                                                     <textarea
+                                                        id="settings-bio"
+                                                        name="bio"
                                                         value={profile.bio || ""}
                                                         onChange={(e) => {
                                                             if (e.target.value.length <= 200) {
@@ -509,7 +528,7 @@ function SettingsContent() {
                                                             }
                                                         }}
                                                         className="textarea"
-                                                        placeholder="Tell potential clients about yourself..."
+                                                        placeholder="Tell potential clients about yourself\u2026"
                                                         rows={3}
                                                     />
                                                     <p className="text-xs text-text-faint mt-1 text-right">
@@ -532,9 +551,11 @@ function SettingsContent() {
                                         <div className="space-y-5">
                                             {(profile.defaultPaymentModel === "SESSION_BLOCKS" || profile.defaultPaymentModel === "PER_SESSION") && (
                                                 <div className="form-field">
-                                                    <label className="label">Price per session (in smallest currency unit)</label>
+                                                    <label htmlFor="settings-price-per-session" className="label">Price per session (in smallest currency unit)</label>
                                                     <input
+                                                        id="settings-price-per-session"
                                                         type="number"
+                                                        name="defaultPricePerSession"
                                                         value={profile.defaultPricePerSession || ""}
                                                         onChange={(e) =>
                                                             updateProfile({ defaultPricePerSession: e.target.value ? Number(e.target.value) : undefined })
@@ -546,9 +567,11 @@ function SettingsContent() {
                                             )}
                                             {profile.defaultPaymentModel === "SESSION_BLOCKS" && (
                                                 <div className="form-field">
-                                                    <label className="label">Sessions per block</label>
+                                                    <label htmlFor="settings-sessions-per-block" className="label">Sessions per block</label>
                                                     <input
+                                                        id="settings-sessions-per-block"
                                                         type="number"
+                                                        name="defaultSessionsPerBlock"
                                                         value={profile.defaultSessionsPerBlock || ""}
                                                         onChange={(e) =>
                                                             updateProfile({ defaultSessionsPerBlock: e.target.value ? Number(e.target.value) : undefined })
@@ -560,9 +583,11 @@ function SettingsContent() {
                                             )}
                                             {profile.defaultPaymentModel === "MONTHLY_RETAINER" && (
                                                 <div className="form-field">
-                                                    <label className="label">Monthly rate (in smallest currency unit)</label>
+                                                    <label htmlFor="settings-monthly-rate" className="label">Monthly rate (in smallest currency unit)</label>
                                                     <input
+                                                        id="settings-monthly-rate"
                                                         type="number"
+                                                        name="defaultMonthlyRate"
                                                         value={profile.defaultMonthlyRate || ""}
                                                         onChange={(e) =>
                                                             updateProfile({ defaultMonthlyRate: e.target.value ? Number(e.target.value) : undefined })
@@ -596,6 +621,8 @@ function SettingsContent() {
                                                 </div>
                                                 <button
                                                     onClick={() => updateProfile({ profileVisible: !profile.profileVisible })}
+                                                    role="switch"
+                                                    aria-checked={profile.profileVisible}
                                                     className={cn(
                                                         "toggle",
                                                         profile.profileVisible && "toggle-active"
@@ -613,6 +640,8 @@ function SettingsContent() {
                                                 </div>
                                                 <button
                                                     onClick={() => updateProfile({ showRatesPublicly: !profile.showRatesPublicly })}
+                                                    role="switch"
+                                                    aria-checked={profile.showRatesPublicly}
                                                     className={cn(
                                                         "toggle",
                                                         profile.showRatesPublicly && "toggle-active"
@@ -630,6 +659,8 @@ function SettingsContent() {
                                                 </div>
                                                 <button
                                                     onClick={() => updateProfile({ showWhatsapp: !profile.showWhatsapp })}
+                                                    role="switch"
+                                                    aria-checked={profile.showWhatsapp}
                                                     className={cn(
                                                         "toggle",
                                                         profile.showWhatsapp && "toggle-active"
@@ -654,6 +685,8 @@ function SettingsContent() {
                                                         }
                                                     }}
                                                     disabled={!profile.telegramConnected}
+                                                    role="switch"
+                                                    aria-checked={profile.showTelegram && profile.telegramConnected}
                                                     className={cn(
                                                         "toggle",
                                                         profile.showTelegram && profile.telegramConnected && "toggle-active",
@@ -807,6 +840,7 @@ function SettingsContent() {
                                                             setTimeout(() => setWaLinkCopied(false), 2000);
                                                         }}
                                                         className="btn-secondary !px-3"
+                                                        aria-label="Copy WhatsApp link"
                                                     >
                                                         {waLinkCopied ? (
                                                             <Check className="w-4 h-4 text-brand-green" />
@@ -854,6 +888,8 @@ function SettingsContent() {
                                                                 value={profile.telegramDeepLink}
                                                                 readOnly
                                                                 className="input flex-1 text-xs"
+                                                                aria-label="Telegram deep link"
+                                                                name="telegramDeepLink"
                                                             />
                                                             <button
                                                                 onClick={copyDeepLink}
@@ -959,14 +995,14 @@ function SettingsContent() {
                                                                         navigator.clipboard.writeText(link.shortUrl);
                                                                     }}
                                                                     className="btn-ghost !p-1.5"
-                                                                    title="Copy short link"
+                                                                    aria-label="Copy short link"
                                                                 >
                                                                     <Copy className="w-3.5 h-3.5" />
                                                                 </button>
                                                                 <button
                                                                     onClick={() => setShowQrId(showQrId === link.id ? null : link.id)}
                                                                     className="btn-ghost !p-1.5"
-                                                                    title="Show QR code"
+                                                                    aria-label="Show QR code"
                                                                 >
                                                                     <QrCode className="w-3.5 h-3.5" />
                                                                 </button>

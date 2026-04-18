@@ -12,3 +12,4 @@ export const engagementQueue = new Queue("engagement", { connection });
 // Previously shared "workout-delivery" which caused BullMQ to dispatch jobs to the wrong worker.
 export const messageQueue = new Queue("message-processing", { connection });
 export const mealQueue = new Queue("meal-delivery", { connection });
+export const riskScoringQueue = new Queue("risk-scoring", { connection });

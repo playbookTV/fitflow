@@ -18,6 +18,9 @@ export enum JobType {
 
     // Meal planning
     MEAL_DELIVERY = "MEAL_DELIVERY",
+
+    // AI risk scoring
+    RISK_SCORE_COMPUTE = "RISK_SCORE_COMPUTE",
 }
 
 export interface MealDeliveryJob {
@@ -86,6 +89,11 @@ export interface MilestoneCheckJob {
     programmeWeek: number;
     totalWeeks: number;
     offerName: string;
+}
+
+export interface RiskScoreComputeJob {
+    clientId: string;
+    coachId: string;
 }
 
 export interface WeekSummaryJob {

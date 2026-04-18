@@ -92,6 +92,9 @@ export default function ProfilePage({ data }: { data: ProfileData }) {
                         <img
                             src={coach.avatarUrl}
                             alt={coach.name}
+                            width={96}
+                            height={96}
+                            loading="lazy"
                             className="w-24 h-24 rounded-full object-cover border-2 border-white/10"
                         />
                     ) : (
@@ -152,7 +155,7 @@ export default function ProfilePage({ data }: { data: ProfileData }) {
                             <a
                                 href={channels.wb}
                                 onClick={() => logChannelClick(coach.slug, "wb")}
-                                className="flex items-center justify-center gap-3 w-full py-3.5 px-6 rounded-xl bg-[#25D366] text-black font-mono text-sm font-bold tracking-wider hover:shadow-glow transition-all hover:-translate-y-0.5"
+                                className="flex items-center justify-center gap-3 w-full py-3.5 px-6 rounded-xl bg-[#25D366] text-black font-mono text-sm font-bold tracking-wider hover:shadow-glow transition-[box-shadow,transform] duration-200 hover:-translate-y-0.5"
                             >
                                 <MessageSquare className="w-5 h-5" />
                                 Message on WhatsApp
@@ -162,7 +165,7 @@ export default function ProfilePage({ data }: { data: ProfileData }) {
                             <a
                                 href={channels.tg}
                                 onClick={() => logChannelClick(coach.slug, "tg")}
-                                className="flex items-center justify-center gap-3 w-full py-3.5 px-6 rounded-xl bg-[#2AABEE] text-white font-mono text-sm font-bold tracking-wider hover:shadow-[0_0_20px_rgba(42,171,238,0.3)] transition-all hover:-translate-y-0.5"
+                                className="flex items-center justify-center gap-3 w-full py-3.5 px-6 rounded-xl bg-[#2AABEE] text-white font-mono text-sm font-bold tracking-wider hover:shadow-[0_0_20px_rgba(42,171,238,0.3)] transition-[box-shadow,transform] duration-200 hover:-translate-y-0.5"
                             >
                                 <Send className="w-5 h-5" />
                                 Message on Telegram

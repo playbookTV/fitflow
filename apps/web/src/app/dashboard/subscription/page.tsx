@@ -304,7 +304,7 @@ export default function SubscriptionPage() {
                                                             target="_blank"
                                                             rel="noopener noreferrer"
                                                             className="btn-icon"
-                                                            title="View invoice"
+                                                            aria-label="View invoice"
                                                         >
                                                             <ExternalLink className="w-3.5 h-3.5" />
                                                         </a>
@@ -315,7 +315,7 @@ export default function SubscriptionPage() {
                                                             target="_blank"
                                                             rel="noopener noreferrer"
                                                             className="btn-icon"
-                                                            title="Download PDF"
+                                                            aria-label="Download PDF"
                                                         >
                                                             <Download className="w-3.5 h-3.5" />
                                                         </a>
@@ -364,7 +364,7 @@ function UsageBar({
                 <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
                     <div
                         className={cn(
-                            "h-full rounded-full transition-all",
+                            "h-full rounded-full transition-[width] duration-300",
                             isNearLimit ? "bg-brand-orange" : "bg-brand-green"
                         )}
                         style={{ width: `${pct}%` }}

@@ -73,9 +73,12 @@ function LoginContent() {
 
                 <form onSubmit={handleLogin} className="space-y-6">
                     <div className="form-field">
-                        <label className="label-mono">Email address</label>
+                        <label htmlFor="email" className="label-mono">Email address</label>
                         <input
+                            id="email"
+                            name="email"
                             type="email"
+                            autoComplete="email"
                             required
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
@@ -85,9 +88,12 @@ function LoginContent() {
                     </div>
 
                     <div className="form-field">
-                        <label className="label-mono">Password</label>
+                        <label htmlFor="password" className="label-mono">Password</label>
                         <input
+                            id="password"
+                            name="password"
                             type="password"
+                            autoComplete="current-password"
                             required
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}

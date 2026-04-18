@@ -2,6 +2,7 @@
 
 import { Users, Activity, CheckCircle2, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { formatCurrency } from "@/lib/tokens";
 
 interface StatItemProps {
     label: string;
@@ -64,7 +65,7 @@ const StatItem = ({ label, value, icon: Icon, trend, trendUp = true, color, load
 
     return (
         <div className={cn(
-            "stat-card group transition-all duration-300 hover:border-white/10",
+            "stat-card group transition-[color,background-color,border-color,box-shadow,transform] duration-200 hover:border-white/10",
             colors.glow
         )}>
             <div className="flex items-center justify-between mb-4">
@@ -73,7 +74,7 @@ const StatItem = ({ label, value, icon: Icon, trend, trendUp = true, color, load
                     colors.bg,
                     colors.border
                 )}>
-                    <Icon className={cn("w-5 h-5", colors.text)} />
+                    <Icon className={cn("w-5 h-5", colors.text)} aria-hidden="true" />
                 </div>
                 {trend && (
                     <span className={cn(
@@ -135,7 +136,7 @@ export const DashboardStats = ({ stats, loading }: DashboardStatsProps) => {
             />
             <StatItem
                 label="Est. Revenue"
-                value={`£${stats.revenue.toLocaleString()}`}
+                value={formatCurrency(stats.revenue)}
                 icon={TrendingUp}
                 color="orange"
                 loading={loading}

@@ -81,6 +81,10 @@ export const EventType = {
     SUBSCRIPTION_RENEWED: "subscription.renewed",
     SUBSCRIPTION_PAYMENT_FAILED: "subscription.payment_failed",
     SUBSCRIPTION_TRIAL_ENDING: "subscription.trial_ending",
+
+    // AI features
+    AI_PLAN_GENERATED: "ai.plan_generated",
+    RISK_SCORE_COMPUTED: "risk.score_computed",
 } as const;
 
 export type EventTypeValue = typeof EventType[keyof typeof EventType];

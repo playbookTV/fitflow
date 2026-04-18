@@ -79,6 +79,7 @@ model Client {
   payments          Payment[]
   messages          Message[]
   sessionBlocks     SessionBlock[]
+  riskScore         ClientRiskScore?
 
   createdAt         DateTime  @default(now()) @map("created_at")
   updatedAt         DateTime  @updatedAt @map("updated_at")
@@ -541,4 +542,32 @@ model ProfileEvent {
   @@index([coachSlug])
   @@index([event])
   @@map("profile_events")
+}
+
+// ═══════════════════════════════════════════════════════════════
+// AI RISK SCORING
+// ═══════════════════════════════════════════════════════════════
+
+model ClientRiskScore {
+  id         String    @id @default(uuid())
+  clientId   String    @unique @map("client_id")
+  client     Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  coachId    String    @map("coach_id")
+  score      Int       // 0-100
+  level      RiskLevel
+  summary    String    // AI-generated or static summary
+  factors    Json      // { compliance, engagement, activity, behavioral, payment }
+  suggestion String?   // AI-generated recommended action
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+
+  @@index([coachId])
+  @@index([score])
+  @@map("client_risk_scores")
+}
+
+enum RiskLevel {
+  LOW
+  MODERATE
+  HIGH
+  CRITICAL
 }
