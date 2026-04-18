@@ -79,6 +79,8 @@ const allowedOrigins = [
     env.WEB_URL,
     ...(env.PREVIEW_URL ? [env.PREVIEW_URL] : []),
 ];
+// Public routes (/p/*) allow any origin — they power external landing pages
+app.use("/p", cors());
 app.use(cors({
     origin: allowedOrigins,
     credentials: true,
