@@ -27,6 +27,7 @@ export default function OffersPage() {
     const [waLink, setWaLink] = useState<string | null>(null);
     const [showQrOffer, setShowQrOffer] = useState<string | null>(null);
     const [shortLinks, setShortLinks] = useState<Record<string, { id: string; shortUrl: string }>>({});
+    const [coachSlug, setCoachSlug] = useState<string | null>(null);
 
     const fetchOffers = async () => {
         try {
@@ -71,7 +72,21 @@ export default function OffersPage() {
         } catch { /* silent */ }
     };
 
-    useEffect(() => { fetchOffers(); fetchChannels(); fetchShortLinks(); }, []);
+    const fetchCoachSlug = async () => {
+        try {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/coaches/me`, {
+                headers: await getAuthHeaders(),
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setCoachSlug(data.slug || null);
+            }
+        } catch (error) {
+            console.error("Failed to fetch coach slug:", error);
+        }
+    };
+
+    useEffect(() => { fetchOffers(); fetchChannels(); fetchShortLinks(); fetchCoachSlug(); }, []);
 
     const handleCreate = async () => {
         if (!newOffer.name || !newOffer.slug) return;
@@ -105,9 +120,9 @@ export default function OffersPage() {
         fetchOffers();
     };
 
-    const copyLink = (slug: string) => {
-        const url = `${window.location.origin}/${slug}`;
-        navigator.clipboard.writeText(url);
+    const copyLink = (offerSlug: string) => {
+        const base = coachSlug ? `/${coachSlug}/${offerSlug}` : `/${offerSlug}`;
+        navigator.clipboard.writeText(`${window.location.origin}${base}`);
     };
 
     const copyWaLink = (offerName: string) => {
@@ -203,7 +218,7 @@ export default function OffersPage() {
                                 <div>
                                     <p className="font-medium text-white">{offer.name}</p>
                                     <p className="text-sm text-text-faint font-mono">
-                                        /{offer.slug}
+                                        {coachSlug ? `/${coachSlug}/${offer.slug}` : `/${offer.slug}`}
                                         {offer.channelParam && (
                                             <span className="ml-2 text-brand-blue">
                                                 ?ch={offer.channelParam === "WHATSAPP" ? "wa" : "tg"}

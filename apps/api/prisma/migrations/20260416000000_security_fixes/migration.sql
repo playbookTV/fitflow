@@ -7,8 +7,13 @@ CREATE UNIQUE INDEX "plan_assignments_client_active_unique"
   ON "plan_assignments" ("client_id")
   WHERE "is_active" = true;
 
--- Enforce at most one active meal assignment per client
-CREATE UNIQUE INDEX "meal_assignments_client_active_unique"
-  ON "meal_assignments" ("client_id")
-  WHERE "is_active" = true;
+-- Enforce at most one active meal assignment per client (if table exists)
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'meal_assignments') THEN
+    CREATE UNIQUE INDEX IF NOT EXISTS "meal_assignments_client_active_unique"
+      ON "meal_assignments" ("client_id")
+      WHERE "is_active" = true;
+  END IF;
+END $$;
 

@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { prisma } from "../lib/prisma";
 import { MessageChannel } from "@prisma/client";
 import { logEvent, EventType } from "../lib/event-logger";
@@ -270,6 +270,7 @@ router.post("/:coachSlug/:offerSlug/apply", async (req, res) => {
         let channelTag: MessageChannel = MessageChannel.WHATSAPP;
         if (channel === "TELEGRAM" || channel === "tg") channelTag = MessageChannel.TELEGRAM;
 
+        const intakeToken = randomUUID();
         const lead = await prisma.lead.create({
             data: {
                 coachId: coach.id,
@@ -281,6 +282,7 @@ router.post("/:coachSlug/:offerSlug/apply", async (req, res) => {
                 channelTag,
                 source: source || null,
                 intakeData: intakeData || null,
+                intakeToken,
             },
         });
 
@@ -298,7 +300,7 @@ router.post("/:coachSlug/:offerSlug/apply", async (req, res) => {
         if (channelTag === MessageChannel.WHATSAPP && phone) {
             try {
                 const adapter = await getChannel(MessageChannel.WHATSAPP, coach.id);
-                const intakeUrl = `${process.env.WEB_URL}/intake/${lead.id}`;
+                const intakeUrl = `${process.env.WEB_URL}/onboarding?id=${lead.id}&token=${intakeToken}`;
                 await adapter.sendOnboarding(phone, {
                     clientId: lead.id,
                     clientName: name,

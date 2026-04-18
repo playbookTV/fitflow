@@ -12,14 +12,17 @@ router.get("/conversations", authenticate, async (req: AuthRequest, res) => {
 
     try {
         const clients = await prisma.client.findMany({
-            where: { coachId },
+            where: { coachId, conversationArchived: false },
             include: {
                 messages: {
                     orderBy: { createdAt: "desc" },
                     take: 50,
                 },
             },
-            orderBy: { updatedAt: "desc" },
+            orderBy: [
+                { conversationPinned: "desc" },
+                { updatedAt: "desc" },
+            ],
         });
 
         const conversations = clients
@@ -33,6 +36,7 @@ router.get("/conversations", authenticate, async (req: AuthRequest, res) => {
                     clientName: client.name,
                     clientPhone: client.phone || client.telegramChatId || "Unknown",
                     channel: client.preferredChannel,
+                    pinned: client.conversationPinned,
                     lastMessage: latestMessage?.content,
                     lastMessageAt: latestMessage?.createdAt,
                     unreadCount: client.messages.filter(
@@ -134,6 +138,74 @@ router.post("/:clientId", authenticate, async (req: AuthRequest, res: Response) 
     } catch (error) {
         console.error("[POST /messages/:clientId]", error);
         res.status(500).json({ error: "Failed to send message" });
+    }
+});
+
+// PATCH /messages/:clientId/pin - Toggle pin on a conversation
+router.patch("/:clientId/pin", authenticate, async (req: AuthRequest, res: Response) => {
+    const coachId = req.user?.id as string;
+    const clientId = req.params.clientId as string;
+
+    try {
+        const client = await prisma.client.findFirst({
+            where: { id: clientId, coachId },
+        });
+        if (!client) return res.status(404).json({ error: "Client not found" });
+
+        const updated = await prisma.client.update({
+            where: { id: clientId },
+            data: { conversationPinned: !client.conversationPinned },
+        });
+
+        res.json({ pinned: updated.conversationPinned });
+    } catch (error) {
+        console.error("[PATCH /messages/:clientId/pin]", error);
+        res.status(500).json({ error: "Failed to update pin status" });
+    }
+});
+
+// PATCH /messages/:clientId/archive - Toggle archive on a conversation
+router.patch("/:clientId/archive", authenticate, async (req: AuthRequest, res: Response) => {
+    const coachId = req.user?.id as string;
+    const clientId = req.params.clientId as string;
+
+    try {
+        const client = await prisma.client.findFirst({
+            where: { id: clientId, coachId },
+        });
+        if (!client) return res.status(404).json({ error: "Client not found" });
+
+        const updated = await prisma.client.update({
+            where: { id: clientId },
+            data: { conversationArchived: !client.conversationArchived },
+        });
+
+        res.json({ archived: updated.conversationArchived });
+    } catch (error) {
+        console.error("[PATCH /messages/:clientId/archive]", error);
+        res.status(500).json({ error: "Failed to update archive status" });
+    }
+});
+
+// DELETE /messages/:clientId - Delete all messages in a conversation
+router.delete("/:clientId", authenticate, async (req: AuthRequest, res: Response) => {
+    const coachId = req.user?.id as string;
+    const clientId = req.params.clientId as string;
+
+    try {
+        const client = await prisma.client.findFirst({
+            where: { id: clientId, coachId },
+        });
+        if (!client) return res.status(404).json({ error: "Client not found" });
+
+        await prisma.message.deleteMany({
+            where: { clientId },
+        });
+
+        res.json({ deleted: true });
+    } catch (error) {
+        console.error("[DELETE /messages/:clientId]", error);
+        res.status(500).json({ error: "Failed to delete conversation" });
     }
 });
 

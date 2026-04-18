@@ -3,7 +3,7 @@ import { prisma } from "../lib/prisma";
 
 const router: Router = Router();
 
-// POST /intake - Public endpoint for clients to submit their onboarding form
+// POST /intake - Public endpoint for clients/leads to submit their onboarding form
 // Requires a valid intake token to prevent unauthorized writes.
 router.post("/", async (req, res) => {
     const { clientId, token, goals, medicalNotes, equipment, experience } = req.body;
@@ -11,29 +11,51 @@ router.post("/", async (req, res) => {
     if (!clientId || !token) return res.status(400).json({ error: "Missing clientId or token" });
 
     try {
+        // Check clients first, then leads
         const client = await prisma.client.findFirst({
             where: { id: clientId, intakeToken: token }
         });
 
-        if (!client) return res.status(404).json({ error: "Invalid or expired intake link" });
+        if (client) {
+            if (client.status !== "INTAKE_SENT") {
+                return res.status(409).json({ error: "Intake already completed or not yet available" });
+            }
 
-        // Only allow intake submission when the client is in INTAKE_SENT status
-        if (client.status !== "INTAKE_SENT") {
-            return res.status(409).json({ error: "Intake already completed or not yet available" });
+            await prisma.client.update({
+                where: { id: clientId },
+                data: {
+                    goals: goals,
+                    notes: `Medical: ${medicalNotes} \nEquipment: ${equipment} \nExperience: ${experience} `,
+                    status: "ACTIVE",
+                    intakeToken: null,
+                }
+            });
+
+            console.log(`[Intake] Client ${clientId} completed onboarding.`);
+            return res.json({ success: true, message: "Onboarding complete! Your coach will be in touch soon." });
         }
 
-        // Update client data and transition status
-        await prisma.client.update({
+        // Check leads
+        const lead = await prisma.lead.findFirst({
+            where: { id: clientId, intakeToken: token }
+        });
+
+        if (!lead) return res.status(404).json({ error: "Invalid or expired intake link" });
+
+        if (lead.status !== "NEW") {
+            return res.status(409).json({ error: "Intake already completed" });
+        }
+
+        await prisma.lead.update({
             where: { id: clientId },
             data: {
-                goals: goals,
-                notes: `Medical: ${medicalNotes} \nEquipment: ${equipment} \nExperience: ${experience} `,
-                status: "ACTIVE",
-                intakeToken: null, // Invalidate token after use
+                intakeData: { goals, medicalNotes, equipment, experience },
+                intakeToken: null,
+                status: "INTAKE_COMPLETE",
             }
         });
 
-        console.log(`[Intake] Client ${clientId} completed onboarding.`);
+        console.log(`[Intake] Lead ${clientId} completed onboarding.`);
         res.json({ success: true, message: "Onboarding complete! Your coach will be in touch soon." });
     } catch (error) {
         console.error("[Intake Error]", error);
@@ -41,7 +63,7 @@ router.post("/", async (req, res) => {
     }
 });
 
-// GET /intake/:id - Get client name for the onboarding page
+// GET /intake/:id - Get client/lead name for the onboarding page
 // Requires a valid intake token as a query parameter.
 router.get("/:id", async (req, res) => {
     const token = req.query.token as string;
@@ -54,8 +76,15 @@ router.get("/:id", async (req, res) => {
             select: { name: true }
         });
 
-        if (!client) return res.status(404).json({ error: "Invalid or expired intake link" });
-        res.json(client);
+        if (client) return res.json(client);
+
+        const lead = await prisma.lead.findFirst({
+            where: { id: req.params.id, intakeToken: token },
+            select: { name: true }
+        });
+
+        if (!lead) return res.status(404).json({ error: "Invalid or expired intake link" });
+        res.json(lead);
     } catch (error) {
         res.status(500).json({ error: "Internal server error" });
     }

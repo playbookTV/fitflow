@@ -12,8 +12,11 @@ import {
     Paperclip,
     Image as ImageIcon,
     MoreVertical,
-    Phone,
+    Archive,
+    Pin,
+    Trash2,
 } from "lucide-react";
+import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { cn, formatRelative } from "@/lib/utils";
 
 interface Message {
@@ -30,6 +33,7 @@ interface Conversation {
     clientName: string;
     clientPhone: string;
     channel: "WHATSAPP" | "TELEGRAM";
+    pinned?: boolean;
     lastMessage?: string;
     lastMessageAt?: string;
     unreadCount: number;
@@ -259,6 +263,73 @@ function MessagesPageContent() {
         }
     };
 
+    const handleArchiveConversation = async () => {
+        if (!selectedConversation) return;
+        const clientId = selectedConversation.clientId;
+        try {
+            await fetch(
+                `${process.env.NEXT_PUBLIC_API_URL}/messages/${clientId}/archive`,
+                { method: "PATCH", headers: await getAuthHeaders() }
+            );
+            setConversations((prev) => prev.filter((c) => c.clientId !== clientId));
+            setSelectedConversation(null);
+        } catch {
+            console.error("Failed to archive conversation");
+        }
+    };
+
+    const handlePinConversation = async () => {
+        if (!selectedConversation) return;
+        const clientId = selectedConversation.clientId;
+        const wasPinned = selectedConversation.pinned;
+        try {
+            // Optimistic update
+            setConversations((prev) => {
+                const updated = prev.map((c) =>
+                    c.clientId === clientId ? { ...c, pinned: !wasPinned } : c
+                );
+                return updated.sort((a, b) => {
+                    if (a.pinned && !b.pinned) return -1;
+                    if (!a.pinned && b.pinned) return 1;
+                    return 0;
+                });
+            });
+            setSelectedConversation((prev) =>
+                prev ? { ...prev, pinned: !wasPinned } : null
+            );
+
+            await fetch(
+                `${process.env.NEXT_PUBLIC_API_URL}/messages/${clientId}/pin`,
+                { method: "PATCH", headers: await getAuthHeaders() }
+            );
+        } catch {
+            // Revert on failure
+            setConversations((prev) =>
+                prev.map((c) =>
+                    c.clientId === clientId ? { ...c, pinned: wasPinned } : c
+                )
+            );
+            setSelectedConversation((prev) =>
+                prev ? { ...prev, pinned: wasPinned } : null
+            );
+        }
+    };
+
+    const handleDeleteConversation = async () => {
+        if (!selectedConversation) return;
+        const clientId = selectedConversation.clientId;
+        try {
+            await fetch(
+                `${process.env.NEXT_PUBLIC_API_URL}/messages/${clientId}`,
+                { method: "DELETE", headers: await getAuthHeaders() }
+            );
+            setConversations((prev) => prev.filter((c) => c.clientId !== clientId));
+            setSelectedConversation(null);
+        } catch {
+            console.error("Failed to delete conversation");
+        }
+    };
+
     const totalUnread = conversations.reduce((sum, c) => sum + c.unreadCount, 0);
 
     return (
@@ -391,14 +462,43 @@ function MessagesPageContent() {
                                         </p>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                    <button className="btn-icon !p-2">
-                                        <Phone className="w-4 h-4" />
-                                    </button>
-                                    <button className="btn-icon !p-2">
-                                        <MoreVertical className="w-4 h-4" />
-                                    </button>
-                                </div>
+                                <DropdownMenu.Root>
+                                    <DropdownMenu.Trigger asChild>
+                                        <button className="btn-icon !p-2">
+                                            <MoreVertical className="w-4 h-4" />
+                                        </button>
+                                    </DropdownMenu.Trigger>
+                                    <DropdownMenu.Portal>
+                                        <DropdownMenu.Content
+                                            align="end"
+                                            sideOffset={8}
+                                            className="min-w-[160px] bg-bg-card border border-border rounded-xl p-1 shadow-lg z-50 animate-in fade-in-0 zoom-in-95"
+                                        >
+                                            <DropdownMenu.Item
+                                                className="flex items-center gap-2.5 px-3 py-2 text-sm text-white rounded-lg cursor-pointer outline-none hover:bg-white/5 transition-colors"
+                                                onSelect={handleArchiveConversation}
+                                            >
+                                                <Archive className="w-4 h-4 text-text-faint" />
+                                                Archive
+                                            </DropdownMenu.Item>
+                                            <DropdownMenu.Item
+                                                className="flex items-center gap-2.5 px-3 py-2 text-sm text-white rounded-lg cursor-pointer outline-none hover:bg-white/5 transition-colors"
+                                                onSelect={handlePinConversation}
+                                            >
+                                                <Pin className="w-4 h-4 text-text-faint" />
+                                                {selectedConversation.pinned ? "Unpin" : "Pin"}
+                                            </DropdownMenu.Item>
+                                            <DropdownMenu.Separator className="h-px bg-border my-1" />
+                                            <DropdownMenu.Item
+                                                className="flex items-center gap-2.5 px-3 py-2 text-sm text-red-400 rounded-lg cursor-pointer outline-none hover:bg-red-500/10 transition-colors"
+                                                onSelect={handleDeleteConversation}
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                                Delete
+                                            </DropdownMenu.Item>
+                                        </DropdownMenu.Content>
+                                    </DropdownMenu.Portal>
+                                </DropdownMenu.Root>
                             </div>
 
                             {/* Messages */}

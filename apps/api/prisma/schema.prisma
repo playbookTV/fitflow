@@ -68,6 +68,8 @@ model Client {
   timezone          String    @default("Europe/London")
   preferredChannel  MessageChannel @default(WHATSAPP) @map("preferred_channel")
   monthlyRate       Int?          @map("monthly_rate")
+  conversationPinned   Boolean   @default(false) @map("conversation_pinned")
+  conversationArchived Boolean   @default(false) @map("conversation_archived")
 
   assignments       PlanAssignment[]
   mealAssignments   MealAssignment[]
@@ -310,6 +312,7 @@ model Lead {
   channelTag      MessageChannel  @map("channel_tag")
   source          String?
   intakeData      Json?           @map("intake_data")
+  intakeToken     String?         @unique @map("intake_token")
   status          LeadStatus      @default(NEW)
   messages        Message[]
   createdAt       DateTime        @default(now()) @map("created_at")
