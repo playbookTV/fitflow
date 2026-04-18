@@ -13,6 +13,7 @@ import {
 import { cn, formatRelative } from "@/lib/utils";
 import { formatTime } from "@/lib/tokens";
 import { getAuthHeaders } from "@/lib/auth";
+import { useToast } from "@/components/ui/Toast";
 
 interface IntakeData {
     step?: string;
@@ -76,6 +77,7 @@ const getAvatarGradient = (name: string) => {
 };
 
 export default function LeadsPage() {
+    const { toast } = useToast();
     const [leads, setLeads] = useState<Lead[]>([]);
     const [loading, setLoading] = useState(true);
     const [statusFilter, setStatusFilter] = useState<string>("ALL");
@@ -96,13 +98,28 @@ export default function LeadsPage() {
             const res = await fetch(url, {
                 headers: await getAuthHeaders(),
             });
-            if (res.ok) setLeads(await res.json());
+            if (res.ok) {
+                setLeads(await res.json());
+            } else {
+                toast({
+                    variant: "error",
+                    title: "Failed to load leads",
+                    description: res.status === 401
+                        ? "Please sign in again."
+                        : "Something went wrong. Please try again.",
+                });
+            }
         } catch (error) {
             console.error("Failed to fetch leads:", error);
+            toast({
+                variant: "error",
+                title: "Failed to load leads",
+                description: "Could not reach the server. Check your connection.",
+            });
         } finally {
             setLoading(false);
         }
-    }, [statusFilter]);
+    }, [statusFilter, toast]);
 
     useEffect(() => { fetchLeads(); }, [fetchLeads]);
 
