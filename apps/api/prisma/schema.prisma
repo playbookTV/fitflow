@@ -465,7 +465,7 @@ model Subscription {
   stripeSubscriptionId String             @unique @map("stripe_subscription_id")
   stripePriceId        String             @map("stripe_price_id")
   tier                 SubscriptionTier   @default(STARTER)
-  billingInterval      BillingInterval    @default(MONTHLY)
+  billingInterval      BillingInterval    @default(MONTHLY) @map("billing_interval")
   status               SubscriptionStatus @default(TRIALING)
   currentPeriodStart   DateTime           @map("current_period_start")
   currentPeriodEnd     DateTime           @map("current_period_end")

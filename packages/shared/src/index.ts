@@ -3,7 +3,6 @@ export {
     type SendResult,
     type CheckInPrompt,
     type WorkoutPayload,
-    type MealPayload,
     type OnboardingPayload,
     type VideoPayload,
     type DeliveryChannel,

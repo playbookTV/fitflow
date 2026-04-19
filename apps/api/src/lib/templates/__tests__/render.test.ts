@@ -36,9 +36,14 @@ function makeTestContext(id: TemplateId): Record<string, any> {
         instructions: "Hinge at the hips, keep a neutral spine.",
         // Meal template context
         day_number: 3,
+        day_title: "High Carb Day",
         plan_title: "High Protein Cut",
-        meals_list: "Breakfast: Oats & Protein\nLunch: Chicken & Rice\nDinner: Salmon & Veg",
-        macros_summary: "Calories: 2100 | Protein: 180g | Carbs: 200g | Fat: 60g",
+        meals_list: "*Breakfast*\n  Oats & Protein \u2014 400 cal\n\n*Lunch*\n  Chicken & Rice \u2014 550 cal",
+        protein: 180,
+        carbs: 200,
+        fat: 60,
+        calories: 2100,
+        total_prep_time: "~35 min",
     };
 
     return base;
@@ -99,6 +104,27 @@ describe("Template Render System", () => {
             const ctx = makeTestContext(TemplateId.WORKOUT_REST_DAY);
             const result = renderTemplate(TemplateId.WORKOUT_REST_DAY, "whatsapp", ctx);
             expect(result.text).toContain("Alex");
+        });
+
+        it("workout_daily should include buttons", () => {
+            const ctx = makeTestContext(TemplateId.WORKOUT_DAILY);
+            const result = renderTemplate(TemplateId.WORKOUT_DAILY, "whatsapp", ctx);
+            expect(result.buttons).toBeDefined();
+            expect(result.buttons!.length).toBeGreaterThan(0);
+        });
+
+        it("meal_daily should include buttons", () => {
+            const ctx = makeTestContext(TemplateId.MEAL_DAILY);
+            const result = renderTemplate(TemplateId.MEAL_DAILY, "whatsapp", ctx);
+            expect(result.buttons).toBeDefined();
+            expect(result.buttons![0].length).toBe(2);
+        });
+
+        it("checkin_weekly_prompt should include Start Check-in button", () => {
+            const ctx = makeTestContext(TemplateId.CHECKIN_WEEKLY_PROMPT);
+            const result = renderTemplate(TemplateId.CHECKIN_WEEKLY_PROMPT, "whatsapp", ctx);
+            expect(result.buttons).toBeDefined();
+            expect(result.buttons![0][0].text).toContain("Start Check-in");
         });
     });
 });

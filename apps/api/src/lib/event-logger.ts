@@ -82,6 +82,12 @@ export const EventType = {
     SUBSCRIPTION_PAYMENT_FAILED: "subscription.payment_failed",
     SUBSCRIPTION_TRIAL_ENDING: "subscription.trial_ending",
 
+    // Message delivery
+    MESSAGE_DELIVERED: "message.delivered",
+    MESSAGE_READ: "message.read",
+    MESSAGE_FAILED: "message.failed",
+    MESSAGE_WINDOW_CLOSED: "message.window_closed",
+
     // AI features
     AI_PLAN_GENERATED: "ai.plan_generated",
     RISK_SCORE_COMPUTED: "risk.score_computed",

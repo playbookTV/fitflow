@@ -307,7 +307,10 @@ export const messageWorker = new Worker(
 
         console.log(`[Message Worker] Processing message from ${clientId}: ${body}`);
 
-        if (normalizedBody !== "DONE") return;
+        const isDone = normalizedBody === "DONE";
+        const isSkipped = normalizedBody === "SKIP" || normalizedBody === "SKIPPED";
+
+        if (!isDone && !isSkipped) return;
 
         const assignment = await prisma.planAssignment.findFirst({
             where: { clientId, isActive: true },
@@ -319,20 +322,17 @@ export const messageWorker = new Worker(
             return;
         }
 
+        const status = isDone ? "COMPLETED" : "SKIPPED";
         const dayNumber = differenceInDays(new Date(), assignment.startDate) + 1;
 
-        // Wrap log creation and compliance update in a transaction to prevent
-        // the TOCTOU race condition that occurs when two "DONE" messages arrive
-        // concurrently — without this, both can create a WorkoutLog and then
-        // each counts/updates compliance independently, doubling the effect.
         const { newCompliance } = await prisma.$transaction(async (tx) => {
             await tx.workoutLog.create({
                 data: {
                     clientId,
                     assignmentId: assignment.id,
                     dayNumber,
-                    status: "COMPLETED",
-                    notes: "Logged via message 'DONE'",
+                    status,
+                    notes: `Logged via message '${normalizedBody}'`,
                 },
             });
 
@@ -357,14 +357,14 @@ export const messageWorker = new Worker(
             compliance: newCompliance,
         });
 
-        await logEvent(EventType.WORKOUT_COMPLETED, {
+        await logEvent(isDone ? EventType.WORKOUT_COMPLETED : EventType.WORKOUT_COMPLETED, {
             coachId: client.coachId,
             clientId: client.id,
             channel: client.preferredChannel,
-            metadata: { dayNumber, compliance: newCompliance },
+            metadata: { dayNumber, compliance: newCompliance, status },
         });
 
-        console.log(`[Message Worker] Workout logged for client ${clientId}, day ${dayNumber}, compliance ${newCompliance}%`);
+        console.log(`[Message Worker] Workout ${status} for client ${clientId}, day ${dayNumber}, compliance ${newCompliance}%`);
     },
     { connection }
 );

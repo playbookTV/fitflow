@@ -71,9 +71,9 @@ describe.skipIf(!META_TOKEN)("Meta Graph API Contract Tests", () => {
             expect(payload.name).toMatch(/^[a-z0-9_]+$/);
             expect(payload.language).toBe("en");
             expect(["UTILITY", "MARKETING"]).toContain(payload.category);
-            expect(payload.components).toHaveLength(1);
-            expect(payload.components[0].type).toBe("BODY");
-            expect(payload.components[0].text.length).toBeGreaterThan(0);
+            const bodyComponent = payload.components.find((c: any) => c.type === "BODY");
+            expect(bodyComponent).toBeDefined();
+            expect(bodyComponent!.text.length).toBeGreaterThan(0);
         }
     });
 

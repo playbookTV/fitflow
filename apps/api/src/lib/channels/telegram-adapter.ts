@@ -3,7 +3,6 @@ import {
     SendResult,
     CheckInPrompt,
     WorkoutPayload,
-    MealPayload,
     OnboardingPayload,
     VideoPayload,
     TemplateId,
@@ -134,25 +133,6 @@ export class TelegramAdapter implements DeliveryChannel {
             return { success: true, messageId: String(result.message_id) };
         } catch (error: any) {
             return { success: false, error: error.message || "Failed to send Telegram onboarding" };
-        }
-    }
-
-    async sendMeal(recipientId: string, data: MealPayload): Promise<SendResult> {
-        const text = `\u{1F37D}\u{FE0F} *Today's Meal Plan*\n\nPlan: *${escapeMarkdownV2(data.planTitle)}*\nDay: ${data.dayNumber}\n\n${escapeMarkdownV2(data.mealsList)}\n\n\u{1F4CA} ${escapeMarkdownV2(data.macrosSummary)}`;
-        const buttons = [
-            [
-                { text: "\u{2705} Done", callback_data: `meal_done_${data.clientId}` },
-                { text: "\u{23ED} Skipped", callback_data: `meal_skip_${data.clientId}` },
-            ],
-        ];
-
-        try {
-            const result = await sendTelegramInlineKeyboard(
-                this.botToken, recipientId, this.brandText(text, "MarkdownV2"), buttons
-            );
-            return { success: true, messageId: String(result.message_id) };
-        } catch (error: any) {
-            return { success: false, error: error.message || "Failed to send Telegram meal" };
         }
     }
 

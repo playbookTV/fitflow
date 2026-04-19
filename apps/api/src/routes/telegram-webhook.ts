@@ -1,7 +1,9 @@
 import { Router } from "express";
 import { MessageChannel, MessageDirection } from "@prisma/client";
+import { TemplateId } from "@fitflow/shared";
 import { prisma } from "../lib/prisma";
 import { answerCallbackQuery, sendTelegramMessage } from "../lib/telegram";
+import { getChannel, getRecipientId } from "../lib/channels/channel-router";
 import { messageQueue } from "../lib/queue";
 import { getSharedBotToken } from "../lib/bot-provisioner";
 import {
@@ -110,7 +112,8 @@ router.post("/", async (req, res) => {
                         },
                     });
                 }
-            } else if (data.startsWith("meal_done_")) {
+            } else if (data.startsWith("meal_done_") || data.startsWith("meal_skip_")) {
+                const isCompleted = data.startsWith("meal_done_");
                 const mealAssignment = await prisma.mealAssignment.findFirst({
                     where: { clientId: client.id, isActive: true },
                 });
@@ -122,29 +125,32 @@ router.post("/", async (req, res) => {
                             clientId: client.id,
                             assignmentId: mealAssignment.id,
                             dayNumber,
-                            status: "COMPLETED",
-                            notes: "Completed via Telegram",
+                            status: isCompleted ? "COMPLETED" : "SKIPPED",
+                            notes: isCompleted ? "Completed via Telegram" : "Skipped via Telegram",
                         },
                     });
-                    await sendTelegramMessage(botToken, chatId, "\u{2705} Meal logged as done!");
-                }
-            } else if (data.startsWith("meal_skip_")) {
-                const mealAssignment = await prisma.mealAssignment.findFirst({
-                    where: { clientId: client.id, isActive: true },
-                });
-                if (mealAssignment) {
-                    const { differenceInDays } = await import("date-fns");
-                    const dayNumber = differenceInDays(new Date(), mealAssignment.startDate) + 1;
-                    await prisma.mealLog.create({
-                        data: {
-                            clientId: client.id,
-                            assignmentId: mealAssignment.id,
-                            dayNumber,
-                            status: "SKIPPED",
-                            notes: "Skipped via Telegram",
-                        },
+
+                    // Compute compliance and send confirmation via template
+                    const totalLogs = await prisma.mealLog.count({
+                        where: { assignmentId: mealAssignment.id },
                     });
-                    await sendTelegramMessage(botToken, chatId, "\u{23ED} Meal skipped. No worries!");
+                    const completedLogs = await prisma.mealLog.count({
+                        where: { assignmentId: mealAssignment.id, status: "COMPLETED" },
+                    });
+                    const compliance = totalLogs > 0 ? Math.round((completedLogs / totalLogs) * 100) : 100;
+
+                    await prisma.mealAssignment.update({
+                        where: { id: mealAssignment.id },
+                        data: { compliance },
+                    });
+
+                    const channel = await getChannel(client.preferredChannel, client.coachId);
+                    const recipientId = getRecipientId(client);
+                    await channel.sendTemplate(recipientId, TemplateId.MEAL_LOGGED_CONFIRMATION, {
+                        day_number: dayNumber,
+                        client_first_name: client.name.split(" ")[0],
+                        compliance,
+                    }, client.id);
                 }
             } else if (data.startsWith("checkin_start_")) {
                 await sendTelegramMessage(

@@ -35,7 +35,7 @@ describe("Meta Template Definitions", () => {
         }
     });
 
-    it("all languages should be 'en'", () => {
+    it("all languages should be 'en_US'", () => {
         for (const id of allTemplateIds) {
             expect(META_TEMPLATES[id].language).toBe("en");
         }
@@ -48,9 +48,9 @@ describe("buildCreatePayload", () => {
         expect(payload.name).toBeTruthy();
         expect(payload.language).toBe("en");
         expect(["UTILITY", "MARKETING"]).toContain(payload.category);
-        expect(payload.components).toHaveLength(1);
-        expect(payload.components[0].type).toBe("BODY");
-        expect(payload.components[0].text).toBeTruthy();
+        const bodyComponent = payload.components.find((c: any) => c.type === "BODY");
+        expect(bodyComponent).toBeDefined();
+        expect(bodyComponent!.text).toBeTruthy();
     });
 });
 
@@ -82,19 +82,24 @@ describe("buildSendPayload", () => {
         reps: "10-12",
         instructions: "Hinge at the hips.",
         day_number: 3,
+        day_title: "High Carb Day",
         plan_title: "High Protein Cut",
-        meals_list: "Breakfast: Oats",
-        macros_summary: "Calories: 2100",
+        meals_list: "*Breakfast*\n  Oats & Protein — 400 cal",
+        protein: 180,
+        carbs: 200,
+        fat: 60,
+        calories: 2100,
+        total_prep_time: "~35 min",
     };
 
     it.each(Object.values(TemplateId))("builds valid send payload for %s", (id) => {
         const payload = buildSendPayload(id, baseContext);
         expect(payload.name).toBeTruthy();
         expect(payload.language).toEqual({ code: "en" });
-        expect(payload.components).toHaveLength(1);
-        expect(payload.components[0].type).toBe("body");
+        const bodyComponent = payload.components.find((c: any) => c.type === "body");
+        expect(bodyComponent).toBeDefined();
 
-        const params = payload.components[0].parameters;
+        const params = bodyComponent!.parameters;
         expect(Array.isArray(params)).toBe(true);
         expect(params.length).toBe(META_TEMPLATES[id].paramKeys.length);
 
@@ -107,8 +112,59 @@ describe("buildSendPayload", () => {
 
     it("exercise_video payload should build details from context", () => {
         const payload = buildSendPayload(TemplateId.EXERCISE_VIDEO, baseContext);
-        const detailsParam = payload.components[0].parameters[1]; // _exercise_details
+        const bodyComponent = payload.components.find((c: any) => c.type === "body")!;
+        const detailsParam = bodyComponent.parameters![1]; // _exercise_details
         expect(detailsParam.text).toContain("Hamstrings & Glutes");
         expect(detailsParam.text).toContain("4");
+    });
+});
+
+describe("Quick Reply Buttons", () => {
+    const templatesWithButtons = Object.values(TemplateId).filter(
+        (id) => META_TEMPLATES[id].quickReplyButtons
+    );
+
+    it("should have buttons on workout, meal, and checkin templates", () => {
+        expect(META_TEMPLATES[TemplateId.WORKOUT_DAILY].quickReplyButtons).toBeDefined();
+        expect(META_TEMPLATES[TemplateId.MEAL_DAILY].quickReplyButtons).toBeDefined();
+        expect(META_TEMPLATES[TemplateId.CHECKIN_WEEKLY_PROMPT].quickReplyButtons).toBeDefined();
+        expect(META_TEMPLATES[TemplateId.CHECKIN_MISSED_NUDGE].quickReplyButtons).toBeDefined();
+        expect(META_TEMPLATES[TemplateId.MEAL_MISSED_NUDGE].quickReplyButtons).toBeDefined();
+    });
+
+    it("should have at most 3 buttons per template", () => {
+        for (const id of templatesWithButtons) {
+            expect(META_TEMPLATES[id].quickReplyButtons!.length).toBeLessThanOrEqual(3);
+        }
+    });
+
+    it("each button label should be at most 25 characters", () => {
+        for (const id of templatesWithButtons) {
+            for (const label of META_TEMPLATES[id].quickReplyButtons!) {
+                expect(label.length).toBeLessThanOrEqual(25);
+            }
+        }
+    });
+
+    it.each(templatesWithButtons)("buildCreatePayload includes BUTTONS component for %s", (id) => {
+        const payload = buildCreatePayload(id);
+        const buttonsComponent = payload.components.find((c: any) => c.type === "BUTTONS");
+        expect(buttonsComponent).toBeDefined();
+        expect(buttonsComponent.buttons.length).toBe(META_TEMPLATES[id].quickReplyButtons!.length);
+        for (const btn of buttonsComponent.buttons) {
+            expect(btn.type).toBe("QUICK_REPLY");
+            expect(btn.text).toBeTruthy();
+        }
+    });
+
+    it.each(templatesWithButtons)("buildSendPayload includes button components for %s", (id) => {
+        const payload = buildSendPayload(id, {});
+        const buttonComponents = payload.components.filter((c: any) => c.type === "button");
+        expect(buttonComponents.length).toBe(META_TEMPLATES[id].quickReplyButtons!.length);
+        for (const comp of buttonComponents) {
+            expect(comp.sub_type).toBe("quick_reply");
+            expect(comp.parameters[0].type).toBe("payload");
+            expect(comp.parameters[0].payload).toContain(id);
+        }
     });
 });

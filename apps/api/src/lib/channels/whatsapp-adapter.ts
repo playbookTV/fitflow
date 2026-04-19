@@ -3,13 +3,13 @@ import {
     SendResult,
     CheckInPrompt,
     WorkoutPayload,
-    MealPayload,
     OnboardingPayload,
     VideoPayload,
     TemplateId,
 } from "@fitflow/shared";
-import { sendWhatsAppMessage, sendWhatsAppVideo } from "../meta";
-import { buildSendPayload } from "../templates/meta-templates";
+import { sendWhatsAppMessage, sendWhatsAppVideo, MetaApiError } from "../meta";
+import { buildSendPayload, getTemplateCategory } from "../templates/meta-templates";
+import { isWindowOpen } from "./window-check";
 
 /**
  * WhatsApp adapter implementing the DeliveryChannel interface.
@@ -24,6 +24,19 @@ export class WhatsAppAdapter implements DeliveryChannel {
     }
 
     async sendMessage(recipientId: string, content: string, clientId?: string): Promise<SendResult> {
+        // Free-form text messages require an open 24-hour window.
+        // Check proactively to give callers a clear signal before hitting Meta.
+        if (clientId) {
+            const windowOpen = await isWindowOpen(clientId);
+            if (!windowOpen) {
+                console.warn(`[WhatsApp] 24h window closed for client ${clientId} — free-form message blocked`);
+                return {
+                    success: false,
+                    error: "24-hour customer service window is closed. Use an approved template instead.",
+                };
+            }
+        }
+
         try {
             const result = await sendWhatsAppMessage(recipientId, this.brandText(content), clientId);
             return {
@@ -39,6 +52,23 @@ export class WhatsAppAdapter implements DeliveryChannel {
     }
 
     async sendTemplate(recipientId: string, templateId: TemplateId, context: Record<string, any>, clientId?: string): Promise<SendResult> {
+        const category = getTemplateCategory(templateId);
+
+        // UTILITY templates require an open 24-hour window.
+        // MARKETING templates can be sent at any time (they're pre-approved for out-of-window delivery).
+        if (category === "UTILITY" && clientId) {
+            const windowOpen = await isWindowOpen(clientId);
+            if (!windowOpen) {
+                console.warn(
+                    `[WhatsApp] 24h window closed for client ${clientId} — UTILITY template ${templateId} blocked`
+                );
+                return {
+                    success: false,
+                    error: `24-hour window closed. Cannot send UTILITY template ${templateId} outside the customer service window.`,
+                };
+            }
+        }
+
         try {
             const templatePayload = buildSendPayload(templateId, context);
             const result = await sendWhatsAppMessage(recipientId, templatePayload, clientId);
@@ -47,6 +77,17 @@ export class WhatsAppAdapter implements DeliveryChannel {
                 messageId: result.messages?.[0]?.id,
             };
         } catch (error: any) {
+            const metaError = error instanceof MetaApiError ? error : null;
+
+            // Surface a specific message for 24-hour window errors that slipped past the pre-check
+            // (e.g. window closed between check and send, or clientId wasn't provided for pre-check)
+            if (metaError?.isWindowClosed) {
+                return {
+                    success: false,
+                    error: `24-hour window closed for recipient. Template ${templateId} (${category}) was rejected by Meta.`,
+                };
+            }
+
             return {
                 success: false,
                 error: error.message || `Failed to send WhatsApp template ${templateId}`,
@@ -66,11 +107,6 @@ export class WhatsAppAdapter implements DeliveryChannel {
 
     async sendOnboarding(recipientId: string, data: OnboardingPayload): Promise<SendResult> {
         const message = `\u{1F44B} *Welcome to FitFlow!*\n\nHey ${data.clientName}! To get started, I need to collect some info about your goals and fitness level.\n\nClick here to fill your intake form: ${data.intakeFormUrl}\n\nOnce done, your coach will assign your first plan! \u{1F680}`;
-        return this.sendMessage(recipientId, message, data.clientId);
-    }
-
-    async sendMeal(recipientId: string, data: MealPayload): Promise<SendResult> {
-        const message = `\u{1F37D}\u{FE0F} *Today's Meal Plan*\n\nPlan: *${data.planTitle}*\nDay: ${data.dayNumber}\n\n${data.mealsList}\n\n\u{1F4CA} ${data.macrosSummary}\n\nView details: ${data.dashboardUrl}`;
         return this.sendMessage(recipientId, message, data.clientId);
     }
 

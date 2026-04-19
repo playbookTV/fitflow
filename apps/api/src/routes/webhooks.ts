@@ -1,10 +1,14 @@
 import crypto from "node:crypto";
 import { Router } from "express";
-import { MessageChannel, MessageDirection } from "@prisma/client";
+import { MessageChannel, MessageDirection, WorkoutStatus, MealStatus } from "@prisma/client";
+import { TemplateId } from "@fitflow/shared";
 import { messageQueue } from "../lib/queue";
 import { prisma } from "../lib/prisma";
 import { routeCoachCommand } from "../handlers/coachCommandRouter";
-import { sendWhatsAppMessage } from "../lib/meta";
+import { sendWhatsAppMessage, sendCheckinFlow, MetaErrorCode } from "../lib/meta";
+import { logEvent, EventType } from "../lib/event-logger";
+import { getChannel, getRecipientId } from "../lib/channels/channel-router";
+import { differenceInDays } from "date-fns";
 
 const router: Router = Router();
 
@@ -150,6 +154,135 @@ async function handleWorkoutLogFlowResponse(clientId: string, data: FlowResponse
     return workoutLog;
 }
 
+// ═══════════════════════════════════════════════════════════════
+// QUICK REPLY BUTTON HANDLERS
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * Resolves a Quick Reply button payload (e.g., "workout.daily:0") to an action string.
+ * The payload format is `${templateId}:${buttonIndex}`.
+ */
+function resolveButtonAction(payload: string): { templateId: string; buttonLabel: string } | null {
+    const colonIdx = payload.lastIndexOf(":");
+    if (colonIdx === -1) return null;
+
+    const templateId = payload.slice(0, colonIdx);
+    const buttonIndex = Number.parseInt(payload.slice(colonIdx + 1), 10);
+
+    const { META_TEMPLATES } = require("../lib/templates/meta-templates");
+    const def = META_TEMPLATES[templateId];
+    if (!def?.quickReplyButtons?.[buttonIndex]) return null;
+
+    return { templateId, buttonLabel: def.quickReplyButtons[buttonIndex] };
+}
+
+async function handleWorkoutButtonReply(client: any, buttonLabel: string) {
+    const statusMap: Record<string, WorkoutStatus> = {
+        "✅ Done": WorkoutStatus.COMPLETED,
+        "⏭ Skipped": WorkoutStatus.SKIPPED,
+        "🔄 Modified": WorkoutStatus.MODIFIED,
+    };
+    const status = statusMap[buttonLabel];
+    if (!status) return;
+
+    const assignment = await prisma.planAssignment.findFirst({
+        where: { clientId: client.id, isActive: true },
+    });
+    if (!assignment) return;
+
+    const dayNumber = differenceInDays(new Date(), assignment.startDate) + 1;
+
+    const { newCompliance } = await prisma.$transaction(async (tx) => {
+        await tx.workoutLog.create({
+            data: {
+                clientId: client.id,
+                assignmentId: assignment.id,
+                dayNumber,
+                status,
+                notes: `${buttonLabel} via WhatsApp button`,
+            },
+        });
+
+        const count = await tx.workoutLog.count({ where: { assignmentId: assignment.id } });
+        const compliance = Math.min(100, Math.round((count / Math.max(dayNumber, 1)) * 100));
+
+        await tx.planAssignment.update({
+            where: { id: assignment.id },
+            data: { compliance },
+        });
+
+        return { newCompliance: compliance };
+    });
+
+    const channel = await getChannel(client.preferredChannel, client.coachId);
+    const recipientId = getRecipientId(client);
+
+    await channel.sendTemplate(recipientId, TemplateId.WORKOUT_LOGGED_CONFIRMATION, {
+        client_first_name: client.name.split(" ")[0],
+        workout_day_number: dayNumber,
+        compliance: newCompliance,
+    }, client.id);
+
+    await logEvent(EventType.WORKOUT_COMPLETED, {
+        coachId: client.coachId,
+        clientId: client.id,
+        channel: MessageChannel.WHATSAPP,
+        metadata: { dayNumber, compliance: newCompliance, source: "whatsapp_button" },
+    });
+}
+
+async function handleMealButtonReply(client: any, buttonLabel: string) {
+    const isCompleted = buttonLabel === "✅ Done";
+    const isSkipped = buttonLabel === "⏭ Skipped";
+    if (!isCompleted && !isSkipped) return;
+
+    const mealAssignment = await prisma.mealAssignment.findFirst({
+        where: { clientId: client.id, isActive: true },
+    });
+    if (!mealAssignment) return;
+
+    const dayNumber = differenceInDays(new Date(), mealAssignment.startDate) + 1;
+
+    await prisma.mealLog.create({
+        data: {
+            clientId: client.id,
+            assignmentId: mealAssignment.id,
+            dayNumber,
+            status: isCompleted ? MealStatus.COMPLETED : MealStatus.SKIPPED,
+            notes: `${buttonLabel} via WhatsApp button`,
+        },
+    });
+
+    const totalLogs = await prisma.mealLog.count({ where: { assignmentId: mealAssignment.id } });
+    const completedLogs = await prisma.mealLog.count({
+        where: { assignmentId: mealAssignment.id, status: "COMPLETED" },
+    });
+    const compliance = totalLogs > 0 ? Math.round((completedLogs / totalLogs) * 100) : 100;
+
+    await prisma.mealAssignment.update({
+        where: { id: mealAssignment.id },
+        data: { compliance },
+    });
+
+    const channel = await getChannel(client.preferredChannel, client.coachId);
+    const recipientId = getRecipientId(client);
+
+    await channel.sendTemplate(recipientId, TemplateId.MEAL_LOGGED_CONFIRMATION, {
+        day_number: dayNumber,
+        client_first_name: client.name.split(" ")[0],
+        compliance,
+    }, client.id);
+}
+
+async function handleCheckinButtonReply(client: any) {
+    const flowId = process.env.WA_CHECKIN_FLOW_ID;
+    if (!flowId) {
+        console.warn("[Webhook] WA_CHECKIN_FLOW_ID not set — cannot send check-in flow");
+        return;
+    }
+    await sendCheckinFlow(client.phone, flowId, client.id);
+}
+
 // GET /webhooks - Meta Webhook Verification
 router.get("/", (req, res) => {
     const mode = req.query["hub.mode"];
@@ -194,7 +327,59 @@ router.post("/", async (req, res) => {
     if (body.object === "whatsapp_business_account") {
         const changes = body.entry?.[0]?.changes?.[0]?.value;
         const messages = changes?.messages;
+        const statuses = changes?.statuses;
 
+        // ── Process delivery status callbacks ────────────────────
+        if (statuses) {
+            for (const status of statuses) {
+                try {
+                    const metaMessageId = status.id;
+                    const statusValue: string = status.status; // sent | delivered | read | failed
+                    const errorCodes: number[] = (status.errors ?? []).map((e: any) => e.code);
+                    const errorTitles: string[] = (status.errors ?? []).map((e: any) => e.title);
+
+                    // Update the Message record if it exists
+                    const message = metaMessageId
+                        ? await prisma.message.findUnique({ where: { metaMessageId } })
+                        : null;
+
+                    if (message) {
+                        await prisma.message.update({
+                            where: { metaMessageId },
+                            data: { status: statusValue },
+                        });
+                    }
+
+                    // Log specific failure events
+                    if (statusValue === "failed") {
+                        const isWindowClosed = errorCodes.includes(MetaErrorCode.REENGAGEMENT_MESSAGE);
+
+                        await logEvent(
+                            isWindowClosed ? EventType.MESSAGE_WINDOW_CLOSED : EventType.MESSAGE_FAILED,
+                            {
+                                clientId: message?.clientId ?? undefined,
+                                channel: MessageChannel.WHATSAPP,
+                                metadata: {
+                                    metaMessageId,
+                                    recipientId: status.recipient_id,
+                                    errorCodes,
+                                    errorTitles,
+                                },
+                            },
+                        );
+
+                        console.warn(
+                            `[Webhook] Message ${metaMessageId} failed:`,
+                            isWindowClosed ? "24-hour window closed" : errorTitles.join(", "),
+                        );
+                    }
+                } catch (statusError) {
+                    console.error(`[Webhook] Error processing status ${status.id}:`, statusError);
+                }
+            }
+        }
+
+        // ── Process inbound messages ─────────────────────────────
         if (messages) {
             for (const msg of messages) {
                 // Each message is processed independently so a failure on one doesn't
@@ -221,6 +406,39 @@ router.post("/", async (req, res) => {
                             }
                         } else {
                             console.log(`[Webhook] Unknown sender: ${msg.from}`);
+                        }
+                        continue;
+                    }
+
+                    // Handle Quick Reply button responses
+                    if (msg.type === "interactive" && msg.interactive?.type === "button_reply") {
+                        const buttonReply = msg.interactive.button_reply;
+                        const payload: string = buttonReply.id || "";
+
+                        await prisma.message.create({
+                            data: {
+                                clientId: client.id,
+                                channel: MessageChannel.WHATSAPP,
+                                direction: MessageDirection.INBOUND,
+                                content: `[Button] ${buttonReply.title || payload}`,
+                                metaMessageId: msg.id,
+                                status: "received",
+                            },
+                        });
+
+                        const action = resolveButtonAction(payload);
+                        if (action) {
+                            console.log(`[Webhook] Button reply: ${action.templateId} → ${action.buttonLabel}`);
+
+                            if (action.templateId === TemplateId.WORKOUT_DAILY) {
+                                await handleWorkoutButtonReply(client, action.buttonLabel);
+                            } else if (action.templateId === TemplateId.MEAL_DAILY || action.templateId === TemplateId.MEAL_MISSED_NUDGE) {
+                                await handleMealButtonReply(client, action.buttonLabel);
+                            } else if (action.templateId === TemplateId.CHECKIN_WEEKLY_PROMPT || action.templateId === TemplateId.CHECKIN_MISSED_NUDGE) {
+                                await handleCheckinButtonReply(client);
+                            }
+                        } else {
+                            console.warn(`[Webhook] Unknown button payload: ${payload}`);
                         }
                         continue;
                     }

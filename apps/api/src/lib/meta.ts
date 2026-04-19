@@ -9,6 +9,52 @@ const WA_BUSINESS_ACCOUNT_ID = process.env.META_WHATSAPP_BUSINESS_ACCOUNT_ID;
 const VERSION = "v22.0";
 
 // ═══════════════════════════════════════════════════════════════
+// META API ERROR HANDLING
+// ═══════════════════════════════════════════════════════════════
+
+/** Error codes from Meta Cloud API that we handle specifically. */
+export const MetaErrorCode = {
+    /** Message sent outside the 24-hour customer service window without an approved template. */
+    REENGAGEMENT_MESSAGE: 131047,
+    /** Rate limit hit. */
+    RATE_LIMIT: 130429,
+    /** Recipient phone number not on WhatsApp. */
+    RECIPIENT_NOT_ON_WHATSAPP: 131026,
+} as const;
+
+/**
+ * Structured error thrown when the Meta Cloud API returns an error response.
+ * Preserves the numeric error code so callers can branch on specific failures.
+ */
+export class MetaApiError extends Error {
+    constructor(
+        message: string,
+        public readonly code: number,
+        public readonly subcode?: number,
+        public readonly fbtraceId?: string,
+    ) {
+        super(message);
+        this.name = "MetaApiError";
+    }
+
+    /** True when the 24-hour customer service window has closed for this recipient. */
+    get isWindowClosed(): boolean {
+        return this.code === MetaErrorCode.REENGAGEMENT_MESSAGE;
+    }
+
+    static fromAxiosError(error: any): MetaApiError | null {
+        const data = error?.response?.data?.error;
+        if (!data?.code) return null;
+        return new MetaApiError(
+            data.message || data.error_user_msg || error.message,
+            data.code,
+            data.error_subcode,
+            data.fbtrace_id,
+        );
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════
 // WHATSAPP FLOWS API
 // ═══════════════════════════════════════════════════════════════
 
@@ -329,6 +375,8 @@ export const sendWhatsAppMessage = async (to: string, bodyOrTemplate: string | o
         data.template = bodyOrTemplate;
     }
 
+    const content = typeof bodyOrTemplate === "string" ? bodyOrTemplate : JSON.stringify(bodyOrTemplate);
+
     try {
         const response = await axios.post(url, data, {
             headers: { Authorization: `Bearer ${WA_ACCESS_TOKEN}` },
@@ -342,7 +390,7 @@ export const sendWhatsAppMessage = async (to: string, bodyOrTemplate: string | o
                     clientId,
                     channel: MessageChannel.WHATSAPP,
                     direction: MessageDirection.OUTBOUND,
-                    content: typeof bodyOrTemplate === "string" ? bodyOrTemplate : JSON.stringify(bodyOrTemplate),
+                    content,
                     metaMessageId: result.messages[0].id,
                     status: "sent",
                 },
@@ -352,6 +400,27 @@ export const sendWhatsAppMessage = async (to: string, bodyOrTemplate: string | o
         return result;
     } catch (error: any) {
         console.error("[WA API Error]", error.response?.data || error.message);
+
+        // Record the failed message so it's visible in the conversation history
+        if (clientId) {
+            const metaError = MetaApiError.fromAxiosError(error);
+            const errorDetail = metaError
+                ? `[FAILED:${metaError.code}] ${metaError.message}`
+                : `[FAILED] ${error.message}`;
+            await prisma.message.create({
+                data: {
+                    clientId,
+                    channel: MessageChannel.WHATSAPP,
+                    direction: MessageDirection.OUTBOUND,
+                    content: `${errorDetail}\n---\n${content}`,
+                    status: "failed",
+                },
+            }).catch((dbErr) => console.error("[WA API] Failed to record failed message:", dbErr));
+        }
+
+        // Throw a structured MetaApiError when possible so callers can branch on error code
+        const metaError = MetaApiError.fromAxiosError(error);
+        if (metaError) throw metaError;
         throw error;
     }
 };

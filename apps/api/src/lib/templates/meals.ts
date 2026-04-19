@@ -9,36 +9,78 @@ import {
 import { escapeMarkdownV2 as esc } from "./escape";
 import { registerTemplate } from "./registry";
 
+function formatCalories(cal: number): string {
+    return cal >= 1000 ? cal.toLocaleString("en-US") : String(cal);
+}
+
 const mealDaily: TemplateDefinition<MealDailyContext> = {
     id: TemplateId.MEAL_DAILY,
-    description: "Daily meal plan delivery with meals list and macros summary",
+    description: "Daily meal plan delivery with grouped meals and macro breakdown",
     channels: {
         telegram: {
-            render: (ctx) => ({
-                text:
-                    `\u{1F37D}\u{FE0F} *Today's Meal Plan — Day ${ctx.day_number}*\n\n` +
-                    `Plan: *${esc(ctx.plan_title)}*\n\n` +
-                    `${esc(ctx.meals_list)}\n\n` +
-                    `\u{1F4CA} ${esc(ctx.macros_summary)}\n\n` +
-                    `How did it go?`,
-                buttons: [
-                    [
-                        { text: "\u{2705} Done", callback_data: `meal_done_${ctx.day_number}` },
-                        { text: "\u{23ED} Skipped", callback_data: `meal_skip_${ctx.day_number}` },
+            render: (ctx) => {
+                const header = ctx.day_title
+                    ? `*Day ${ctx.day_number} \u2014 ${esc(ctx.day_title)}* \u{1F37D}\u{FE0F}`
+                    : `*Day ${ctx.day_number}* \u{1F37D}\u{FE0F}`;
+
+                const prepLine = ctx.total_prep_time
+                    ? `\n\u{23F1}\u{FE0F} ${esc(ctx.total_prep_time)} total prep\n`
+                    : "";
+
+                return {
+                    text:
+                        `Hey ${esc(ctx.client_first_name)}, here's your plan for today\\.\n\n` +
+                        `${header}\n` +
+                        `${esc(ctx.plan_title)}\n\n` +
+                        `${esc(ctx.meals_list)}\n` +
+                        `${prepLine}\n` +
+                        `\u{1F4CA} *Daily Totals*\n` +
+                        `Protein: ${ctx.protein}g\n` +
+                        `Carbs: ${ctx.carbs}g\n` +
+                        `Fat: ${ctx.fat}g\n` +
+                        `Calories: ${formatCalories(ctx.calories)}\n\n` +
+                        `How did it go?`,
+                    buttons: [
+                        [
+                            { text: "\u{2705} Done", callback_data: `meal_done_${ctx.day_number}` },
+                            { text: "\u{23ED} Skipped", callback_data: `meal_skip_${ctx.day_number}` },
+                        ],
                     ],
-                ],
-                parseMode: "MarkdownV2",
-            }),
+                    parseMode: "MarkdownV2",
+                };
+            },
         },
         whatsapp: {
-            render: (ctx) => ({
-                text:
-                    `\u{1F37D}\u{FE0F} Today's Meal Plan — Day ${ctx.day_number}\n\n` +
-                    `Plan: ${ctx.plan_title}\n\n` +
-                    `${ctx.meals_list}\n\n` +
-                    `\u{1F4CA} ${ctx.macros_summary}\n\n` +
-                    `Hit Done \u{2705} when you've followed today's plan, or Skipped \u{23ED} if you couldn't stick to it.`,
-            }),
+            render: (ctx) => {
+                const header = ctx.day_title
+                    ? `*Day ${ctx.day_number} \u2014 ${ctx.day_title}* \u{1F37D}\u{FE0F}`
+                    : `*Day ${ctx.day_number}* \u{1F37D}\u{FE0F}`;
+
+                const prepLine = ctx.total_prep_time
+                    ? `\n\u{23F1}\u{FE0F} ${ctx.total_prep_time} total prep\n`
+                    : "";
+
+                return {
+                    text:
+                        `Hey ${ctx.client_first_name}, here's your plan for today.\n\n` +
+                        `${header}\n` +
+                        `${ctx.plan_title}\n\n` +
+                        `${ctx.meals_list}\n` +
+                        `${prepLine}\n` +
+                        `\u{1F4CA} *Daily Totals*\n` +
+                        `Protein: ${ctx.protein}g\n` +
+                        `Carbs: ${ctx.carbs}g\n` +
+                        `Fat: ${ctx.fat}g\n` +
+                        `Calories: ${formatCalories(ctx.calories)}\n\n` +
+                        `How did it go?`,
+                    buttons: [
+                        [
+                            { text: "\u{2705} Done", callback_data: `meal_done_${ctx.day_number}` },
+                            { text: "\u{23ED} Skipped", callback_data: `meal_skip_${ctx.day_number}` },
+                        ],
+                    ],
+                };
+            },
         },
     },
 };
@@ -75,7 +117,7 @@ const mealLoggedConfirmation: TemplateDefinition<MealLoggedConfirmationContext> 
             render: (ctx) => ({
                 text:
                     `\u{1F64C} Meal plan logged for Day ${ctx.day_number}\\.\n\n` +
-                    `Nice work, ${esc(ctx.client_first_name)}\\! Consistency with nutrition is where the real results come from\\. Keep it up\\! \u{1F957}`,
+                    `Nice work, ${esc(ctx.client_first_name)}\\! Your meal compliance is now ${ctx.compliance}%\\. Keep it up\\! \u{1F957}`,
                 parseMode: "MarkdownV2",
             }),
         },
@@ -83,7 +125,7 @@ const mealLoggedConfirmation: TemplateDefinition<MealLoggedConfirmationContext> 
             render: (ctx) => ({
                 text:
                     `\u{1F64C} Meal plan logged for Day ${ctx.day_number}.\n\n` +
-                    `Nice work, ${ctx.client_first_name}! Consistency with nutrition is where the real results come from. Keep it up! \u{1F957}`,
+                    `Nice work, ${ctx.client_first_name}! Your meal compliance is now ${ctx.compliance}%. Keep it up! \u{1F957}`,
             }),
         },
     },
@@ -96,16 +138,22 @@ const mealMissedNudge: TemplateDefinition<MealMissedNudgeContext> = {
         telegram: {
             render: (ctx) => ({
                 text:
-                    `Hey ${esc(ctx.client_first_name)}, quick reminder — did you follow yesterday's meal plan?\n\n` +
-                    `Even a rough log helps your coach keep your nutrition on track\\. Just reply Done or Skipped when you get a moment \u{1F447}`,
+                    `Hey ${esc(ctx.client_first_name)}, quick reminder — did you follow yesterday's meal plan? \\(Day ${ctx.day_number}, ${esc(ctx.plan_title)}\\)\n\n` +
+                    `Even a rough log helps your coach keep your nutrition on track\\. Reply Done or Skipped when you get a moment \u{1F447}`,
                 parseMode: "MarkdownV2",
             }),
         },
         whatsapp: {
             render: (ctx) => ({
                 text:
-                    `Hey ${ctx.client_first_name}, quick reminder — did you follow yesterday's meal plan?\n\n` +
-                    `Even a rough log helps your coach keep your nutrition on track. Just reply Done or Skipped when you get a moment \u{1F447}`,
+                    `Hey ${ctx.client_first_name}, quick reminder — did you follow yesterday's meal plan? (Day ${ctx.day_number}, ${ctx.plan_title})\n\n` +
+                    `Even a rough log helps your coach keep your nutrition on track.`,
+                buttons: [
+                    [
+                        { text: "\u{2705} Done", callback_data: `meal_done_${ctx.day_number}` },
+                        { text: "\u{23ED} Skipped", callback_data: `meal_skip_${ctx.day_number}` },
+                    ],
+                ],
             }),
         },
     },

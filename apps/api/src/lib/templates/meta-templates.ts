@@ -18,8 +18,11 @@ export interface MetaTemplateDefinition {
     metaName: string;
     category: "UTILITY" | "MARKETING";
     language: string;
+    headerText?: string;
     bodyText: string;
     paramKeys: string[];
+    /** WhatsApp Quick Reply button labels (max 3, each max 25 chars). */
+    quickReplyButtons?: string[];
 }
 
 /**
@@ -94,14 +97,15 @@ export const META_TEMPLATES: Record<TemplateId, MetaTemplateDefinition> = {
 
     // ── Workout Delivery ─────────────────────────────────────────
     [TemplateId.WORKOUT_DAILY]: {
-        metaName: "fitflow_workout_daily_v2",
+        metaName: "fitflow_workout_daily_v3",
         category: "UTILITY",
         language: "en",
         bodyText:
             "Day {{1}} — {{2}} 💪\n\n" +
             "{{3}}\n\n" +
-            "Hit Done ✅ when you've finished, Skipped ⏭ if you can't make it today, or Modified 🔄 if you changed something.",
+            "How did it go?",
         paramKeys: ["workout_day_number", "workout_name", "exercise_list"],
+        quickReplyButtons: ["✅ Done", "⏭ Skipped", "🔄 Modified"],
     },
     [TemplateId.WORKOUT_REST_DAY]: {
         metaName: "fitflow_workout_rest_day",
@@ -117,6 +121,7 @@ export const META_TEMPLATES: Record<TemplateId, MetaTemplateDefinition> = {
         metaName: "fitflow_workout_week_summary",
         category: "UTILITY",
         language: "en",
+        headerText: "Weekly Summary",
         bodyText:
             "Week {{1}} of {{2}} — done. 📋\n\n" +
             "Here's how you did this week:\n\n" +
@@ -137,13 +142,15 @@ export const META_TEMPLATES: Record<TemplateId, MetaTemplateDefinition> = {
 
     // ── Check-ins ────────────────────────────────────────────────
     [TemplateId.CHECKIN_WEEKLY_PROMPT]: {
-        metaName: "fitflow_checkin_weekly_prompt_v2",
+        metaName: "fitflow_checkin_weekly_prompt_v3",
         category: "UTILITY",
         language: "en",
+        headerText: "Weekly Check-in",
         bodyText:
             "Check-in time, {{1}} 📋\n\n" +
-            "Week {{2}} of {{3}}. Takes 2 minutes — tap below to complete it.",
+            "Week {{2}} of {{3}}. Takes 2 minutes.",
         paramKeys: ["client_first_name", "programme_week", "total_weeks"],
+        quickReplyButtons: ["✅ Start Check-in"],
     },
     [TemplateId.CHECKIN_COACH_ACK]: {
         metaName: "fitflow_checkin_coach_ack",
@@ -156,13 +163,14 @@ export const META_TEMPLATES: Record<TemplateId, MetaTemplateDefinition> = {
         paramKeys: ["client_first_name", "coach_first_name"],
     },
     [TemplateId.CHECKIN_MISSED_NUDGE]: {
-        metaName: "fitflow_checkin_missed_nudge_v2",
+        metaName: "fitflow_checkin_missed_nudge_v3",
         category: "UTILITY",
         language: "en",
         bodyText:
             "Hey {{1}}, just a nudge — your week {{2}} check-in is still outstanding.\n\n" +
-            "Only takes 2 minutes. Tap below when you're ready 👇",
+            "Only takes 2 minutes.",
         paramKeys: ["client_first_name", "programme_week"],
+        quickReplyButtons: ["✅ Start Check-in"],
     },
 
     // ── At-Risk & Re-engagement ──────────────────────────────────
@@ -278,16 +286,19 @@ export const META_TEMPLATES: Record<TemplateId, MetaTemplateDefinition> = {
 
     // ── Meal Delivery ─────────────────────────────────────────────
     [TemplateId.MEAL_DAILY]: {
-        metaName: "fitflow_meal_daily",
+        metaName: "fitflow_meal_daily_v3",
         category: "UTILITY",
         language: "en",
         bodyText:
-            "🍽️ Today's Meal Plan — Day {{1}}\n\n" +
-            "Plan: {{2}}\n\n" +
+            "Hey {{1}}, here's your plan for today.\n\n" +
+            "Day {{2}} 🍽️\n" +
             "{{3}}\n\n" +
-            "📊 {{4}}\n\n" +
-            "Hit Done ✅ when you've followed today's plan, or Skipped ⏭ if you couldn't stick to it.",
-        paramKeys: ["day_number", "plan_title", "meals_list", "macros_summary"],
+            "{{4}}\n\n" +
+            "📊 Daily Totals\n" +
+            "Protein: {{5}}g | Carbs: {{6}}g | Fat: {{7}}g | Calories: {{8}}\n\n" +
+            "How did it go?",
+        paramKeys: ["client_first_name", "day_number", "plan_title", "meals_list", "protein", "carbs", "fat", "calories"],
+        quickReplyButtons: ["✅ Done", "⏭ Skipped"],
     },
     [TemplateId.MEAL_REST_DAY]: {
         metaName: "fitflow_meal_rest_day",
@@ -300,22 +311,23 @@ export const META_TEMPLATES: Record<TemplateId, MetaTemplateDefinition> = {
         paramKeys: ["client_first_name", "coach_first_name"],
     },
     [TemplateId.MEAL_LOGGED_CONFIRMATION]: {
-        metaName: "fitflow_meal_logged_confirm",
+        metaName: "fitflow_meal_logged_confirm_v2",
         category: "UTILITY",
         language: "en",
         bodyText:
             "🙌 Meal plan logged for Day {{1}}.\n\n" +
-            "Nice work, {{2}}! Consistency with nutrition is where the real results come from. Keep it up! 🥗",
-        paramKeys: ["day_number", "client_first_name"],
+            "Nice work, {{2}}! Your meal compliance is now {{3}}%. Keep it up! 🥗",
+        paramKeys: ["day_number", "client_first_name", "compliance"],
     },
     [TemplateId.MEAL_MISSED_NUDGE]: {
-        metaName: "fitflow_meal_missed_nudge",
+        metaName: "fitflow_meal_missed_nudge_v3",
         category: "UTILITY",
         language: "en",
         bodyText:
-            "Hey {{1}}, quick reminder — did you follow yesterday's meal plan?\n\n" +
-            "Even a rough log helps your coach keep your nutrition on track. Just reply Done or Skipped when you get a moment 👇",
-        paramKeys: ["client_first_name"],
+            "Hey {{1}}, quick reminder — did you follow yesterday's meal plan? (Day {{2}}, {{3}})\n\n" +
+            "Even a rough log helps your coach keep your nutrition on track.",
+        paramKeys: ["client_first_name", "day_number", "plan_title"],
+        quickReplyButtons: ["✅ Done", "⏭ Skipped"],
     },
 
     // ── Exercise Videos ──────────────────────────────────────────
@@ -372,16 +384,28 @@ export const META_TEMPLATES: Record<TemplateId, MetaTemplateDefinition> = {
  */
 export function buildCreatePayload(templateId: TemplateId) {
     const def = META_TEMPLATES[templateId];
+    const components: any[] = [];
+
+    if (def.headerText) {
+        components.push({ type: "HEADER", format: "TEXT", text: def.headerText });
+    }
+    components.push({ type: "BODY", text: def.bodyText });
+
+    if (def.quickReplyButtons) {
+        components.push({
+            type: "BUTTONS",
+            buttons: def.quickReplyButtons.map((text) => ({
+                type: "QUICK_REPLY",
+                text,
+            })),
+        });
+    }
+
     return {
         name: def.metaName,
         language: def.language,
         category: def.category,
-        components: [
-            {
-                type: "BODY",
-                text: def.bodyText,
-            },
-        ],
+        components,
     };
 }
 
@@ -406,16 +430,37 @@ export function buildSendPayload(templateId: TemplateId, context: Record<string,
         };
     });
 
+    const components: any[] = [];
+
+    if (def.headerText) {
+        components.push({ type: "header" });
+    }
+    components.push({ type: "body", parameters });
+
+    if (def.quickReplyButtons) {
+        def.quickReplyButtons.forEach((_, index) => {
+            components.push({
+                type: "button",
+                sub_type: "quick_reply",
+                index: String(index),
+                parameters: [{ type: "payload", payload: `${templateId}:${index}` }],
+            });
+        });
+    }
+
     return {
         name: def.metaName,
         language: { code: def.language },
-        components: [
-            {
-                type: "body",
-                parameters,
-            },
-        ],
+        components,
     };
+}
+
+/**
+ * Returns the Meta template category for a given FitFlow TemplateId.
+ * MARKETING templates can be sent outside the 24-hour customer service window.
+ */
+export function getTemplateCategory(templateId: TemplateId): "UTILITY" | "MARKETING" {
+    return META_TEMPLATES[templateId].category;
 }
 
 /**

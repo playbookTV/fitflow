@@ -1,9 +1,79 @@
 import { Worker, Job } from "bullmq";
+import { TemplateId } from "@fitflow/shared";
 import { prisma } from "../lib/prisma";
 import { getChannel, getRecipientId } from "../lib/channels/channel-router";
 import { connection } from "../lib/queue";
 import { JobType } from "../lib/types";
 import { logEvent, EventType } from "../lib/event-logger";
+
+const CATEGORY_ORDER = ["breakfast", "snack", "lunch", "dinner"] as const;
+
+interface MealEntryWithMeal {
+    meal: {
+        name: string;
+        category: string;
+        protein: number | null;
+        carbs: number | null;
+        fat: number | null;
+        calories: number | null;
+        prepTime: string | null;
+    };
+    servingSize: string | null;
+    notes: string | null;
+}
+
+function buildGroupedMealsList(entries: MealEntryWithMeal[]) {
+    let totalProtein = 0;
+    let totalCarbs = 0;
+    let totalFat = 0;
+    let totalCalories = 0;
+    let totalPrepMinutes = 0;
+
+    // Group entries by category, preserving order within each group
+    const grouped = new Map<string, MealEntryWithMeal[]>();
+    for (const entry of entries) {
+        const cat = entry.meal.category.toLowerCase();
+        if (!grouped.has(cat)) grouped.set(cat, []);
+        grouped.get(cat)!.push(entry);
+
+        totalProtein += entry.meal.protein || 0;
+        totalCarbs += entry.meal.carbs || 0;
+        totalFat += entry.meal.fat || 0;
+        totalCalories += entry.meal.calories || 0;
+
+        if (entry.meal.prepTime) {
+            const mins = Number.parseInt(entry.meal.prepTime, 10);
+            if (!Number.isNaN(mins)) totalPrepMinutes += mins;
+        }
+    }
+
+    // Render groups in display order
+    const sections: string[] = [];
+    for (const cat of CATEGORY_ORDER) {
+        const catEntries = grouped.get(cat);
+        if (!catEntries) continue;
+
+        const label = cat.charAt(0).toUpperCase() + cat.slice(1);
+        const lines = catEntries.map((entry) => {
+            const m = entry.meal;
+            let line = `  ${m.name}`;
+            if (m.calories) line += ` \u2014 ${m.calories} cal`;
+            if (entry.servingSize) line += ` (${entry.servingSize})`;
+            if (entry.notes) line += `\n  ${entry.notes}`;
+            return line;
+        });
+        sections.push(`*${label}*\n${lines.join("\n")}`);
+    }
+
+    return {
+        mealsList: sections.join("\n\n"),
+        protein: Math.round(totalProtein),
+        carbs: Math.round(totalCarbs),
+        fat: Math.round(totalFat),
+        calories: totalCalories,
+        totalPrepTime: totalPrepMinutes > 0 ? `~${totalPrepMinutes} min` : "",
+    };
+}
 
 /**
  * Worker to process meal plan delivery.
@@ -33,7 +103,9 @@ export const mealWorker = new Worker(
                             },
                         },
                     },
-                    client: true,
+                    client: {
+                        include: { coach: true },
+                    },
                 },
             });
 
@@ -47,47 +119,28 @@ export const mealWorker = new Worker(
             const recipientId = getRecipientId(client);
             const mealDay = (dayNumber % 7) || 7;
 
-            // Find the matching MealDay
             const matchingDay = assignment.plan.days.find((d) => d.dayNumber === mealDay);
 
-            // Build formatted meal list
-            let mealsList = "Check your dashboard for today's meals.";
-            let totalProtein = 0;
-            let totalCarbs = 0;
-            let totalFat = 0;
-            let totalCalories = 0;
+            const hasEntries = matchingDay?.entries && matchingDay.entries.length > 0;
+            const mealData = hasEntries
+                ? buildGroupedMealsList(matchingDay.entries)
+                : { mealsList: "Check your dashboard for today's meals.", protein: 0, carbs: 0, fat: 0, calories: 0, totalPrepTime: "" };
 
-            if (matchingDay?.entries && matchingDay.entries.length > 0) {
-                mealsList = matchingDay.entries
-                    .map((entry, i) => {
-                        const m = entry.meal;
-                        const parts = [`${i + 1}. ${m.category.charAt(0).toUpperCase() + m.category.slice(1)}: ${m.name}`];
-                        if (m.calories) parts.push(`(${m.calories} cal)`);
-                        if (entry.servingSize) parts.push(`- ${entry.servingSize}`);
-                        if (entry.notes) parts.push(`- ${entry.notes}`);
+            const clientFirstName = client.name.split(" ")[0];
 
-                        totalProtein += m.protein || 0;
-                        totalCarbs += m.carbs || 0;
-                        totalFat += m.fat || 0;
-                        totalCalories += m.calories || 0;
-
-                        return parts.join(" ");
-                    })
-                    .join("\n");
-            }
-
-            const macrosSummary = `Protein: ${Math.round(totalProtein)}g | Carbs: ${Math.round(totalCarbs)}g | Fat: ${Math.round(totalFat)}g | ${totalCalories} cal`;
-            const dashboardUrl = `${process.env.WEB_URL || "http://localhost:3000"}/dashboard`;
-
-            const result = await channel.sendMeal?.(recipientId, {
-                clientId: client.id,
-                clientName: client.name,
-                planTitle: assignment.plan.title,
-                dayNumber: mealDay,
-                mealsList,
-                macrosSummary,
-                dashboardUrl,
-            });
+            const result = await channel.sendTemplate(recipientId, TemplateId.MEAL_DAILY, {
+                client_first_name: clientFirstName,
+                day_number: mealDay,
+                day_title: matchingDay?.title || "",
+                plan_title: assignment.plan.title,
+                meals_list: mealData.mealsList,
+                protein: mealData.protein,
+                carbs: mealData.carbs,
+                fat: mealData.fat,
+                calories: mealData.calories,
+                total_prep_time: mealData.totalPrepTime,
+                compliance: assignment.compliance,
+            }, client.id);
 
             if (result?.success) {
                 await logEvent(EventType.MEAL_DELIVERED, {

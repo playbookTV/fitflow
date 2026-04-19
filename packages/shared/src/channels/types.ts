@@ -40,15 +40,6 @@ export interface OnboardingPayload {
  * WhatsApp and Telegram adapters both implement this interface.
  * Business logic (schedulers, workers) calls these methods without knowing the channel.
  */
-export interface MealPayload {
-    clientId: string;
-    clientName: string;
-    planTitle: string;
-    dayNumber: number;
-    mealsList: string;
-    macrosSummary: string;
-    dashboardUrl: string;
-}
 
 export interface VideoPayload {
     videoUrl: string;
@@ -72,9 +63,6 @@ export interface DeliveryChannel {
 
     /** Send a message using the centralized template system */
     sendTemplate(recipientId: string, templateId: TemplateId, context: Record<string, any>, clientId?: string): Promise<SendResult>;
-
-    /** Send a meal plan delivery message */
-    sendMeal?(recipientId: string, data: MealPayload): Promise<SendResult>;
 
     /** Send a video message (exercise demos, etc.) */
     sendVideo?(recipientId: string, data: VideoPayload): Promise<SendResult>;

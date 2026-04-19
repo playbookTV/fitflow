@@ -160,6 +160,7 @@ export interface CheckinMissedNudgeContext {
     client_first_name: string;
     programme_week: number;
     checkin_link: string;
+    clientId: string;
 }
 
 export interface AtRiskMissedWorkoutContext {
@@ -239,10 +240,17 @@ export interface SystemBroadcastContext {
 }
 
 export interface MealDailyContext {
+    client_first_name: string;
     day_number: number;
+    day_title: string;
     plan_title: string;
     meals_list: string;
-    macros_summary: string;
+    protein: number;
+    carbs: number;
+    fat: number;
+    calories: number;
+    total_prep_time: string;
+    compliance: number;
 }
 
 export interface MealRestDayContext {
@@ -253,10 +261,13 @@ export interface MealRestDayContext {
 export interface MealLoggedConfirmationContext {
     day_number: number;
     client_first_name: string;
+    compliance: number;
 }
 
 export interface MealMissedNudgeContext {
     client_first_name: string;
+    day_number: number;
+    plan_title: string;
 }
 
 export interface ExerciseVideoContext {

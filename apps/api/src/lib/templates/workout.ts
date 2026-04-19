@@ -34,7 +34,14 @@ const workoutDaily: TemplateDefinition<WorkoutDailyContext> = {
                 text:
                     `*Day ${ctx.workout_day_number} \u{2014} ${ctx.workout_name}* \u{1F4AA}\n\n` +
                     `${ctx.exercise_list}\n\n` +
-                    `Hit *Done \u{2705}* when you've finished, *Skipped \u{23ED}* if you can't make it today, or *Modified \u{1F504}* if you changed something.`,
+                    `How did it go?`,
+                buttons: [
+                    [
+                        { text: "\u{2705} Done", callback_data: `workout_done_${ctx.clientId}` },
+                        { text: "\u{23ED} Skipped", callback_data: `workout_skip_${ctx.clientId}` },
+                        { text: "\u{1F504} Modified", callback_data: `workout_modified_${ctx.clientId}` },
+                    ],
+                ],
             }),
         },
     },

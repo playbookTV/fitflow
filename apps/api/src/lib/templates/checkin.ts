@@ -29,7 +29,12 @@ const checkinWeeklyPrompt: TemplateDefinition<CheckinWeeklyPromptContext> = {
             render: (ctx) => ({
                 text:
                     `Check-in time, ${ctx.client_first_name} \u{1F4CB}\n\n` +
-                    `Week ${ctx.programme_week} of ${ctx.total_weeks}. Takes 2 minutes \u{2014} tap below to complete it.`,
+                    `Week ${ctx.programme_week} of ${ctx.total_weeks}. Takes 2 minutes.`,
+                buttons: [
+                    [
+                        { text: "\u{2705} Start Check-in", callback_data: `checkin_start_${ctx.clientId}` },
+                    ],
+                ],
             }),
         },
     },
@@ -76,7 +81,12 @@ const checkinMissedNudge: TemplateDefinition<CheckinMissedNudgeContext> = {
             render: (ctx) => ({
                 text:
                     `Hey ${ctx.client_first_name}, just a nudge \u{2014} your week ${ctx.programme_week} check-in is still outstanding.\n\n` +
-                    `Only takes 2 minutes. Tap below when you're ready \u{1F447}`,
+                    `Only takes 2 minutes.`,
+                buttons: [
+                    [
+                        { text: "\u{2705} Start Check-in", callback_data: `checkin_start_${ctx.clientId}` },
+                    ],
+                ],
             }),
         },
     },
