@@ -12,11 +12,25 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
+    scroll-behavior: smooth;
   }
 
   body {
     @apply bg-bg-primary text-text-primary font-sans;
     min-height: 100dvh;
+  }
+
+  /* Noise/grain texture overlay — adds depth to flat dark surfaces */
+  body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    pointer-events: none;
+    opacity: 0.035;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-repeat: repeat;
+    background-size: 256px 256px;
   }
 
   /* Scrollbar styling */
@@ -63,9 +77,9 @@
 }
 
 @layer components {
-  /* Mono label utility */
+  /* Mono label utility — refined from 10px to 11px, slightly less aggressive tracking */
   .label-mono {
-    @apply font-mono text-[10px] font-semibold tracking-widest uppercase text-text-faint;
+    @apply font-mono text-[11px] font-semibold tracking-[0.08em] uppercase text-text-faint;
   }
 
   /* Card base with glass effect */
@@ -86,6 +100,11 @@
   .card-interactive:hover {
     @apply bg-bg-hover border-border-hover shadow-card-hover;
     transform: translateY(-2px);
+  }
+
+  .card-interactive:active {
+    transform: translateY(0) scale(0.995);
+    transition-duration: 100ms;
   }
 
   /* Glass card */
@@ -144,16 +163,33 @@
     transform: translateY(-1px);
   }
 
+  .btn-primary:active {
+    transform: translateY(1px) scale(0.98);
+    box-shadow: none;
+  }
+
   .btn-secondary {
     @apply btn px-4 py-2 bg-white/5 border border-white/10 text-text-secondary hover:text-white hover:bg-white/10 hover:border-white/20;
+  }
+
+  .btn-secondary:active {
+    transform: scale(0.98);
   }
 
   .btn-ghost {
     @apply btn px-3 py-2 text-text-faint hover:text-text-secondary hover:bg-white/5;
   }
 
+  .btn-ghost:active {
+    transform: scale(0.98);
+  }
+
   .btn-icon {
     @apply p-2.5 rounded-xl bg-white/5 border border-white/10 text-text-faint hover:text-white hover:bg-white/10 transition-colors;
+  }
+
+  .btn-icon:active {
+    transform: scale(0.95);
   }
 
   /* Input fields */
@@ -266,6 +302,20 @@
 
   .section-title {
     @apply text-xl font-bold text-white tracking-tight;
+    letter-spacing: -0.02em;
+  }
+
+  /* Display heading for auth / marketing pages */
+  .heading-display {
+    @apply font-display text-4xl font-semibold text-text-primary tracking-tight;
+    letter-spacing: -0.025em;
+    line-height: 1.15;
+  }
+
+  @media (min-width: 640px) {
+    .heading-display {
+      @apply text-5xl;
+    }
   }
 
   /* Empty state */

@@ -380,9 +380,9 @@ export function DashboardLayout({
                         {/* Page title */}
                         {title && (
                             <div>
-                                <h1 className="text-lg font-bold text-white">{title}</h1>
+                                <h1 className="text-xl font-bold text-white tracking-tight" style={{ letterSpacing: "-0.02em" }}>{title}</h1>
                                 {subtitle && (
-                                    <p className="text-xs text-text-faint">{subtitle}</p>
+                                    <p className="text-xs text-text-faint mt-0.5">{subtitle}</p>
                                 )}
                             </div>
                         )}

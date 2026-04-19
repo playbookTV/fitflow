@@ -52,12 +52,19 @@ function LoginContent() {
     };
 
     return (
-        <div className="flex min-h-dvh items-center justify-center p-6 sm:p-12">
-            <div className="w-full max-w-[400px] animate-fade-in">
+        <div className="relative flex min-h-dvh items-center justify-center p-6 sm:p-12 overflow-hidden">
+            {/* Ambient background orbs */}
+            <div className="pointer-events-none absolute inset-0" aria-hidden="true">
+                <div className="absolute -top-40 -left-40 h-[500px] w-[500px] rounded-full bg-brand-green/[0.04] blur-[120px]" />
+                <div className="absolute -bottom-40 -right-40 h-[400px] w-[400px] rounded-full bg-brand-violet/[0.05] blur-[120px]" />
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[600px] w-[600px] rounded-full bg-brand-blue/[0.02] blur-[120px]" />
+            </div>
+
+            <div className="relative w-full max-w-[400px] animate-fade-in">
                 {/* Logo */}
                 <Logo size="sm" showText className="mb-12" />
 
-                <h1 className="mb-2 font-display text-3xl font-semibold text-text-primary text-balance">
+                <h1 className="heading-display mb-3 text-balance">
                     Welcome back
                 </h1>
                 <p className="mb-10 text-sm text-text-secondary text-pretty">

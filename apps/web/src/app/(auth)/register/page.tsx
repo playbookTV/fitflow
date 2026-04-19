@@ -42,15 +42,21 @@ export default function RegisterPage() {
 
     if (emailSent) {
         return (
-            <div className="flex min-h-dvh items-center justify-center p-6 sm:p-12">
-                <div className="w-full max-w-[400px] animate-fade-in text-center">
+            <div className="relative flex min-h-dvh items-center justify-center p-6 sm:p-12 overflow-hidden">
+                {/* Ambient background orbs */}
+                <div className="pointer-events-none absolute inset-0" aria-hidden="true">
+                    <div className="absolute -top-40 -right-40 h-[500px] w-[500px] rounded-full bg-brand-green/[0.04] blur-[120px]" />
+                    <div className="absolute -bottom-40 -left-40 h-[400px] w-[400px] rounded-full bg-brand-cyan/[0.05] blur-[120px]" />
+                </div>
+
+                <div className="relative w-full max-w-[400px] animate-fade-in text-center">
                     <Logo size="sm" showText className="mb-12" />
 
-                    <div className="mb-6 mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-brand-green/10">
+                    <div className="mb-6 mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-brand-green/10 border border-brand-green/20">
                         <Mail className="h-8 w-8 text-brand-green" />
                     </div>
 
-                    <h1 className="mb-2 font-display text-2xl font-semibold text-text-primary text-balance">
+                    <h1 className="heading-display mb-3 text-balance">
                         Check your email
                     </h1>
                     <p className="mb-2 text-sm text-text-secondary text-pretty">
@@ -78,12 +84,19 @@ export default function RegisterPage() {
     }
 
     return (
-        <div className="flex min-h-dvh items-center justify-center p-6 sm:p-12">
-            <div className="w-full max-w-[400px] animate-fade-in">
+        <div className="relative flex min-h-dvh items-center justify-center p-6 sm:p-12 overflow-hidden">
+            {/* Ambient background orbs */}
+            <div className="pointer-events-none absolute inset-0" aria-hidden="true">
+                <div className="absolute -top-40 -right-40 h-[500px] w-[500px] rounded-full bg-brand-green/[0.04] blur-[120px]" />
+                <div className="absolute -bottom-40 -left-40 h-[400px] w-[400px] rounded-full bg-brand-cyan/[0.05] blur-[120px]" />
+                <div className="absolute top-1/3 left-1/2 -translate-x-1/2 h-[500px] w-[500px] rounded-full bg-brand-violet/[0.02] blur-[120px]" />
+            </div>
+
+            <div className="relative w-full max-w-[400px] animate-fade-in">
                 {/* Logo */}
                 <Logo size="sm" showText className="mb-12" />
 
-                <h1 className="mb-2 font-display text-3xl font-semibold text-text-primary text-balance">
+                <h1 className="heading-display mb-3 text-balance">
                     Start your clinic
                 </h1>
                 <p className="mb-10 text-sm text-text-secondary text-pretty">
