@@ -375,7 +375,7 @@ export default function PlanBuilder({ planId }: PlanBuilderProps) {
                                         const newDays = days.filter((_, i) => i !== dayIdx);
                                         setDays(newDays);
                                     }}
-                                    className="btn-icon !p-1.5 hover:!bg-brand-red-glow hover:!text-brand-red"
+                                    className="btn-icon-danger"
                                     aria-label={`Delete Day ${day.dayNumber}`}
                                 >
                                     <Trash2 size={14} />
@@ -440,7 +440,7 @@ export default function PlanBuilder({ planId }: PlanBuilderProps) {
 
                                             <button
                                                 onClick={() => removeExercise(dayIdx, exIdx)}
-                                                className="btn-icon !p-1.5 opacity-0 group-hover:opacity-100 hover:!bg-brand-red-glow hover:!text-brand-red transition-[opacity,background-color,color]"
+                                                className="btn-icon-danger opacity-0 group-hover:opacity-100 transition-[opacity,background-color,color]"
                                                 aria-label={`Remove ${ex.name}`}
                                             >
                                                 <Trash2 size={14} />

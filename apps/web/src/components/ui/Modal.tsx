@@ -107,7 +107,7 @@ const ModalClose = React.forwardRef<
 >(({ className, children, ...props }, ref) => (
     <Dialog.Close
         ref={ref}
-        className={cn("btn-icon !p-1.5", className)}
+        className={cn("btn-icon-sm", className)}
         aria-label="Close"
         {...props}
     >

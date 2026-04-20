@@ -92,22 +92,25 @@ export default function ActivityPage() {
                 </div>
             ) : events.length === 0 ? (
                 <div className="empty-state">
-                    <Activity className="w-12 h-12 text-text-faint mx-auto mb-4" />
-                    <p className="text-text-secondary mb-2 text-balance">No activity yet</p>
-                    <p className="text-text-faint text-sm text-pretty">
+                    <div className="empty-state-icon">
+                        <Activity className="w-6 h-6" />
+                    </div>
+                    <h3>No activity yet</h3>
+                    <p className="text-text-secondary text-sm text-pretty">
                         Events will appear here as clients interact with your coaching system.
                     </p>
                 </div>
             ) : (
                 <div className="space-y-1">
-                    {events.map((event) => {
+                    {events.map((event, index) => {
                         const config = getEventConfig(event.eventType);
                         const Icon = config.icon;
 
                         return (
                             <div
                                 key={event.id}
-                                className="flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-bg-hover transition-colors group"
+                                className="flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-bg-hover transition-colors group animate-fade-in"
+                                style={{ animationDelay: `${Math.min(index, 10) * 30}ms`, animationFillMode: "both" }}
                             >
                                 <div className={cn(
                                     "w-8 h-8 rounded-lg flex items-center justify-center shrink-0 bg-bg-card border border-border",

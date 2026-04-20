@@ -262,14 +262,15 @@ export default function LeadsPage() {
                                 </p>
                             </div>
                         ) : (
-                            leads.map((lead) => (
+                            leads.map((lead, index) => (
                                 <button
                                     key={lead.id}
                                     onClick={() => handleSelectLead(lead)}
                                     className={cn(
-                                        "w-full p-4 flex items-start gap-3 hover:bg-bg-hover transition-colors text-left border-b border-border/50",
+                                        "w-full p-4 flex items-start gap-3 hover:bg-bg-hover transition-colors text-left border-b border-border/50 animate-fade-in",
                                         selectedLead?.id === lead.id && "bg-bg-hover"
                                     )}
+                                    style={{ animationDelay: `${Math.min(index, 10) * 30}ms`, animationFillMode: "both" }}
                                 >
                                     <div className={cn(
                                         "w-10 h-10 rounded-full bg-gradient-to-br flex items-center justify-center text-white font-bold text-sm shrink-0",

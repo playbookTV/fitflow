@@ -491,7 +491,7 @@ function SetupContent() {
                 </div>
 
                 {/* Progress bar */}
-                <div className="flex gap-2 mb-8 justify-center">
+                <div className="flex gap-2 mb-8 justify-center" role="progressbar" aria-valuenow={step} aria-valuemin={1} aria-valuemax={TOTAL_STEPS} aria-label="Setup progress">
                     {Array.from({ length: TOTAL_STEPS }, (_, i) => i + 1).map((i) => (
                         <div
                             key={i}

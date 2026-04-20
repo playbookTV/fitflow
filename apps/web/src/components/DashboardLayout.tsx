@@ -23,6 +23,7 @@ import {
     Crown,
 } from "lucide-react";
 import { useEffect, useState, useRef, useCallback } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { getAuthHeaders } from "@/lib/auth";
 
 interface NavItem {
@@ -408,8 +409,15 @@ export function DashboardLayout({
                                 )}
                             </button>
 
+                            <AnimatePresence>
                             {notifOpen && (
-                                <div className="absolute right-0 top-full mt-2 w-80 max-h-96 bg-bg-secondary border border-border rounded-2xl shadow-xl overflow-hidden z-50">
+                                <motion.div
+                                    key="notif-dropdown"
+                                    initial={{ opacity: 0, y: -4, scale: 0.97 }}
+                                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                                    exit={{ opacity: 0, y: -4, scale: 0.97 }}
+                                    transition={{ duration: 0.15, ease: "easeOut" }}
+                                    className="absolute right-0 top-full mt-2 w-80 max-h-96 bg-bg-secondary border border-border rounded-2xl shadow-card overflow-hidden z-50">
                                     <div className="flex items-center justify-between px-4 py-3 border-b border-border">
                                         <h3 className="text-sm font-semibold text-white">Notifications</h3>
                                         <Link
@@ -454,8 +462,9 @@ export function DashboardLayout({
                                             })
                                         )}
                                     </div>
-                                </div>
+                                </motion.div>
                             )}
+                            </AnimatePresence>
                         </div>
                         <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-violet to-brand-blue flex items-center justify-center text-white font-bold text-sm cursor-pointer hover:shadow-glow-violet transition-shadow">
                             T

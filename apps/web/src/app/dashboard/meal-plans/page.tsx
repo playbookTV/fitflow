@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import { getAuthHeaders } from "@/lib/auth";
+import { motion } from "framer-motion";
 
 interface MealPlan {
     id: string;
@@ -27,6 +28,9 @@ interface MealPlan {
         assignments: number;
     };
 }
+
+const gridVariants = { hidden: {}, visible: { transition: { staggerChildren: 0.06 } } };
+const cardVariants = { hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0, transition: { duration: 0.35, ease: [0.25, 0.1, 0.25, 1] as const } } };
 
 export default function MealPlansPage() {
     const [plans, setPlans] = useState<MealPlan[]>([]);
@@ -145,9 +149,10 @@ export default function MealPlansPage() {
                     )}
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <motion.div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" variants={gridVariants} initial="hidden" animate="visible">
                     {filteredPlans.map((plan) => (
-                        <div key={plan.id} className="card-interactive p-5 group relative">
+                        <motion.div key={plan.id} variants={cardVariants}>
+                        <div className="card-interactive p-5 group relative">
                             {/* Menu button */}
                             <div className="absolute top-4 right-4">
                                 <button
@@ -221,8 +226,10 @@ export default function MealPlansPage() {
                                 </p>
                             </Link>
                         </div>
+                        </motion.div>
                     ))}
 
+                    <motion.div variants={cardVariants}>
                     <Link
                         href="/dashboard/meal-plans/new"
                         className="flex flex-col items-center justify-center p-5 rounded-2xl border border-dashed border-border-hover bg-transparent hover:bg-bg-hover hover:border-brand-green/30 transition-[color,background-color,border-color] duration-200 group min-h-[200px]"
@@ -234,7 +241,8 @@ export default function MealPlansPage() {
                             Create New Meal Plan
                         </p>
                     </Link>
-                </div>
+                    </motion.div>
+                </motion.div>
             )}
         </DashboardLayout>
     );

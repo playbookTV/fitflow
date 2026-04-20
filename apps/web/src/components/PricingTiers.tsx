@@ -1,10 +1,21 @@
 "use client";
 
 import { useState } from "react";
+import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { getAuthHeaders } from "@/lib/auth";
 import { formatCurrency } from "@/lib/tokens";
 import { Check, Loader2 } from "lucide-react";
+
+const tierGridVariants = {
+    hidden: {},
+    visible: { transition: { staggerChildren: 0.1 } },
+};
+
+const tierCardVariants = {
+    hidden: { opacity: 0, y: 16 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.25, 0.1, 0.25, 1] as const } },
+};
 
 interface TierInfo {
     tier: string;
@@ -155,7 +166,12 @@ export function PricingTiers({ tiers, currentTier, onSubscribed }: PricingTiersP
             </div>
 
             {/* Tier Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <motion.div
+                className="grid grid-cols-1 md:grid-cols-3 gap-6"
+                variants={tierGridVariants}
+                initial="hidden"
+                animate="visible"
+            >
                 {tiers.map((t) => {
                     const label = TIER_LABELS[t.tier] || { name: t.tier };
                     const features = TIER_FEATURES[t.tier] || [];
@@ -164,8 +180,9 @@ export function PricingTiers({ tiers, currentTier, onSubscribed }: PricingTiersP
                     const isPro = t.tier === "PRO";
 
                     return (
-                        <div
+                        <motion.div
                             key={t.tier}
+                            variants={tierCardVariants}
                             className={cn(
                                 "relative rounded-2xl border p-6 flex flex-col",
                                 isPro
@@ -235,10 +252,10 @@ export function PricingTiers({ tiers, currentTier, onSubscribed }: PricingTiersP
                                     )}
                                 </button>
                             )}
-                        </div>
+                        </motion.div>
                     );
                 })}
-            </div>
+            </motion.div>
         </div>
     );
 }

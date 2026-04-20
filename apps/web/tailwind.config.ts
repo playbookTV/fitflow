@@ -59,6 +59,7 @@ const config: Config = {
                     "cyan-dim": "rgba(38,198,218,0.08)",
                     "cyan-glow": "rgba(38,198,218,0.15)",
                     "cyan-border": "rgba(38,198,218,0.30)",
+                    telegram: "#2AABEE",
                 },
             },
             borderRadius: {
@@ -88,9 +89,11 @@ const config: Config = {
             },
             animation: {
                 "fade-in": "fadeIn 0.3s ease-out",
+                "fade-out": "fadeOut 0.15s ease-in",
                 "slide-up": "slideUp 0.2s ease-out",
                 "slide-down": "slideDown 0.2s ease-out",
                 "scale-in": "scaleIn 0.2s ease-out",
+                "scale-out": "scaleOut 0.15s ease-in",
                 "pulse-glow": "pulseGlow 2s ease-in-out infinite",
                 "shimmer": "shimmer 2s linear infinite",
                 "float": "float 3s ease-in-out infinite",
@@ -111,6 +114,14 @@ const config: Config = {
                 scaleIn: {
                     "0%": { opacity: "0", transform: "scale(0.95)" },
                     "100%": { opacity: "1", transform: "scale(1)" },
+                },
+                fadeOut: {
+                    "0%": { opacity: "1" },
+                    "100%": { opacity: "0" },
+                },
+                scaleOut: {
+                    "0%": { opacity: "1", transform: "scale(1)" },
+                    "100%": { opacity: "0", transform: "scale(0.95)" },
                 },
                 pulseGlow: {
                     "0%, 100%": { opacity: "1" },

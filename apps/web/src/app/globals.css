@@ -91,6 +91,7 @@
   .card-elevated {
     @apply bg-bg-elevated border border-border rounded-2xl shadow-card;
     background-image: linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%);
+    box-shadow: 0 4px 24px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06);
   }
 
   .card-interactive {
@@ -112,6 +113,7 @@
     @apply rounded-2xl border border-white/10;
     background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%);
     backdrop-filter: blur(12px);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
   }
 
   /* Status badge colours - enhanced */
@@ -192,9 +194,23 @@
     transform: scale(0.95);
   }
 
+  /* Compact icon button — for close buttons and inline actions */
+  .btn-icon-sm {
+    @apply p-2 rounded-lg bg-white/5 border border-white/10 text-text-faint hover:text-white hover:bg-white/10 transition-colors;
+  }
+
+  .btn-icon-sm:active {
+    transform: scale(0.95);
+  }
+
+  /* Danger icon button — for delete actions in builders */
+  .btn-icon-danger {
+    @apply p-1.5 rounded-lg text-text-faint hover:bg-brand-red-glow hover:text-brand-red transition-colors;
+  }
+
   /* Input fields */
   .input {
-    @apply bg-white/5 border border-white/10 rounded-xl py-2.5 px-4 text-sm text-white placeholder:text-text-faint focus-visible:outline-transparent focus:ring-2 focus:ring-brand-green/50 focus:border-brand-green/30 transition-[color,background-color,border-color,box-shadow] duration-200;
+    @apply bg-white/5 border border-white/10 rounded-xl py-2.5 px-4 text-sm text-white placeholder:text-text-faint focus-visible:outline-transparent focus:ring-2 focus:ring-brand-green/50 focus:border-brand-green/30 focus:bg-white/[0.08] transition-[color,background-color,border-color,box-shadow] duration-200;
   }
 
   .input-with-icon {
@@ -221,7 +237,16 @@
 
   .data-table-row {
     @apply grid gap-4 px-6 py-5 bg-bg-primary hover:bg-bg-hover transition-colors items-center border-b border-border last:border-b-0;
+    animation: fadeIn 0.3s ease-out both;
   }
+  .data-table-row:nth-child(2) { animation-delay: 30ms; }
+  .data-table-row:nth-child(3) { animation-delay: 60ms; }
+  .data-table-row:nth-child(4) { animation-delay: 90ms; }
+  .data-table-row:nth-child(5) { animation-delay: 120ms; }
+  .data-table-row:nth-child(6) { animation-delay: 150ms; }
+  .data-table-row:nth-child(7) { animation-delay: 180ms; }
+  .data-table-row:nth-child(8) { animation-delay: 210ms; }
+  .data-table-row:nth-child(n+9) { animation-delay: 240ms; }
 
   /* Stat card */
   .stat-card {
@@ -285,9 +310,11 @@
     @apply bg-clip-text text-transparent bg-gradient-to-r from-brand-green to-brand-cyan;
   }
 
-  /* Skeleton loading */
+  /* Skeleton loading — shimmer sweep */
   .skeleton {
-    @apply bg-white/5 rounded-lg animate-pulse;
+    @apply rounded-lg animate-shimmer;
+    background: linear-gradient(90deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.03) 100%);
+    background-size: 200% 100%;
   }
 
   /* Divider */
@@ -325,6 +352,10 @@
 
   .empty-state-icon {
     @apply w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center text-text-faint mb-4;
+  }
+
+  .empty-state h3 {
+    @apply text-lg font-bold text-white mb-1 text-balance;
   }
 
   /* Tooltip */
@@ -370,12 +401,12 @@
 
   /* Textarea */
   .textarea {
-    @apply bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-sm text-white placeholder:text-text-faint focus-visible:outline-transparent focus:ring-2 focus:ring-brand-green/50 focus:border-brand-green/30 transition-[color,background-color,border-color,box-shadow] duration-200 resize-none min-h-[100px];
+    @apply bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-sm text-white placeholder:text-text-faint focus-visible:outline-transparent focus:ring-2 focus:ring-brand-green/50 focus:border-brand-green/30 focus:bg-white/[0.08] transition-[color,background-color,border-color,box-shadow] duration-200 resize-none min-h-[100px];
   }
 
   /* Select / Dropdown Input */
   .select {
-    @apply bg-white/5 border border-white/10 rounded-xl py-2.5 px-4 text-sm text-white appearance-none cursor-pointer focus-visible:outline-transparent focus:ring-2 focus:ring-brand-green/50 focus:border-brand-green/30 transition-[color,background-color,border-color,box-shadow] duration-200;
+    @apply bg-white/5 border border-white/10 rounded-xl py-2.5 px-4 text-sm text-white appearance-none cursor-pointer focus-visible:outline-transparent focus:ring-2 focus:ring-brand-green/50 focus:border-brand-green/30 focus:bg-white/[0.08] transition-[color,background-color,border-color,box-shadow] duration-200;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23606065' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-position: right 12px center;
@@ -392,26 +423,22 @@
 
   /* Form error message */
   .form-error {
-    @apply text-xs mt-1.5 flex items-center gap-1.5;
-    color: #EF5350;
+    @apply text-xs mt-1.5 flex items-center gap-1.5 text-brand-red;
   }
 
   .form-error-box {
-    @apply rounded-xl border px-4 py-3 text-sm;
-    color: #EF5350;
+    @apply rounded-xl border px-4 py-3 text-sm text-brand-red;
     background: rgba(239,83,80,0.08);
     border-color: rgba(239,83,80,0.30);
   }
 
   /* Form success message */
   .form-success {
-    @apply text-xs mt-1.5 flex items-center gap-1.5;
-    color: #25D366;
+    @apply text-xs mt-1.5 flex items-center gap-1.5 text-brand-green;
   }
 
   .form-success-box {
-    @apply rounded-xl border px-4 py-3 text-sm;
-    color: #25D366;
+    @apply rounded-xl border px-4 py-3 text-sm text-brand-green;
     background: rgba(37,211,102,0.08);
     border-color: rgba(37,211,102,0.30);
   }
@@ -490,12 +517,20 @@
     @apply fixed inset-0 bg-black/60 backdrop-blur-sm z-50 animate-fade-in;
   }
 
+  .modal-backdrop[data-state="closed"] {
+    animation: fadeOut 0.15s ease-in;
+  }
+
   .modal {
     @apply fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-lg;
   }
 
   .modal-content {
     @apply bg-bg-elevated border border-border rounded-2xl shadow-card overflow-hidden animate-scale-in;
+  }
+
+  .modal-content[data-state="closed"] {
+    animation: scaleOut 0.15s ease-in;
   }
 
   .modal-header {

@@ -72,14 +72,14 @@ export const ClientCard = ({ client }: { client: Client }) => {
                     <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                         <button
                             onClick={(e) => e.preventDefault()}
-                            className="btn-icon !p-2 !rounded-lg"
+                            className="btn-icon-sm"
                             aria-label={`Message ${client.name}`}
                         >
                             <MessageCircle className="w-3.5 h-3.5" aria-hidden="true" />
                         </button>
                         <button
                             onClick={(e) => e.preventDefault()}
-                            className="btn-icon !p-2 !rounded-lg"
+                            className="btn-icon-sm"
                             aria-label="More options"
                         >
                             <MoreHorizontal className="w-3.5 h-3.5" aria-hidden="true" />

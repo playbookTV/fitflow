@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useState, useCallback } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { useSearchParams } from "next/navigation";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { getAuthHeaders } from "@/lib/auth";
@@ -348,10 +349,10 @@ function SettingsContent() {
                             ))}
                         </div>
                     ) : (
-                        <>
+                        <AnimatePresence mode="wait">
                             {/* Profile Tab */}
                             {activeTab === "profile" && (
-                                <div className="space-y-8 animate-fade-in">
+                                <motion.div key="profile" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.2 }} className="space-y-8">
                                     <div className="card p-6">
                                         <h3 className="text-lg font-semibold text-white mb-6 flex items-center gap-2 text-balance">
                                             <User className="w-5 h-5 text-brand-blue" />
@@ -471,12 +472,12 @@ function SettingsContent() {
                                             </div>
                                         </div>
                                     </div>
-                                </div>
+                                </motion.div>
                             )}
 
                             {/* Public Profile Tab */}
                             {activeTab === "public-profile" && (
-                                <div className="space-y-8 animate-fade-in">
+                                <motion.div key="public-profile" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.2 }} className="space-y-8">
                                     {/* Status Indicator */}
                                     <div className={cn(
                                         "flex items-center gap-3 p-4 rounded-xl border",
@@ -713,12 +714,12 @@ function SettingsContent() {
                                             </div>
                                         </div>
                                     )}
-                                </div>
+                                </motion.div>
                             )}
 
                             {/* Notifications Tab */}
                             {activeTab === "notifications" && (
-                                <div className="space-y-6 animate-fade-in">
+                                <motion.div key="notifications" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.2 }} className="space-y-6">
                                     <div className="card p-6">
                                         <h3 className="text-lg font-semibold text-white mb-6 flex items-center gap-2 text-balance">
                                             <Bell className="w-5 h-5 text-brand-orange" />
@@ -777,12 +778,12 @@ function SettingsContent() {
                                             </label>
                                         </div>
                                     </div>
-                                </div>
+                                </motion.div>
                             )}
 
                             {/* Integrations Tab */}
                             {activeTab === "integrations" && (
-                                <div className="space-y-6 animate-fade-in">
+                                <motion.div key="integrations" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.2 }} className="space-y-6">
                                     <div className="card p-6">
                                         <h3 className="text-lg font-semibold text-white mb-6 flex items-center gap-2 text-balance">
                                             <Smartphone className="w-5 h-5 text-brand-green" />
@@ -1036,12 +1037,12 @@ function SettingsContent() {
                                             </div>
                                         )}
                                     </div>
-                                </div>
+                                </motion.div>
                             )}
 
                             {/* Billing Tab */}
                             {activeTab === "billing" && (
-                                <div className="space-y-6 animate-fade-in">
+                                <motion.div key="billing" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.2 }} className="space-y-6">
                                     <div className="card p-6">
                                         <h3 className="text-lg font-semibold text-white mb-6 flex items-center gap-2">
                                             <CreditCard className="w-5 h-5 text-brand-cyan" />
@@ -1096,9 +1097,9 @@ function SettingsContent() {
                                             </p>
                                         </div>
                                     </div>
-                                </div>
+                                </motion.div>
                             )}
-                        </>
+                        </AnimatePresence>
                     )}
                 </div>
             </div>

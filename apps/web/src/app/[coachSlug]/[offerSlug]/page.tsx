@@ -227,7 +227,7 @@ function IntakeContent() {
                     </div>
                 </form>
 
-                <p className="text-center text-[10px] text-text-faint mt-6 font-mono uppercase tracking-widest">
+                <p className="text-center text-[10px] text-text-faint mt-12 font-mono uppercase tracking-widest">
                     Powered by FitFlow
                 </p>
             </div>

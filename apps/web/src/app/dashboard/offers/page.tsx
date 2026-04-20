@@ -197,9 +197,11 @@ export default function OffersPage() {
                 </div>
             ) : offers.length === 0 ? (
                 <div className="empty-state">
-                    <Link2 className="w-12 h-12 text-text-faint mx-auto mb-4" />
-                    <p className="text-text-secondary mb-2 text-balance">No offer links yet</p>
-                    <p className="text-text-faint text-sm text-pretty">
+                    <div className="empty-state-icon">
+                        <Link2 className="w-6 h-6" />
+                    </div>
+                    <h3>No offer links yet</h3>
+                    <p className="text-text-secondary text-sm text-pretty">
                         Create your first offer link to start capturing leads.
                     </p>
                 </div>

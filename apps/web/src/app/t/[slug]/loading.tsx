@@ -1,7 +1,13 @@
 export default function ProfileLoading() {
     return (
-        <div className="min-h-dvh bg-bg-primary text-white">
-            <div className="flex flex-col items-center px-4 py-12 max-w-md mx-auto animate-pulse">
+        <div className="relative min-h-dvh bg-bg-primary text-white overflow-hidden">
+            {/* Ambient background orbs — match ProfilePage */}
+            <div className="pointer-events-none fixed inset-0" aria-hidden="true">
+                <div className="absolute top-[-15%] left-[-10%] w-[40%] h-[40%] bg-brand-green/5 rounded-full blur-[120px]" />
+                <div className="absolute bottom-[-15%] right-[-10%] w-[40%] h-[40%] bg-brand-cyan/5 rounded-full blur-[120px]" />
+            </div>
+
+            <div className="relative flex flex-col items-center px-4 py-12 max-w-md mx-auto">
                 {/* Avatar skeleton */}
                 <div className="w-24 h-24 rounded-full skeleton mb-5" />
 

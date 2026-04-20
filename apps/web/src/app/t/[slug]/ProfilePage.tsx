@@ -2,6 +2,7 @@
 
 import { MessageSquare, Send, Copy, Check } from "lucide-react";
 import { useState } from "react";
+import { motion } from "framer-motion";
 
 interface ProfileData {
     coach: {
@@ -85,7 +86,12 @@ export default function ProfilePage({ data }: { data: ProfileData }) {
                 <div className="absolute bottom-[-15%] right-[-10%] w-[40%] h-[40%] bg-brand-cyan/5 rounded-full blur-[120px]" />
             </div>
 
-            <div className="relative z-10 flex flex-col items-center px-4 py-12 max-w-md mx-auto">
+            <motion.div
+                className="relative z-10 flex flex-col items-center px-4 py-12 max-w-md mx-auto"
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, ease: [0.25, 0.1, 0.25, 1] }}
+            >
                 {/* Avatar */}
                 <div className="mb-5">
                     {coach.avatarUrl ? (
@@ -105,7 +111,7 @@ export default function ProfilePage({ data }: { data: ProfileData }) {
                 </div>
 
                 {/* Name */}
-                <h1 className="text-2xl font-bold tracking-tight text-center text-balance" style={{ fontFamily: "var(--font-newsreader)" }}>
+                <h1 className="font-display text-2xl font-bold tracking-tight text-center text-balance">
                     {coach.name || coach.slug}
                 </h1>
 
@@ -121,6 +127,7 @@ export default function ProfilePage({ data }: { data: ProfileData }) {
                 {/* Slug URL (copyable) */}
                 <button
                     onClick={handleCopy}
+                    aria-label={copied ? "Link copied" : "Copy profile link"}
                     className="mt-3 flex items-center gap-2 text-xs text-text-faint font-mono hover:text-text-secondary transition-colors"
                 >
                     <span>{profileUrl}</span>
@@ -155,7 +162,7 @@ export default function ProfilePage({ data }: { data: ProfileData }) {
                             <a
                                 href={channels.wb}
                                 onClick={() => logChannelClick(coach.slug, "wb")}
-                                className="flex items-center justify-center gap-3 w-full py-3.5 px-6 rounded-xl bg-[#25D366] text-black font-mono text-sm font-bold tracking-wider hover:shadow-glow transition-[box-shadow,transform] duration-200 hover:-translate-y-0.5"
+                                className="flex items-center justify-center gap-3 w-full py-3.5 px-6 rounded-xl bg-brand-green text-black font-mono text-sm font-bold tracking-wider hover:shadow-glow-lg transition-[box-shadow,transform] duration-200 hover:-translate-y-0.5 active:scale-[0.98] active:translate-y-[1px]"
                             >
                                 <MessageSquare className="w-5 h-5" />
                                 Message on WhatsApp
@@ -165,7 +172,7 @@ export default function ProfilePage({ data }: { data: ProfileData }) {
                             <a
                                 href={channels.tg}
                                 onClick={() => logChannelClick(coach.slug, "tg")}
-                                className="flex items-center justify-center gap-3 w-full py-3.5 px-6 rounded-xl bg-[#2AABEE] text-white font-mono text-sm font-bold tracking-wider hover:shadow-[0_0_20px_rgba(42,171,238,0.3)] transition-[box-shadow,transform] duration-200 hover:-translate-y-0.5"
+                                className="flex items-center justify-center gap-3 w-full py-3.5 px-6 rounded-xl bg-brand-telegram text-white font-mono text-sm font-bold tracking-wider hover:shadow-[0_0_40px_rgba(42,171,238,0.25)] transition-[box-shadow,transform] duration-200 hover:-translate-y-0.5 active:scale-[0.98] active:translate-y-[1px]"
                             >
                                 <Send className="w-5 h-5" />
                                 Message on Telegram
@@ -196,7 +203,7 @@ export default function ProfilePage({ data }: { data: ProfileData }) {
                 <p className="mt-12 text-[10px] text-text-faint font-mono uppercase tracking-widest">
                     Powered by FitFlow
                 </p>
-            </div>
+            </motion.div>
         </div>
     );
 }

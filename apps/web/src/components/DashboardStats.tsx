@@ -1,8 +1,19 @@
 "use client";
 
 import { Users, Activity, CheckCircle2, TrendingUp } from "lucide-react";
+import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { formatCurrency } from "@/lib/tokens";
+
+const gridVariants = {
+    hidden: {},
+    visible: { transition: { staggerChildren: 0.08 } },
+};
+
+const cardVariants = {
+    hidden: { opacity: 0, y: 12 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.35, ease: [0.25, 0.1, 0.25, 1] as const } },
+};
 
 interface StatItemProps {
     label: string;
@@ -107,40 +118,36 @@ interface DashboardStatsProps {
 }
 
 export const DashboardStats = ({ stats, loading }: DashboardStatsProps) => {
+    if (loading) {
+        return (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+                <StatItem label="Total Clients" value={0} icon={Users} color="blue" loading />
+                <StatItem label="Active Plans" value={0} icon={Activity} color="violet" loading />
+                <StatItem label="Avg Compliance" value="0%" icon={CheckCircle2} color="green" loading />
+                <StatItem label="Est. Revenue" value="£0" icon={TrendingUp} color="orange" loading />
+            </div>
+        );
+    }
+
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-            <StatItem
-                label="Total Clients"
-                value={stats.totalClients}
-                icon={Users}
-                trend="+12%"
-                trendUp={true}
-                color="blue"
-                loading={loading}
-            />
-            <StatItem
-                label="Active Plans"
-                value={stats.activePlans}
-                icon={Activity}
-                color="violet"
-                loading={loading}
-            />
-            <StatItem
-                label="Avg Compliance"
-                value={`${stats.averageCompliance}%`}
-                icon={CheckCircle2}
-                trend="+5%"
-                trendUp={true}
-                color="green"
-                loading={loading}
-            />
-            <StatItem
-                label="Est. Revenue"
-                value={formatCurrency(stats.revenue)}
-                icon={TrendingUp}
-                color="orange"
-                loading={loading}
-            />
-        </div>
+        <motion.div
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10"
+            variants={gridVariants}
+            initial="hidden"
+            animate="visible"
+        >
+            <motion.div variants={cardVariants}>
+                <StatItem label="Total Clients" value={stats.totalClients} icon={Users} trend="+12%" trendUp color="blue" />
+            </motion.div>
+            <motion.div variants={cardVariants}>
+                <StatItem label="Active Plans" value={stats.activePlans} icon={Activity} color="violet" />
+            </motion.div>
+            <motion.div variants={cardVariants}>
+                <StatItem label="Avg Compliance" value={`${stats.averageCompliance}%`} icon={CheckCircle2} trend="+5%" trendUp color="green" />
+            </motion.div>
+            <motion.div variants={cardVariants}>
+                <StatItem label="Est. Revenue" value={formatCurrency(stats.revenue)} icon={TrendingUp} color="orange" />
+            </motion.div>
+        </motion.div>
     );
 };

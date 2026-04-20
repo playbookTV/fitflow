@@ -363,14 +363,15 @@ function MessagesPageContent() {
                                 <p className="text-text-secondary text-sm">No conversations yet</p>
                             </div>
                         ) : (
-                            filteredConversations.map((conv) => (
+                            filteredConversations.map((conv, index) => (
                                 <button
                                     key={conv.id}
                                     onClick={() => setSelectedConversation(conv)}
                                     className={cn(
-                                        "w-full p-4 flex items-start gap-3 hover:bg-bg-hover transition-colors text-left border-b border-border/50",
+                                        "w-full p-4 flex items-start gap-3 hover:bg-bg-hover transition-colors text-left border-b border-border/50 animate-fade-in",
                                         selectedConversation?.id === conv.id && "bg-bg-hover"
                                     )}
+                                    style={{ animationDelay: `${Math.min(index, 10) * 30}ms`, animationFillMode: "both" }}
                                 >
                                     <div className={cn(
                                         "w-10 h-10 rounded-full bg-gradient-to-br flex items-center justify-center text-white font-bold text-sm shrink-0",

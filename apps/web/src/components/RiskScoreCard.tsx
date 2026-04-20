@@ -52,10 +52,7 @@ export function RiskScoreCard({ client }: RiskScoreCardProps) {
     return (
         <Link
             href={`/dashboard/clients/${client.id}`}
-            className="card group cursor-pointer transition-[color,background-color,border-color,box-shadow,transform] duration-200 p-4"
-            style={{ ["--hover-border" as string]: style.borderColor }}
-            onMouseEnter={(e) => { e.currentTarget.style.borderColor = style.borderColor; }}
-            onMouseLeave={(e) => { e.currentTarget.style.borderColor = ""; }}
+            className="card group cursor-pointer transition-[color,background-color,border-color,box-shadow,transform] duration-200 p-4 hover:border-border-accent hover:shadow-card-hover"
         >
             <div className="flex items-start justify-between mb-3">
                 <div className="flex-1 min-w-0">

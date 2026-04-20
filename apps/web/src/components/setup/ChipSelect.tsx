@@ -49,9 +49,10 @@ export function ChipSelect({
                     <button
                         key={option.value}
                         type="button"
+                        aria-pressed={isSelected(option.value)}
                         onClick={() => handleClick(option.value)}
                         className={cn(
-                            "p-4 rounded-xl border text-left transition-[color,background-color,border-color] duration-200",
+                            "p-4 rounded-xl border text-left transition-[color,background-color,border-color] duration-200 focus-visible:ring-2 focus-visible:ring-brand-green/50 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-primary",
                             isSelected(option.value)
                                 ? "border-brand-green/40 bg-brand-green/10"
                                 : "border-border bg-bg-hover hover:border-border-hover"
@@ -96,9 +97,10 @@ export function ChipSelect({
                 <button
                     key={option.value}
                     type="button"
+                    aria-pressed={isSelected(option.value)}
                     onClick={() => handleClick(option.value)}
                     className={cn(
-                        "px-3.5 py-1.5 rounded-full text-sm font-medium border transition-[color,background-color,border-color] duration-200",
+                        "px-3.5 py-1.5 rounded-full text-sm font-medium border transition-[color,background-color,border-color] duration-200 focus-visible:ring-2 focus-visible:ring-brand-green/50 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-primary",
                         isSelected(option.value)
                             ? "border-brand-green/40 bg-brand-green/10 text-brand-green"
                             : "border-border bg-bg-hover text-text-secondary hover:border-border-hover hover:text-white"

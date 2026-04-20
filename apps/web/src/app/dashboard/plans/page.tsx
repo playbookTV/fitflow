@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import { getAuthHeaders } from "@/lib/auth";
+import { motion } from "framer-motion";
 
 interface WorkoutPlan {
     id: string;
@@ -27,6 +28,9 @@ interface WorkoutPlan {
         assignments: number;
     };
 }
+
+const gridVariants = { hidden: {}, visible: { transition: { staggerChildren: 0.06 } } };
+const cardVariants = { hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0, transition: { duration: 0.35, ease: [0.25, 0.1, 0.25, 1] as const } } };
 
 export default function PlansPage() {
     const [plans, setPlans] = useState<WorkoutPlan[]>([]);
@@ -151,10 +155,10 @@ export default function PlansPage() {
                     )}
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <motion.div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" variants={gridVariants} initial="hidden" animate="visible">
                     {filteredPlans.map((plan) => (
+                        <motion.div key={plan.id} variants={cardVariants}>
                         <div
-                            key={plan.id}
                             className="card-interactive p-5 group relative"
                         >
                             {/* Menu button */}
@@ -236,9 +240,11 @@ export default function PlansPage() {
                                 </p>
                             </Link>
                         </div>
+                        </motion.div>
                     ))}
 
                     {/* Create new card */}
+                    <motion.div variants={cardVariants}>
                     <Link
                         href="/dashboard/plans/new"
                         className="flex flex-col items-center justify-center p-5 rounded-2xl border border-dashed border-border-hover bg-transparent hover:bg-bg-hover hover:border-brand-green/30 transition-[color,background-color,border-color] duration-200 group min-h-[200px]"
@@ -250,7 +256,8 @@ export default function PlansPage() {
                             Create New Plan
                         </p>
                     </Link>
-                </div>
+                    </motion.div>
+                </motion.div>
             )}
         </DashboardLayout>
     );

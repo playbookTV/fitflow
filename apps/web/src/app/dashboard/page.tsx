@@ -6,7 +6,7 @@ import { DashboardStats } from "@/components/DashboardStats";
 import { ClientGrid } from "@/components/ClientGrid";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { RiskScoreCard } from "@/components/RiskScoreCard";
-import { Search, Filter, RefreshCcw, MessageSquare, Plus, Send, UserPlus } from "lucide-react";
+import { Search, Filter, RefreshCcw, MessageSquare, Plus, Send, UserPlus, BarChart3, ArrowUpRight } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { getAuthHeaders } from "@/lib/auth";
@@ -61,6 +61,7 @@ export default function DashboardPage() {
     const [clients, setClients] = useState<Client[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
+    const [analyticsLocked, setAnalyticsLocked] = useState(false);
 
     const router = useRouter();
 
@@ -88,7 +89,12 @@ export default function DashboardPage() {
                 }
             }
 
-            if (statsRes.ok) setStats(await statsRes.json());
+            if (statsRes.ok) {
+                setStats(await statsRes.json());
+                setAnalyticsLocked(false);
+            } else if (statsRes.status === 403) {
+                setAnalyticsLocked(true);
+            }
             if (clientsRes.ok) setClients(await clientsRes.json());
         } catch (error) {
             console.error("Dashboard fetch error:", error);
@@ -144,55 +150,80 @@ export default function DashboardPage() {
             }
         >
 
-                {/* Stats */}
-                <DashboardStats stats={stats} loading={loading} />
+                {/* Stats or Upgrade Prompt */}
+                {analyticsLocked && !loading ? (
+                    <div className="card p-6 mb-10 flex items-center gap-5 border-brand-violet/20 bg-brand-violet/5">
+                        <div className="p-3 rounded-xl bg-brand-violet-glow border border-brand-violet-border">
+                            <BarChart3 className="w-5 h-5 text-brand-violet" aria-hidden="true" />
+                        </div>
+                        <div className="flex-1">
+                            <p className="text-sm font-semibold text-white mb-0.5">
+                                Analytics requires a Pro plan
+                            </p>
+                            <p className="text-sm text-text-secondary">
+                                Upgrade to unlock compliance tracking, revenue insights, and at-risk client alerts.
+                            </p>
+                        </div>
+                        <Link
+                            href="/dashboard/subscription"
+                            className="btn-primary shrink-0"
+                        >
+                            Upgrade
+                            <ArrowUpRight className="w-4 h-4" aria-hidden="true" />
+                        </Link>
+                    </div>
+                ) : (
+                    <>
+                        <DashboardStats stats={stats} loading={loading} />
 
-                {/* Channel Breakdown & Leads */}
-                {!loading && (stats.channels || stats.newLeads) && (
-                    <div className="flex flex-wrap gap-4 mb-10 animate-fade-in">
-                        {stats.channels && (
-                            <div className="card p-4 flex items-center gap-4">
-                                <div className="flex items-center gap-2 text-sm">
-                                    <MessageSquare className="w-4 h-4 text-brand-green" aria-hidden="true" />
-                                    <span className="text-text-secondary">WhatsApp</span>
-                                    <span className="font-bold text-white tabular-nums">{stats.channels.whatsapp}</span>
+                        {/* Channel Breakdown & Leads */}
+                        {!loading && (stats.channels || stats.newLeads) && (
+                            <div className="flex flex-wrap gap-4 mb-10 animate-fade-in">
+                                {stats.channels && (
+                                    <div className="card p-4 flex items-center gap-4">
+                                        <div className="flex items-center gap-2 text-sm">
+                                            <MessageSquare className="w-4 h-4 text-brand-green" aria-hidden="true" />
+                                            <span className="text-text-secondary">WhatsApp</span>
+                                            <span className="font-bold text-white tabular-nums">{stats.channels.whatsapp}</span>
+                                        </div>
+                                        <div className="w-px h-6 bg-border" />
+                                        <div className="flex items-center gap-2 text-sm">
+                                            <Send className="w-4 h-4 text-brand-blue" aria-hidden="true" />
+                                            <span className="text-text-secondary">Telegram</span>
+                                            <span className="font-bold text-white tabular-nums">{stats.channels.telegram}</span>
+                                        </div>
+                                    </div>
+                                )}
+                                {(stats.newLeads ?? 0) > 0 && (
+                                    <Link
+                                        href="/dashboard/leads"
+                                        className="card p-4 flex items-center gap-3 hover:border-brand-orange/30 transition-colors"
+                                    >
+                                        <UserPlus className="w-4 h-4 text-brand-orange" aria-hidden="true" />
+                                        <span className="text-sm text-text-secondary">New Leads</span>
+                                        <span className="badge badge-orange">{stats.newLeads}</span>
+                                    </Link>
+                                )}
+                            </div>
+                        )}
+
+                        {/* At Risk Alerts */}
+                        {stats.atRiskClients?.length > 0 && (
+                            <div className="mb-10 animate-fade-in">
+                                <div className="section-header">
+                                    <h2 className="section-title flex items-center gap-2 text-balance">
+                                        <div className="w-2 h-2 rounded-full bg-brand-red animate-pulse-glow" />
+                                        Needs Attention
+                                    </h2>
                                 </div>
-                                <div className="w-px h-6 bg-border" />
-                                <div className="flex items-center gap-2 text-sm">
-                                    <Send className="w-4 h-4 text-brand-blue" aria-hidden="true" />
-                                    <span className="text-text-secondary">Telegram</span>
-                                    <span className="font-bold text-white tabular-nums">{stats.channels.telegram}</span>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    {stats.atRiskClients.map((client) => (
+                                        <RiskScoreCard key={client.id} client={client} />
+                                    ))}
                                 </div>
                             </div>
                         )}
-                        {(stats.newLeads ?? 0) > 0 && (
-                            <Link
-                                href="/dashboard/leads"
-                                className="card p-4 flex items-center gap-3 hover:border-brand-orange/30 transition-colors"
-                            >
-                                <UserPlus className="w-4 h-4 text-brand-orange" aria-hidden="true" />
-                                <span className="text-sm text-text-secondary">New Leads</span>
-                                <span className="badge badge-orange">{stats.newLeads}</span>
-                            </Link>
-                        )}
-                    </div>
-                )}
-
-                {/* At Risk Alerts */}
-                {stats.atRiskClients?.length > 0 && (
-                    <div className="mb-10 animate-fade-in">
-                        <div className="section-header">
-                            <h2 className="section-title flex items-center gap-2 text-balance">
-                                <div className="w-2 h-2 rounded-full bg-brand-red animate-pulse-glow" />
-                                Needs Attention
-                            </h2>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {stats.atRiskClients.map((client) => (
-                                <RiskScoreCard key={client.id} client={client} />
-                            ))}
-                        </div>
-                    </div>
+                    </>
                 )}
 
                 {/* Client Roster */}

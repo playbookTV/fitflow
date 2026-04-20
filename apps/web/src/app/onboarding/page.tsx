@@ -105,7 +105,7 @@ function OnboardingContent() {
                     <p className="text-text-secondary text-pretty">Let&apos;s personalize your fitness journey, {clientName || "there"}.</p>
                 </div>
 
-                <div className="flex gap-2 mb-8 justify-center">
+                <div className="flex gap-2 mb-8 justify-center" role="progressbar" aria-valuenow={step} aria-valuemin={1} aria-valuemax={3} aria-label="Intake progress">
                     {[1, 2, 3].map(i => (
                         <div
                             key={i}
