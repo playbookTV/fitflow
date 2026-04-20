@@ -14,6 +14,10 @@ export interface AuthRequest extends Request {
     };
 }
 
+// In-memory set of coach IDs we've already verified exist in the DB.
+// Avoids a findUnique query on every single authenticated request.
+const knownCoachIds = new Set<string>();
+
 export const authenticate = async (
     req: AuthRequest,
     res: Response,
@@ -43,11 +47,13 @@ export const authenticate = async (
         };
 
         // Ensure coach record exists (creates on first authenticated request)
-        try {
-            console.log(`[Auth] Ensuring coach for ${user.id}`);
-            if (user.email) {
+        if (!knownCoachIds.has(user.id) && user.email) {
+            try {
                 const existing = await prisma.coach.findUnique({ where: { id: user.id } });
-                if (!existing) {
+                if (existing) {
+                    knownCoachIds.add(user.id);
+                } else {
+                    console.log(`[Auth] Creating coach for ${user.id}`);
                     const fullName = user.user_metadata?.full_name as string | undefined;
                     const baseSlug = (fullName || user.email!.split("@")[0])
                         .toLowerCase()
@@ -69,12 +75,15 @@ export const authenticate = async (
                             billingCurrency,
                         },
                     });
+                    knownCoachIds.add(user.id);
                 }
-            }
-        } catch (upsertErr: any) {
-            // P2002 = unique constraint race — another concurrent request already created the coach
-            if (upsertErr?.code !== "P2002") {
-                console.error("[Auth] Coach ensure failed:", upsertErr);
+            } catch (upsertErr: any) {
+                // P2002 = unique constraint race — another concurrent request already created the coach
+                if (upsertErr?.code === "P2002") {
+                    knownCoachIds.add(user.id);
+                } else {
+                    console.error("[Auth] Coach ensure failed:", upsertErr);
+                }
             }
         }
 
