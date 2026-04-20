@@ -97,15 +97,14 @@ export const META_TEMPLATES: Record<TemplateId, MetaTemplateDefinition> = {
 
     // ── Workout Delivery ─────────────────────────────────────────
     [TemplateId.WORKOUT_DAILY]: {
-        metaName: "fitflow_workout_daily_v3",
+        metaName: "fitflow_workout_daily_v2",
         category: "UTILITY",
         language: "en",
         bodyText:
             "Day {{1}} — {{2}} 💪\n\n" +
             "{{3}}\n\n" +
-            "How did it go?",
+            "Hit Done ✅ when you've finished, Skipped ⏭ if you can't make it today, or Modified 🔄 if you changed something.",
         paramKeys: ["workout_day_number", "workout_name", "exercise_list"],
-        quickReplyButtons: ["✅ Done", "⏭ Skipped", "🔄 Modified"],
     },
     [TemplateId.WORKOUT_REST_DAY]: {
         metaName: "fitflow_workout_rest_day",
@@ -286,19 +285,16 @@ export const META_TEMPLATES: Record<TemplateId, MetaTemplateDefinition> = {
 
     // ── Meal Delivery ─────────────────────────────────────────────
     [TemplateId.MEAL_DAILY]: {
-        metaName: "fitflow_meal_daily_v3",
+        metaName: "fitflow_meal_daily",
         category: "UTILITY",
         language: "en",
         bodyText:
-            "Hey {{1}}, here's your plan for today.\n\n" +
-            "Day {{2}} 🍽️\n" +
+            "🍽️ Today's Meal Plan — Day {{1}}\n\n" +
+            "Plan: {{2}}\n\n" +
             "{{3}}\n\n" +
-            "{{4}}\n\n" +
-            "📊 Daily Totals\n" +
-            "Protein: {{5}}g | Carbs: {{6}}g | Fat: {{7}}g | Calories: {{8}}\n\n" +
-            "How did it go?",
-        paramKeys: ["client_first_name", "day_number", "plan_title", "meals_list", "protein", "carbs", "fat", "calories"],
-        quickReplyButtons: ["✅ Done", "⏭ Skipped"],
+            "📊 {{4}}\n\n" +
+            "Hit Done ✅ when you've followed today's plan, or Skipped ⏭ if you couldn't stick to it.",
+        paramKeys: ["day_number", "plan_title", "meals_list", "macros_summary"],
     },
     [TemplateId.MEAL_REST_DAY]: {
         metaName: "fitflow_meal_rest_day",

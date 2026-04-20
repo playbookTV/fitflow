@@ -128,12 +128,15 @@ export const mealWorker = new Worker(
 
             const clientFirstName = client.name.split(" ")[0];
 
+            const macrosSummary = `Protein: ${mealData.protein}g | Carbs: ${mealData.carbs}g | Fat: ${mealData.fat}g | ${mealData.calories} cal`;
+
             const result = await channel.sendTemplate(recipientId, TemplateId.MEAL_DAILY, {
                 client_first_name: clientFirstName,
                 day_number: mealDay,
                 day_title: matchingDay?.title || "",
                 plan_title: assignment.plan.title,
                 meals_list: mealData.mealsList,
+                macros_summary: macrosSummary,
                 protein: mealData.protein,
                 carbs: mealData.carbs,
                 fat: mealData.fat,
