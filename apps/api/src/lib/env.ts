@@ -13,6 +13,8 @@ const envSchema = z.object({
     META_APP_SECRET: z.string().min(1),
     STRIPE_SECRET_KEY: z.string().min(1),
     STRIPE_WEBHOOK_SECRET: z.string().min(1),
+    STRIPE_SUBSCRIPTION_WEBHOOK_SECRET: z.string().min(1),
+    TG_WEBHOOK_SECRET: z.string().min(1),
     ANTHROPIC_API_KEY: z.string().min(1),
     REDIS_URL: z.string().default("redis://localhost:6379"),
     WEB_URL: z.string().default("http://localhost:3000"),

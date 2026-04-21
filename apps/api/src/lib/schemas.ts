@@ -25,12 +25,13 @@ export const updateClientSchema = z.object({
     email: z.string().email().max(255).optional().nullable(),
     goals: z.string().max(2000).optional().nullable(),
     notes: z.string().max(2000).optional().nullable(),
-    status: z.enum([
-        "PENDING_PAYMENT", "INTAKE_SENT", "INTAKE_COMPLETE",
-        "PLAN_ASSIGNED", "ACTIVE", "PAUSED", "INACTIVE",
-    ]).optional(),
+    // status intentionally omitted — transitions must go through dedicated flows
+    // (payment confirmation, intake completion, plan assignment, etc.)
     preferredChannel: z.enum(["WHATSAPP", "TELEGRAM"]).optional(),
     timezone: z.string().max(50).optional(),
+    monthlyRate: z.number().int().min(0).optional(),
+    conversationPinned: z.boolean().optional(),
+    conversationArchived: z.boolean().optional(),
 });
 
 // --- Plan schemas ---

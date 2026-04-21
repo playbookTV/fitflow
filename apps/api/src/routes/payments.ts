@@ -64,7 +64,7 @@ router.post("/checkout", authenticate, requireTier("PRO", "STUDIO"), async (req:
 });
 
 // POST /payments/confirm-bank-transfer - Coach manually confirms a bank transfer
-router.post("/confirm-bank-transfer", authenticate, async (req: AuthRequest, res: Response) => {
+router.post("/confirm-bank-transfer", authenticate, requireTier("PRO", "STUDIO"), async (req: AuthRequest, res: Response) => {
     const coachId = req.user?.id as string;
     const { clientId, amount, currency } = req.body;
 

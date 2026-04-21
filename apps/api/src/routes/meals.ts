@@ -66,45 +66,9 @@ router.post("/", authenticate, async (req: AuthRequest, res: Response) => {
     }
 });
 
-// PUT /meals/:id — update a meal
-router.put("/:id", authenticate, async (req: AuthRequest, res: Response) => {
-    const { id } = req.params;
-    const { name, category, protein, carbs, fat, calories, ingredients, prepTime, recipeUrl, imageUrl } = req.body;
-
-    try {
-        const meal = await prisma.meal.update({
-            where: { id: id as string },
-            data: {
-                ...(name !== undefined && { name }),
-                ...(category !== undefined && { category }),
-                ...(protein !== undefined && { protein: protein != null ? Number(protein) : null }),
-                ...(carbs !== undefined && { carbs: carbs != null ? Number(carbs) : null }),
-                ...(fat !== undefined && { fat: fat != null ? Number(fat) : null }),
-                ...(calories !== undefined && { calories: calories != null ? Number(calories) : null }),
-                ...(ingredients !== undefined && { ingredients }),
-                ...(prepTime !== undefined && { prepTime }),
-                ...(recipeUrl !== undefined && { recipeUrl }),
-                ...(imageUrl !== undefined && { imageUrl }),
-            },
-        });
-        res.json(meal);
-    } catch (error) {
-        console.error(`[PUT /meals/${id}]`, error);
-        res.status(500).json({ error: "Failed to update meal" });
-    }
-});
-
-// DELETE /meals/:id — delete a meal
-router.delete("/:id", authenticate, async (req: AuthRequest, res: Response) => {
-    const { id } = req.params;
-
-    try {
-        await prisma.meal.delete({ where: { id: id as string } });
-        res.json({ success: true });
-    } catch (error) {
-        console.error(`[DELETE /meals/${id}]`, error);
-        res.status(500).json({ error: "Failed to delete meal" });
-    }
-});
+// PUT and DELETE removed — the Meal table is a shared global catalog with no
+// ownership model. Without a coachId column, any authenticated coach could
+// mutate or delete meals used by every other coach on the platform.
+// If per-coach meal editing is needed, add a coachId column + migration first.
 
 export default router;

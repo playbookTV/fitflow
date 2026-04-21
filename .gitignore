@@ -26,6 +26,9 @@ Thumbs.db
 *.swp
 *.swo
 
+# AI tooling (may contain plaintext secrets in permission rules)
+.claude/
+
 # Logs
 *.log
 npm-debug.log*

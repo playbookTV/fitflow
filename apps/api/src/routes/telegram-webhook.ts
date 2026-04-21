@@ -2,6 +2,7 @@ import { Router } from "express";
 import { MessageChannel, MessageDirection } from "@prisma/client";
 import { TemplateId } from "@fitflow/shared";
 import { prisma } from "../lib/prisma";
+import { env } from "../lib/env";
 import { answerCallbackQuery, sendTelegramMessage } from "../lib/telegram";
 import { getChannel, getRecipientId } from "../lib/channels/channel-router";
 import { messageQueue } from "../lib/queue";
@@ -31,15 +32,12 @@ router.post("/", async (req, res) => {
         return;
     }
 
-    // Validate webhook secret
-    const expectedSecret = process.env.TG_WEBHOOK_SECRET;
-    if (expectedSecret) {
-        const incomingSecret = req.headers["x-telegram-bot-api-secret-token"];
-        if (incomingSecret !== expectedSecret) {
-            console.warn("[TG Webhook] Invalid secret token — rejecting.");
-            res.sendStatus(401);
-            return;
-        }
+    // Validate webhook secret — fail closed if missing or mismatched
+    const incomingSecret = req.headers["x-telegram-bot-api-secret-token"];
+    if (incomingSecret !== env.TG_WEBHOOK_SECRET) {
+        console.warn("[TG Webhook] Invalid or missing secret token — rejecting.");
+        res.sendStatus(401);
+        return;
     }
 
     // Respond 200 immediately so Telegram doesn't retry while we process.

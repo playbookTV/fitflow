@@ -1,6 +1,7 @@
 import Stripe from "stripe";
+import { env } from "./env";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
+const stripe = new Stripe(env.STRIPE_SECRET_KEY, {
     apiVersion: "2025-02-24.acacia",
 });
 
@@ -72,7 +73,7 @@ export const verifyWebhook = (payload: string | Buffer, signature: string) => {
     return stripe.webhooks.constructEvent(
         payload,
         signature,
-        process.env.STRIPE_WEBHOOK_SECRET || ""
+        env.STRIPE_WEBHOOK_SECRET
     );
 };
 
@@ -129,7 +130,7 @@ export const verifySubscriptionWebhook = (
     return stripe.webhooks.constructEvent(
         payload,
         signature,
-        process.env.STRIPE_SUBSCRIPTION_WEBHOOK_SECRET || ""
+        env.STRIPE_SUBSCRIPTION_WEBHOOK_SECRET
     );
 };
 
