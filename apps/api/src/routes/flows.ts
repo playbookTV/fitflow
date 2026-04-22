@@ -203,7 +203,7 @@ router.post("/send/workout", authenticate, async (req: AuthRequest, res) => {
 const testFlowLimiter = rateLimit({
     windowMs: 60 * 60 * 1000, // 1 hour
     max: 5,
-    keyGenerator: (req: AuthRequest) => req.user?.id || req.ip!,
+    keyGenerator: (req: AuthRequest) => req.user?.id || "anonymous",
     standardHeaders: true,
     legacyHeaders: false,
     message: { error: "Test flow rate limit exceeded. Max 5 per hour." },

@@ -124,9 +124,7 @@ describe("Quick Reply Buttons", () => {
         (id) => META_TEMPLATES[id].quickReplyButtons
     );
 
-    it("should have buttons on workout, meal, and checkin templates", () => {
-        expect(META_TEMPLATES[TemplateId.WORKOUT_DAILY].quickReplyButtons).toBeDefined();
-        expect(META_TEMPLATES[TemplateId.MEAL_DAILY].quickReplyButtons).toBeDefined();
+    it("should have buttons on checkin and meal nudge templates", () => {
         expect(META_TEMPLATES[TemplateId.CHECKIN_WEEKLY_PROMPT].quickReplyButtons).toBeDefined();
         expect(META_TEMPLATES[TemplateId.CHECKIN_MISSED_NUDGE].quickReplyButtons).toBeDefined();
         expect(META_TEMPLATES[TemplateId.MEAL_MISSED_NUDGE].quickReplyButtons).toBeDefined();

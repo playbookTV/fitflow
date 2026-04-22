@@ -1,5 +1,5 @@
-import { describe, it, expect, vi } from "vitest";
-import { authenticate, AuthRequest } from "../auth";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { authenticate, AuthRequest, _resetCoachCache } from "../auth";
 import { prismaMock } from "../../__tests__/mocks/prisma";
 import { mockGetUser } from "../../__tests__/mocks/auth";
 import { buildCoach } from "../../__tests__/factories";
@@ -23,6 +23,10 @@ function createMockReqRes(overrides: Partial<AuthRequest> = {}) {
 }
 
 describe("authenticate middleware", () => {
+    beforeEach(() => {
+        _resetCoachCache();
+    });
+
     it("returns 401 when Authorization header is missing", async () => {
         const { req, res, next } = createMockReqRes({ headers: {} as any });
         await authenticate(req, res, next);

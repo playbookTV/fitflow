@@ -20,6 +20,9 @@ export interface AuthRequest extends Request {
 const knownCoachIds = new Map<string, number>();
 const COACH_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
+/** @internal Exposed for tests only — clears the in-memory coach cache. */
+export const _resetCoachCache = () => knownCoachIds.clear();
+
 export const authenticate = async (
     req: AuthRequest,
     res: Response,
