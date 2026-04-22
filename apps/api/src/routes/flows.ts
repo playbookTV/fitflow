@@ -1,5 +1,7 @@
 import { Router } from "express";
+import rateLimit from "express-rate-limit";
 import { authenticate, AuthRequest } from "../middleware/auth";
+import { requirePlatformAdmin } from "../middleware/admin";
 import {
     createFlow,
     uploadFlowJson,
@@ -31,7 +33,7 @@ const FLOW_SCHEMAS: Record<string, object> = {
 /**
  * GET /flows - List all flows
  */
-router.get("/", authenticate, async (_req: AuthRequest, res) => {
+router.get("/", authenticate, requirePlatformAdmin, async (_req: AuthRequest, res) => {
     try {
         const flows = await listFlows();
         res.json({ flows });
@@ -44,7 +46,7 @@ router.get("/", authenticate, async (_req: AuthRequest, res) => {
 /**
  * GET /flows/:flowId - Get flow details
  */
-router.get("/:flowId", authenticate, async (req: AuthRequest, res) => {
+router.get("/:flowId", authenticate, requirePlatformAdmin, async (req: AuthRequest, res) => {
     const flowId = req.params.flowId as string;
     try {
         const flow = await getFlow(flowId);
@@ -59,7 +61,7 @@ router.get("/:flowId", authenticate, async (req: AuthRequest, res) => {
  * POST /flows/create - Create a new flow
  * Body: { name: string, type: "weekly_checkin" | "workout_log" }
  */
-router.post("/create", authenticate, async (req: AuthRequest, res) => {
+router.post("/create", authenticate, requirePlatformAdmin, async (req: AuthRequest, res) => {
     const { name, type } = req.body;
 
     if (!name || !type) {
@@ -99,7 +101,7 @@ router.post("/create", authenticate, async (req: AuthRequest, res) => {
 /**
  * POST /flows/:flowId/publish - Publish a flow
  */
-router.post("/:flowId/publish", authenticate, async (req: AuthRequest, res) => {
+router.post("/:flowId/publish", authenticate, requirePlatformAdmin, async (req: AuthRequest, res) => {
     const flowId = req.params.flowId as string;
     try {
         await publishFlow(flowId);
@@ -113,7 +115,7 @@ router.post("/:flowId/publish", authenticate, async (req: AuthRequest, res) => {
 /**
  * DELETE /flows/:flowId - Delete a flow
  */
-router.delete("/:flowId", authenticate, async (req: AuthRequest, res) => {
+router.delete("/:flowId", authenticate, requirePlatformAdmin, async (req: AuthRequest, res) => {
     const flowId = req.params.flowId as string;
     try {
         await deleteFlow(flowId);
@@ -195,22 +197,40 @@ router.post("/send/workout", authenticate, async (req: AuthRequest, res) => {
 });
 
 /**
- * POST /flows/test - Test a flow by sending to a phone number directly
+ * POST /flows/test - Test a flow by sending to one of YOUR clients' phone numbers
  * Body: { phone: string, flowId: string, type: "checkin" | "workout", mode?: "draft" | "published" }
  */
-router.post("/test", authenticate, async (req: AuthRequest, res) => {
+const testFlowLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000, // 1 hour
+    max: 5,
+    keyGenerator: (req: AuthRequest) => req.user?.id || req.ip!,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: "Test flow rate limit exceeded. Max 5 per hour." },
+});
+
+router.post("/test", authenticate, testFlowLimiter, async (req: AuthRequest, res) => {
+    const coachId = req.user?.id;
     const { phone, flowId, type, mode = "draft" } = req.body;
 
     if (!phone || !flowId || !type) {
         return res.status(400).json({ error: "phone, flowId, and type are required" });
     }
 
+    // Verify the phone belongs to one of this coach's clients
+    const client = await prisma.client.findFirst({
+        where: { phone, coachId },
+    });
+    if (!client) {
+        return res.status(403).json({ error: "Phone number does not belong to one of your clients" });
+    }
+
     try {
         let result;
         if (type === "checkin") {
-            result = await sendCheckinFlow(phone, flowId, undefined, mode);
+            result = await sendCheckinFlow(phone, flowId, client.id, mode);
         } else if (type === "workout") {
-            result = await sendWorkoutLogFlow(phone, flowId, undefined, mode);
+            result = await sendWorkoutLogFlow(phone, flowId, client.id, mode);
         } else {
             return res.status(400).json({ error: "type must be 'checkin' or 'workout'" });
         }

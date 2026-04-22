@@ -60,6 +60,11 @@ router.post("/ymove-import", authenticate, async (req: AuthRequest, res: Respons
         return res.status(400).json({ error: "ymoveId is required" });
     }
 
+    // Prevent path traversal — ymoveId is interpolated into a URL path
+    if (!/^[a-zA-Z0-9][a-zA-Z0-9_-]{0,127}$/.test(ymoveId)) {
+        return res.status(400).json({ error: "Invalid ymoveId format" });
+    }
+
     try {
         // Check if already imported
         const existing = await prisma.exercise.findUnique({ where: { ymoveId } });

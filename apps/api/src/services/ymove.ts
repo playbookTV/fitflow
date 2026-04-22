@@ -50,6 +50,10 @@ export async function searchExercises(params: {
 }
 
 export async function fetchExercise(idOrSlug: string): Promise<YMoveExercise> {
+    // Defense-in-depth: reject path traversal characters even if caller validated
+    if (!/^[a-zA-Z0-9][a-zA-Z0-9_-]{0,127}$/.test(idOrSlug)) {
+        throw new Error("Invalid exercise identifier");
+    }
     const resp = await ymoveGet<{ data: YMoveExercise }>(`/exercises/${idOrSlug}`);
     return resp.data;
 }

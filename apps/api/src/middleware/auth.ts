@@ -14,9 +14,11 @@ export interface AuthRequest extends Request {
     };
 }
 
-// In-memory set of coach IDs we've already verified exist in the DB.
-// Avoids a findUnique query on every single authenticated request.
-const knownCoachIds = new Set<string>();
+// In-memory cache of coach IDs with timestamps for TTL-based re-verification.
+// Avoids a findUnique query on every single authenticated request, while
+// ensuring deleted coaches are detected within the TTL window.
+const knownCoachIds = new Map<string, number>();
+const COACH_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
 export const authenticate = async (
     req: AuthRequest,
@@ -46,12 +48,19 @@ export const authenticate = async (
             email: user.email,
         };
 
-        // Ensure coach record exists (creates on first authenticated request)
-        if (!knownCoachIds.has(user.id) && user.email) {
+        // Ensure coach record exists (creates on first authenticated request).
+        // Re-verify against DB when cache entry is missing or expired.
+        const cachedAt = knownCoachIds.get(user.id);
+        const cacheValid = cachedAt != null && (Date.now() - cachedAt < COACH_CACHE_TTL_MS);
+        if (!cacheValid && user.email) {
             try {
                 const existing = await prisma.coach.findUnique({ where: { id: user.id } });
                 if (existing) {
-                    knownCoachIds.add(user.id);
+                    knownCoachIds.set(user.id, Date.now());
+                } else if (cachedAt != null) {
+                    // Coach was previously cached but no longer exists in DB — deleted
+                    knownCoachIds.delete(user.id);
+                    return res.status(403).json({ error: "Coach account not found" });
                 } else {
                     console.log(`[Auth] Creating coach for ${user.id}`);
                     const fullName = user.user_metadata?.full_name as string | undefined;
@@ -75,12 +84,12 @@ export const authenticate = async (
                             billingCurrency,
                         },
                     });
-                    knownCoachIds.add(user.id);
+                    knownCoachIds.set(user.id, Date.now());
                 }
             } catch (upsertErr: any) {
                 // P2002 = unique constraint race — another concurrent request already created the coach
                 if (upsertErr?.code === "P2002") {
-                    knownCoachIds.add(user.id);
+                    knownCoachIds.set(user.id, Date.now());
                 } else {
                     console.error("[Auth] Coach ensure failed:", upsertErr);
                 }
