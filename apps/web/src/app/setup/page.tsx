@@ -137,7 +137,6 @@ function SetupContent() {
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [createdClient, setCreatedClient] = useState<CreatedClient | null>(null);
-    const [completedStep3, setCompletedStep3] = useState(false);
     const [stripeLoading, setStripeLoading] = useState(false);
     const [stripeConnected, setStripeConnected] = useState(false);
 
@@ -331,7 +330,6 @@ function SetupContent() {
 
             const result = await res.json();
             setCreatedClient(result);
-            setCompletedStep3(true);
             await saveStep(3, {});
             setStep(4);
         } catch (err) {

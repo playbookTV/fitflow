@@ -264,7 +264,7 @@ export default function BillingPage() {
 
         setConfirmingTransfer(true);
         try {
-            const body: Record<string, any> = { clientId: targetClientId };
+            const body: Record<string, string | number> = { clientId: targetClientId };
             if (paymentId) {
                 body.paymentId = paymentId;
             } else {
