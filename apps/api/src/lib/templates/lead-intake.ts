@@ -5,7 +5,7 @@ import {
     LeadPaymentRequestContext,
     LeadPaymentConfirmedContext,
 } from "@fitflow/shared";
-import { escapeMarkdownV2 as esc } from "./escape";
+import { escapeMarkdownV2 as esc, escapeMarkdownV2Url as escUrl } from "./escape";
 import { registerTemplate } from "./registry";
 
 const leadEnquiryResponse: TemplateDefinition<LeadEnquiryContext> = {
@@ -17,7 +17,7 @@ const leadEnquiryResponse: TemplateDefinition<LeadEnquiryContext> = {
                 text:
                     `Hi ${esc(ctx.client_first_name)} \u{1F44B}\n\n` +
                     `Thanks for your interest in ${esc(ctx.offer_name)}\\. Click below to complete your intake \u{2014} it takes about 3 minutes\\.\n\n` +
-                    `[Complete intake form](${esc(ctx.intake_link)})\n\n` +
+                    `[Complete intake form](${escUrl(ctx.intake_link)})\n\n` +
                     `I'll review your details and confirm your spot shortly\\.\n\n` +
                     `\u{2014} ${esc(ctx.coach_first_name)}`,
                 parseMode: "MarkdownV2",
@@ -47,7 +47,7 @@ const leadPaymentRequest: TemplateDefinition<LeadPaymentRequestContext> = {
                     `Hi ${esc(ctx.client_first_name)},\n\n` +
                     `You're confirmed as a great fit for ${esc(ctx.offer_name)} \u{2014} excited to work with you\\.\n\n` +
                     `Complete your payment below to lock in your spot:\n\n` +
-                    `[Pay now \u{2014} ${esc(ctx.offer_name)}](${esc(ctx.payment_link)})\n\n` +
+                    `[Pay now \u{2014} ${esc(ctx.offer_name)}](${escUrl(ctx.payment_link)})\n\n` +
                     `I'll activate your programme as soon as payment goes through\\.\n\n` +
                     `${esc(ctx.coach_first_name)}`,
                 parseMode: "MarkdownV2",

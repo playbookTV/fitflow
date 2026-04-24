@@ -264,6 +264,13 @@ router.post("/stripe/connect", authenticate, async (req: AuthRequest, res: Respo
             });
         }
 
+        if (error?.type === "StripeInvalidRequestError" && error?.message?.includes("platform-profile")) {
+            return res.status(503).json({
+                error: "Stripe Connect platform setup is incomplete. The platform admin needs to complete the Connect profile in the Stripe Dashboard.",
+                code: "STRIPE_PLATFORM_PROFILE_INCOMPLETE",
+            });
+        }
+
         res.status(500).json({ error: "Failed to initiate Stripe Connect" });
     }
 });

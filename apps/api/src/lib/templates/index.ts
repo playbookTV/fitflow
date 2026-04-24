@@ -14,4 +14,4 @@ import "./exercise";
 // Re-export the public API
 export { renderTemplate } from "./render";
 export { getTemplate, getAllTemplateIds } from "./registry";
-export { escapeMarkdownV2 } from "./escape";
+export { escapeMarkdownV2, escapeMarkdownV2Url } from "./escape";

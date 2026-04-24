@@ -5,7 +5,7 @@ import {
     Renewal2DayContext,
     RenewalPostExpiryContext,
 } from "@fitflow/shared";
-import { escapeMarkdownV2 as esc } from "./escape";
+import { escapeMarkdownV2 as esc, escapeMarkdownV2Url as escUrl } from "./escape";
 import { registerTemplate } from "./registry";
 
 const renewal7Day: TemplateDefinition<Renewal7DayContext> = {
@@ -17,7 +17,7 @@ const renewal7Day: TemplateDefinition<Renewal7DayContext> = {
                 text:
                     `Hey ${esc(ctx.client_first_name)},\n\n` +
                     `Your programme wraps up on *${esc(ctx.renewal_date)}* \u{2014} 7 days from now\\.\n\n` +
-                    `[Renew here \u{2014} ${esc(ctx.renewal_amount)}](${esc(ctx.payment_link)})\n\n` +
+                    `[Renew here \u{2014} ${esc(ctx.renewal_amount)}](${escUrl(ctx.payment_link)})\n\n` +
                     `Renewing keeps everything intact \u{2014} your history, your plan, your progress\\. Let me know if you want to talk through what's next\\.\n\n` +
                     `${esc(ctx.coach_first_name)}`,
                 parseMode: "MarkdownV2",

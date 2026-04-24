@@ -83,11 +83,16 @@ export const engagementWorker = new Worker(
                 case JobType.MISSED_CHECKIN_NUDGE: {
                     const { programmeWeek, checkinLink } = job.data;
 
-                    await channel.sendTemplate(recipientId, TemplateId.CHECKIN_MISSED_NUDGE, {
+                    const nudgeResult = await channel.sendTemplate(recipientId, TemplateId.CHECKIN_MISSED_NUDGE, {
                         client_first_name: clientFirstName,
                         programme_week: programmeWeek,
                         checkin_link: checkinLink,
+                        clientId: client.id,
                     });
+
+                    if (!nudgeResult.success) {
+                        throw new Error(`Failed to send missed check-in nudge via ${client.preferredChannel}: ${nudgeResult.error}`);
+                    }
 
                     await logEvent(EventType.MISSED_CHECKIN_NUDGE_SENT, {
                         coachId: client.coachId,

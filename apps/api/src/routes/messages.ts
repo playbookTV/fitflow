@@ -3,6 +3,7 @@ import { authenticate, AuthRequest } from "../middleware/auth";
 import { prisma } from "../lib/prisma";
 import { MessageDirection } from "@prisma/client";
 import { getChannel, getRecipientId } from "../lib/channels/channel-router";
+import { getWindowStatus } from "../lib/channels/window-check";
 
 const router: Router = Router();
 
@@ -109,8 +110,8 @@ router.post("/:clientId", authenticate, async (req: AuthRequest, res: Response) 
         const channel = await getChannel(client.preferredChannel, coachId);
         const recipientId = getRecipientId(client);
 
-        // Send via adapter (don't pass clientId so meta.ts skips its own DB save)
-        const result = await channel.sendMessage(recipientId, content);
+        // Pass clientId so the adapter can run the 24-hour window pre-check
+        const result = await channel.sendMessage(recipientId, content, client.id);
 
         if (!result.success) {
             return res.status(502).json({ error: result.error || "Failed to send message" });
@@ -138,6 +139,45 @@ router.post("/:clientId", authenticate, async (req: AuthRequest, res: Response) 
     } catch (error) {
         console.error("[POST /messages/:clientId]", error);
         res.status(500).json({ error: "Failed to send message" });
+    }
+});
+
+// GET /messages/:clientId/window-status - WhatsApp 24-hour window status
+router.get("/:clientId/window-status", authenticate, async (req: AuthRequest, res: Response) => {
+    const coachId = req.user?.id as string;
+    const clientId = req.params.clientId as string;
+
+    try {
+        const client = await prisma.client.findFirst({
+            where: { id: clientId, coachId },
+            select: { preferredChannel: true },
+        });
+
+        if (!client) return res.status(404).json({ error: "Client not found" });
+
+        // Telegram has no messaging window restrictions
+        if (client.preferredChannel === "TELEGRAM") {
+            return res.json({
+                channel: "TELEGRAM",
+                windowOpen: true,
+                windowExpiresAt: null,
+                canSendFreeText: true,
+                canSendMarketingTemplate: true,
+            });
+        }
+
+        const status = await getWindowStatus(clientId);
+
+        res.json({
+            channel: "WHATSAPP",
+            windowOpen: status.isOpen,
+            windowExpiresAt: status.expiresAt?.toISOString() ?? null,
+            canSendFreeText: status.isOpen,
+            canSendMarketingTemplate: true,
+        });
+    } catch (error) {
+        console.error("[GET /messages/:clientId/window-status]", error);
+        res.status(500).json({ error: "Failed to fetch window status" });
     }
 });
 

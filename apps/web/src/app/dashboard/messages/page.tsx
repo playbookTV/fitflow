@@ -18,6 +18,8 @@ import {
 } from "lucide-react";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { Modal, ModalContent, ModalHeader, ModalTitle, ModalFooter, ModalClose } from "@/components/ui/Modal";
+import { useToast } from "@/components/ui/Toast";
+import { WhatsAppWindowBanner } from "@/components/WhatsAppWindowBanner";
 import { cn, formatRelative } from "@/lib/utils";
 import { formatTime } from "@/lib/tokens";
 
@@ -116,6 +118,8 @@ function MessagesPageContent() {
     const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
     const [newMessage, setNewMessage] = useState("");
     const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+    const [canSendFreeText, setCanSendFreeText] = useState(true);
+    const { toast } = useToast();
 
     const fetchConversations = useCallback(async () => {
         try {
@@ -227,7 +231,11 @@ function MessagesPageContent() {
                 }
             );
 
-            if (!res.ok) throw new Error("Send failed");
+            if (!res.ok) {
+                const errorData = await res.json().catch(() => ({}));
+                const errorMsg = errorData.error || "Failed to send message";
+                throw new Error(errorMsg);
+            }
 
             const saved = await res.json();
 
@@ -251,7 +259,7 @@ function MessagesPageContent() {
                         : c
                 )
             );
-        } catch {
+        } catch (err) {
             // Mark as failed
             setSelectedConversation((prev) =>
                 prev
@@ -263,6 +271,23 @@ function MessagesPageContent() {
                       }
                     : null
             );
+
+            const message = err instanceof Error ? err.message : "Failed to send message";
+            let title = "Message not sent";
+            let description = message;
+
+            if (message.toLowerCase().includes("24-hour") || message.toLowerCase().includes("window")) {
+                title = "WhatsApp window closed";
+                description = "This client's messaging window has closed. They need to send you a message first to reopen it.";
+            } else if (message.toLowerCase().includes("rate limit")) {
+                title = "Rate limit reached";
+                description = "WhatsApp is temporarily limiting message volume. Try again in a few minutes.";
+            } else if (message.toLowerCase().includes("not on whatsapp")) {
+                title = "Number not on WhatsApp";
+                description = "This phone number is not registered on WhatsApp.";
+            }
+
+            toast({ variant: "warning", title, description });
         }
     };
 
@@ -366,7 +391,7 @@ function MessagesPageContent() {
                             filteredConversations.map((conv, index) => (
                                 <button
                                     key={conv.id}
-                                    onClick={() => setSelectedConversation(conv)}
+                                    onClick={() => { setSelectedConversation(conv); setCanSendFreeText(true); }}
                                     className={cn(
                                         "w-full p-4 flex items-start gap-3 hover:bg-bg-hover transition-colors text-left border-b border-border/50 animate-fade-in",
                                         selectedConversation?.id === conv.id && "bg-bg-hover"
@@ -449,6 +474,13 @@ function MessagesPageContent() {
                                             )}>
                                                 {selectedConversation.channel === "TELEGRAM" ? "Telegram" : "WhatsApp"}
                                             </span>
+                                            {selectedConversation.channel === "WHATSAPP" && (
+                                                <WhatsAppWindowBanner
+                                                    clientId={selectedConversation.clientId}
+                                                    channel={selectedConversation.channel}
+                                                    compact
+                                                />
+                                            )}
                                         </p>
                                         <p className="text-[10px] text-text-faint font-mono">
                                             {selectedConversation.clientPhone}
@@ -532,34 +564,47 @@ function MessagesPageContent() {
                                 ))}
                             </div>
 
-                            {/* Message Input */}
-                            <div className="p-4 border-t border-border bg-bg-secondary">
-                                <div className="flex items-center gap-3">
-                                    <button className="btn-icon !p-2" aria-label="Attach file">
-                                        <Paperclip className="w-4 h-4" />
-                                    </button>
-                                    <button className="btn-icon !p-2" aria-label="Attach image">
-                                        <ImageIcon className="w-4 h-4" />
-                                    </button>
-                                    <input
-                                        type="text"
-                                        placeholder="Type a message\u2026"
-                                        value={newMessage}
-                                        onChange={(e) => setNewMessage(e.target.value)}
-                                        onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
-                                        className="input flex-1"
-                                        aria-label="Message input"
-                                        name="message"
-                                        autoComplete="off"
+                            {/* WhatsApp Window Status + Message Input */}
+                            <div className="border-t border-border bg-bg-secondary">
+                                {selectedConversation.channel === "WHATSAPP" && (
+                                    <WhatsAppWindowBanner
+                                        clientId={selectedConversation.clientId}
+                                        channel={selectedConversation.channel}
+                                        className="mx-4 mt-3"
+                                        onWindowStatusChange={setCanSendFreeText}
                                     />
-                                    <button
-                                        onClick={handleSendMessage}
-                                        disabled={!newMessage.trim()}
-                                        className="btn-primary !px-4"
-                                        aria-label="Send message"
-                                    >
-                                        <Send className="w-4 h-4" />
-                                    </button>
+                                )}
+                                <div className="p-4">
+                                    <div className="flex items-center gap-3">
+                                        <button className="btn-icon !p-2" aria-label="Attach file" disabled={!canSendFreeText && selectedConversation.channel === "WHATSAPP"}>
+                                            <Paperclip className="w-4 h-4" />
+                                        </button>
+                                        <button className="btn-icon !p-2" aria-label="Attach image" disabled={!canSendFreeText && selectedConversation.channel === "WHATSAPP"}>
+                                            <ImageIcon className="w-4 h-4" />
+                                        </button>
+                                        <input
+                                            type="text"
+                                            placeholder={!canSendFreeText && selectedConversation.channel === "WHATSAPP"
+                                                ? "Window closed \u2014 only templates available"
+                                                : "Type a message\u2026"}
+                                            value={newMessage}
+                                            onChange={(e) => setNewMessage(e.target.value)}
+                                            onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
+                                            className="input flex-1"
+                                            aria-label="Message input"
+                                            name="message"
+                                            autoComplete="off"
+                                            disabled={!canSendFreeText && selectedConversation.channel === "WHATSAPP"}
+                                        />
+                                        <button
+                                            onClick={handleSendMessage}
+                                            disabled={!newMessage.trim() || (!canSendFreeText && selectedConversation.channel === "WHATSAPP")}
+                                            className="btn-primary !px-4"
+                                            aria-label="Send message"
+                                        >
+                                            <Send className="w-4 h-4" />
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </>

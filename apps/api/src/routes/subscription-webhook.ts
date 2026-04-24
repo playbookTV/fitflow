@@ -38,6 +38,13 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req: R
 
                 const status = mapStripeStatus(sub.status);
 
+                const currentPeriodStart = sub.current_period_start
+                    ? new Date(sub.current_period_start * 1000)
+                    : new Date();
+                const currentPeriodEnd = sub.current_period_end
+                    ? new Date(sub.current_period_end * 1000)
+                    : new Date();
+
                 const existingSub = await prisma.subscription.findUnique({
                     where: { coachId: coach.id },
                 });
@@ -50,8 +57,8 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req: R
                         tier,
                         billingInterval,
                         status,
-                        currentPeriodStart: new Date(sub.current_period_start * 1000),
-                        currentPeriodEnd: new Date(sub.current_period_end * 1000),
+                        currentPeriodStart,
+                        currentPeriodEnd,
                         cancelAtPeriodEnd: sub.cancel_at_period_end ?? false,
                         trialEnd: sub.trial_end ? new Date(sub.trial_end * 1000) : null,
                     },
@@ -62,8 +69,8 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req: R
                         tier,
                         billingInterval,
                         status,
-                        currentPeriodStart: new Date(sub.current_period_start * 1000),
-                        currentPeriodEnd: new Date(sub.current_period_end * 1000),
+                        currentPeriodStart,
+                        currentPeriodEnd,
                         cancelAtPeriodEnd: sub.cancel_at_period_end ?? false,
                         trialEnd: sub.trial_end ? new Date(sub.trial_end * 1000) : null,
                     },

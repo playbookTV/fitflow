@@ -5,7 +5,7 @@ import {
     CheckinCoachAckContext,
     CheckinMissedNudgeContext,
 } from "@fitflow/shared";
-import { escapeMarkdownV2 as esc } from "./escape";
+import { escapeMarkdownV2 as esc, escapeMarkdownV2Url as escUrl } from "./escape";
 import { registerTemplate } from "./registry";
 
 const checkinWeeklyPrompt: TemplateDefinition<CheckinWeeklyPromptContext> = {
@@ -72,7 +72,7 @@ const checkinMissedNudge: TemplateDefinition<CheckinMissedNudgeContext> = {
             render: (ctx) => ({
                 text:
                     `Hey ${esc(ctx.client_first_name)} \u{2014} your week ${ctx.programme_week} check\\-in hasn't come through yet\\.\n\n` +
-                    `[Complete your check\\-in here](${esc(ctx.checkin_link)})\n\n` +
+                    `[Complete your check\\-in here](${escUrl(ctx.checkin_link)})\n\n` +
                     `Only 2 minutes\\. Let's keep the streak going \u{1F4AA}`,
                 parseMode: "MarkdownV2",
             }),

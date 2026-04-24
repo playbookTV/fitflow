@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AvatarUpload } from "@/components/ui/AvatarUpload";
+import { WhatsAppRulesSection } from "@/components/WhatsAppRulesSection";
 
 interface CoachProfile {
     id: string;
@@ -855,6 +856,8 @@ function SettingsContent() {
                                                 </p>
                                             </div>
                                         )}
+
+                                        {profile.whatsappConnected && <WhatsAppRulesSection />}
                                     </div>
 
                                     <div className="card p-6">

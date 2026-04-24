@@ -3,6 +3,12 @@ import { prisma } from "../prisma";
 
 const WINDOW_DURATION_MS = 24 * 60 * 60 * 1000; // 24 hours
 
+export interface WindowStatus {
+    isOpen: boolean;
+    expiresAt: Date | null;
+    lastInboundAt: Date | null;
+}
+
 /**
  * Checks whether the WhatsApp 24-hour customer service window is open for a client.
  *
@@ -10,6 +16,14 @@ const WINDOW_DURATION_MS = 24 * 60 * 60 * 1000; // 24 hours
  * When the window is closed, only MARKETING-category templates can be sent.
  */
 export async function isWindowOpen(clientId: string): Promise<boolean> {
+    const status = await getWindowStatus(clientId);
+    return status.isOpen;
+}
+
+/**
+ * Returns the full window status including expiry time for UI display.
+ */
+export async function getWindowStatus(clientId: string): Promise<WindowStatus> {
     const lastInbound = await prisma.message.findFirst({
         where: {
             clientId,
@@ -19,7 +33,17 @@ export async function isWindowOpen(clientId: string): Promise<boolean> {
         select: { createdAt: true },
     });
 
-    if (!lastInbound) return false;
+    if (!lastInbound) {
+        return { isOpen: false, expiresAt: null, lastInboundAt: null };
+    }
 
-    return Date.now() - lastInbound.createdAt.getTime() < WINDOW_DURATION_MS;
+    const lastInboundAt = lastInbound.createdAt;
+    const expiresAt = new Date(lastInboundAt.getTime() + WINDOW_DURATION_MS);
+    const isOpen = Date.now() < expiresAt.getTime();
+
+    return {
+        isOpen,
+        expiresAt: isOpen ? expiresAt : null,
+        lastInboundAt,
+    };
 }

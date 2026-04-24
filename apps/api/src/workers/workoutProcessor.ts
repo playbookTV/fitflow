@@ -134,40 +134,49 @@ export const checkinWorker = new Worker(
         const { clientId } = job.data;
         console.log(`[Checkin Worker] Sending reminder to ${clientId}`);
 
-        const client = await prisma.client.findUnique({
-            where: { id: clientId },
-            include: { coach: true },
-        });
-        if (!client) return;
+        try {
+            const client = await prisma.client.findUnique({
+                where: { id: clientId },
+                include: { coach: true },
+            });
+            if (!client) return;
 
-        const channel = await getChannel(client.preferredChannel, client.coachId);
-        const recipientId = getRecipientId(client);
+            const channel = await getChannel(client.preferredChannel, client.coachId);
+            const recipientId = getRecipientId(client);
 
-        // Calculate programme week from active assignment
-        const assignment = await prisma.planAssignment.findFirst({
-            where: { clientId, isActive: true },
-            include: { plan: { include: { days: true } } },
-        });
+            // Calculate programme week from active assignment
+            const assignment = await prisma.planAssignment.findFirst({
+                where: { clientId, isActive: true },
+                include: { plan: { include: { days: true } } },
+            });
 
-        const programmeWeek = assignment
-            ? differenceInWeeks(new Date(), assignment.startDate) + 1
-            : 1;
-        const totalWeeks = assignment
-            ? Math.ceil(assignment.plan.days.length / assignment.scheduleDays.length)
-            : 12;
+            const programmeWeek = assignment
+                ? differenceInWeeks(new Date(), assignment.startDate) + 1
+                : 1;
+            const totalWeeks = assignment
+                ? Math.ceil(assignment.plan.days.length / assignment.scheduleDays.length)
+                : 12;
 
-        await channel.sendTemplate(recipientId, TemplateId.CHECKIN_WEEKLY_PROMPT, {
-            client_first_name: client.name.split(" ")[0],
-            programme_week: programmeWeek,
-            total_weeks: totalWeeks,
-            clientId: client.id,
-        });
+            const result = await channel.sendTemplate(recipientId, TemplateId.CHECKIN_WEEKLY_PROMPT, {
+                client_first_name: client.name.split(" ")[0],
+                programme_week: programmeWeek,
+                total_weeks: totalWeeks,
+                clientId: client.id,
+            });
 
-        await logEvent(EventType.CHECKIN_SENT, {
-            coachId: client.coachId,
-            clientId: client.id,
-            channel: client.preferredChannel,
-        });
+            if (!result.success) {
+                throw new Error(`Failed to send check-in reminder via ${client.preferredChannel}: ${result.error}`);
+            }
+
+            await logEvent(EventType.CHECKIN_SENT, {
+                coachId: client.coachId,
+                clientId: client.id,
+                channel: client.preferredChannel,
+            });
+        } catch (error) {
+            console.error(`[Checkin Worker] Error processing job ${job.id}:`, error);
+            throw error;
+        }
     },
     { connection }
 );
