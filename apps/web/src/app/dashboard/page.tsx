@@ -10,6 +10,7 @@ import { Search, Filter, RefreshCcw, MessageSquare, Plus, Send, UserPlus, BarCha
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { getAuthHeaders } from "@/lib/auth";
+import { useSubscription } from "@/hooks/useSubscription";
 
 interface AtRiskClient {
     id: string;
@@ -62,8 +63,10 @@ export default function DashboardPage() {
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
     const [analyticsLocked, setAnalyticsLocked] = useState(false);
+    const [analyticsLockCode, setAnalyticsLockCode] = useState<string | null>(null);
 
     const router = useRouter();
+    const { isTrialing } = useSubscription();
 
     const fetchData = async () => {
         setLoading(true);
@@ -94,6 +97,12 @@ export default function DashboardPage() {
                 setAnalyticsLocked(false);
             } else if (statsRes.status === 403) {
                 setAnalyticsLocked(true);
+                try {
+                    const body = await statsRes.json();
+                    setAnalyticsLockCode(body.code ?? null);
+                } catch {
+                    setAnalyticsLockCode(null);
+                }
             }
             if (clientsRes.ok) setClients(await clientsRes.json());
         } catch (error) {
@@ -110,6 +119,27 @@ export default function DashboardPage() {
     const filteredClients = clients.filter(client =>
         client.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
+
+    const getAnalyticsBannerCopy = () => {
+        if (analyticsLockCode === "NO_SUBSCRIPTION") {
+            return {
+                title: "Analytics requires a subscription",
+                subtitle: "Subscribe to a Pro or Studio plan to unlock compliance tracking, revenue insights, and at-risk client alerts.",
+            };
+        }
+        if (isTrialing) {
+            return {
+                title: "Analytics is available on Pro and Studio plans",
+                subtitle: "Your free trial is on the Starter plan. Upgrade to Pro to unlock compliance tracking, revenue insights, and at-risk client alerts.",
+            };
+        }
+        return {
+            title: "Analytics is available on Pro and Studio plans",
+            subtitle: "Upgrade your Starter plan to unlock compliance tracking, revenue insights, and at-risk client alerts.",
+        };
+    };
+
+    const bannerCopy = analyticsLocked ? getAnalyticsBannerCopy() : null;
 
     return (
         <DashboardLayout
@@ -158,10 +188,10 @@ export default function DashboardPage() {
                         </div>
                         <div className="flex-1">
                             <p className="text-sm font-semibold text-white mb-0.5">
-                                Analytics requires a Pro plan
+                                {bannerCopy?.title}
                             </p>
                             <p className="text-sm text-text-secondary">
-                                Upgrade to unlock compliance tracking, revenue insights, and at-risk client alerts.
+                                {bannerCopy?.subtitle}
                             </p>
                         </div>
                         <Link

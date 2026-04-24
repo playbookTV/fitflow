@@ -19,7 +19,7 @@ router.get("/", authenticate, async (req: AuthRequest, res: Response) => {
 
     try {
         const plans = await prisma.workoutPlan.findMany({
-            where: { coachId },
+            where: { coachId, isTemplate: false },
             include: {
                 days: { include: { exercises: { include: { exercise: true } } } },
                 _count: { select: { assignments: true } },
@@ -101,6 +101,100 @@ router.post("/generate", authenticate, enforceLimit("workoutPlans"), validate(ge
         }
         console.error("[POST /plans/generate]", error);
         res.status(500).json({ error: "Failed to generate plan" });
+    }
+});
+
+// GET /plans/templates - Browse workout templates
+router.get("/templates", authenticate, async (req: AuthRequest, res: Response) => {
+    const coachId = req.user?.id as string;
+    if (!coachId) return res.status(401).json({ error: "Unauthorized" });
+
+    const tagFilter = typeof req.query.tags === "string"
+        ? req.query.tags.split(",").map((t) => t.trim().toLowerCase()).filter(Boolean)
+        : [];
+
+    try {
+        const templates = await prisma.workoutPlan.findMany({
+            where: {
+                isTemplate: true,
+                ...(tagFilter.length > 0 ? { tags: { hasSome: tagFilter } } : {}),
+            },
+            include: {
+                days: {
+                    include: { exercises: { include: { exercise: true }, orderBy: { order: "asc" } } },
+                    orderBy: { dayNumber: "asc" },
+                },
+            },
+            orderBy: { title: "asc" },
+        });
+
+        res.json(templates.map((t) => ({
+            ...t,
+            daysPerWeek: t.days.length,
+            totalExercises: t.days.reduce((sum, d) => sum + d.exercises.length, 0),
+        })));
+    } catch (error) {
+        console.error("[GET /plans/templates]", error);
+        res.status(500).json({ error: "Failed to fetch templates" });
+    }
+});
+
+// POST /plans/templates/:id/use - Create a plan from a template
+router.post("/templates/:id/use", authenticate, enforceLimit("workoutPlans"), async (req: AuthRequest, res: Response) => {
+    const coachId = req.user?.id as string;
+    if (!coachId) return res.status(401).json({ error: "Unauthorized" });
+
+    try {
+        const template = await prisma.workoutPlan.findFirst({
+            where: { id: req.params.id as string, isTemplate: true },
+            include: {
+                days: {
+                    include: { exercises: true },
+                    orderBy: { dayNumber: "asc" },
+                },
+            },
+        });
+
+        if (!template) return res.status(404).json({ error: "Template not found" });
+
+        const plan = await prisma.workoutPlan.create({
+            data: {
+                coachId,
+                title: template.title,
+                description: template.description,
+                isTemplate: false,
+                days: {
+                    create: template.days.map((day) => ({
+                        dayNumber: day.dayNumber,
+                        title: day.title,
+                        exercises: {
+                            create: day.exercises.map((ex) => ({
+                                exerciseId: ex.exerciseId,
+                                order: ex.order,
+                                sets: ex.sets,
+                                reps: ex.reps,
+                                rest: ex.rest,
+                                notes: ex.notes,
+                            })),
+                        },
+                    })),
+                },
+            },
+            include: {
+                days: { include: { exercises: { include: { exercise: true } } } },
+                _count: { select: { assignments: true } },
+            },
+        });
+
+        logEvent(EventType.TEMPLATE_USED, {
+            coachId,
+            metadata: { templateId: template.id, templateTitle: template.title },
+        });
+
+        res.status(201).json({ ...plan, daysPerWeek: plan.days.length });
+    } catch (error) {
+        console.error("[POST /plans/templates/:id/use]", error);
+        res.status(500).json({ error: "Failed to create plan from template" });
     }
 });
 

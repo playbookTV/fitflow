@@ -145,7 +145,7 @@ export default function PlansPage() {
                     <p className="text-text-secondary text-sm mb-6 text-pretty">
                         {searchQuery
                             ? "Try a different search term"
-                            : "Create your first workout plan template"}
+                            : "Create your first workout plan or start from a template"}
                     </p>
                     {!searchQuery && (
                         <Link href="/dashboard/plans/new" className="btn-primary">

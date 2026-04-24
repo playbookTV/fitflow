@@ -26,6 +26,7 @@ export const EventType = {
 
     // Plan & Workout
     PLAN_ASSIGNED: "plan.assigned",
+    TEMPLATE_USED: "template.used",
     WORKOUT_DELIVERED: "workout.delivered",
     WORKOUT_COMPLETED: "workout.completed",
 

@@ -518,7 +518,7 @@
   }
 
   .modal-backdrop[data-state="closed"] {
-    animation: fadeOut 0.15s ease-in;
+    @apply animate-fade-out;
   }
 
   .modal {
@@ -530,7 +530,7 @@
   }
 
   .modal-content[data-state="closed"] {
-    animation: scaleOut 0.15s ease-in;
+    @apply animate-scale-out;
   }
 
   .modal-header {

@@ -118,6 +118,7 @@ model WorkoutPlan {
   ownerCoach        Coach?    @relation("CoachTemplates", fields: [ownerCoachId], references: [id])
   title             String
   description       String?
+  tags              String[]  @default([])
 
   days              WorkoutDay[]
   assignments       PlanAssignment[]
