@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { PricingTiers } from "@/components/PricingTiers";
 import { useSubscription } from "@/hooks/useSubscription";
@@ -61,10 +62,43 @@ function formatCurrency(cents: number, currency: string = "usd") {
 
 export default function SubscriptionPage() {
     const sub = useSubscription();
+    const searchParams = useSearchParams();
+    const router = useRouter();
     const [tiers, setTiers] = useState<TierInfo[]>([]);
     const [invoices, setInvoices] = useState<Invoice[]>([]);
     const [showPricing, setShowPricing] = useState(false);
     const [portalLoading, setPortalLoading] = useState(false);
+    const [checkoutPending, setCheckoutPending] = useState(false);
+    const pollCountRef = useRef(0);
+
+    const isCheckoutSuccess = searchParams.get("checkout") === "success";
+
+    // Poll for subscription status after successful checkout
+    useEffect(() => {
+        if (!isCheckoutSuccess || sub.isLoading) return;
+
+        if (sub.subscribed) {
+            // Subscription arrived — clean up URL and stop polling
+            setCheckoutPending(false);
+            pollCountRef.current = 0;
+            router.replace("/dashboard/subscription");
+            return;
+        }
+
+        // Webhook hasn't fired yet — poll up to 10 times (every 2s = ~20s max)
+        if (pollCountRef.current >= 10) {
+            setCheckoutPending(false);
+            return;
+        }
+
+        setCheckoutPending(true);
+        const timer = setTimeout(() => {
+            pollCountRef.current += 1;
+            sub.refetch();
+        }, 2000);
+
+        return () => clearTimeout(timer);
+    }, [isCheckoutSuccess, sub.subscribed, sub.isLoading, sub.refetch, router]);
 
     useEffect(() => {
         fetchTiers();
@@ -116,11 +150,14 @@ export default function SubscriptionPage() {
         }
     };
 
-    if (sub.isLoading) {
+    if (sub.isLoading || checkoutPending) {
         return (
             <DashboardLayout title="Subscription">
-                <div className="flex items-center justify-center py-20">
+                <div className="flex flex-col items-center justify-center py-20 gap-3">
                     <Loader2 className="w-6 h-6 animate-spin text-text-faint" />
+                    {checkoutPending && (
+                        <p className="text-sm text-text-faint">Activating your subscription...</p>
+                    )}
                 </div>
             </DashboardLayout>
         );

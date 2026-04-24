@@ -9,8 +9,8 @@ import {
     Send,
     MessageSquare,
     CheckCheck,
-    Paperclip,
-    Image as ImageIcon,
+    // Paperclip,
+    // Image as ImageIcon,
     MoreVertical,
     Archive,
     Pin,
@@ -576,12 +576,14 @@ function MessagesPageContent() {
                                 )}
                                 <div className="p-4">
                                     <div className="flex items-center gap-3">
+                                        {/* TODO: Wire up when media upload API is ready
                                         <button className="btn-icon !p-2" aria-label="Attach file" disabled={!canSendFreeText && selectedConversation.channel === "WHATSAPP"}>
                                             <Paperclip className="w-4 h-4" />
                                         </button>
                                         <button className="btn-icon !p-2" aria-label="Attach image" disabled={!canSendFreeText && selectedConversation.channel === "WHATSAPP"}>
                                             <ImageIcon className="w-4 h-4" />
                                         </button>
+                                        */}
                                         <input
                                             type="text"
                                             placeholder={!canSendFreeText && selectedConversation.channel === "WHATSAPP"
