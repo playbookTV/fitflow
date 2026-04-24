@@ -191,7 +191,13 @@ ${instructions ? `COACH INSTRUCTIONS: ${instructions}` : "Generate a balanced 3-
     const data = await res.json();
     let plan: GeneratedPlan;
     try {
-        plan = JSON.parse(data.content[0].text);
+        let raw = data.content[0].text.trim();
+        // Strip markdown code fences if present (e.g. ```json ... ```)
+        const fenceMatch = raw.match(/^```(?:json)?\s*\n?([\s\S]*?)\n?\s*```$/);
+        if (fenceMatch) {
+            raw = fenceMatch[1].trim();
+        }
+        plan = JSON.parse(raw);
     } catch {
         throw new PlanGenerationError("AI generated an invalid response. Please try again or adjust your instructions.", 502);
     }
