@@ -19,6 +19,7 @@ model Coach {
   stripeAccountId   String?   @map("stripe_account_id")
   stripeCustomerId  String?   @unique @map("stripe_customer_id")
   billingCurrency   String    @default("usd") @map("billing_currency")
+  bankDetails       String?   @map("bank_details")
   defaultChannel    MessageChannel? @map("default_channel")
   specialities      String[]  @default([])
   defaultPaymentModel PaymentModel? @map("default_payment_model")

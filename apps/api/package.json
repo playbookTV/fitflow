@@ -18,7 +18,8 @@
         "prisma:studio": "prisma studio",
         "test": "vitest run",
         "test:watch": "vitest",
-        "test:coverage": "vitest run --coverage"
+        "test:coverage": "vitest run --coverage",
+        "stripe:seed": "tsx scripts/stripe-seed-prices.ts"
     },
     "dependencies": {
         "@bull-board/api": "^6.2.0",

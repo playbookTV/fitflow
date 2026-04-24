@@ -22,6 +22,7 @@ export const EventType = {
     PAYMENT_CONFIRMED: "payment.confirmed",
     PAYMENT_FAILED: "payment.failed",
     BANK_TRANSFER_CONFIRMED: "payment.bank_transfer_confirmed",
+    BANK_TRANSFER_SENT: "payment.bank_transfer_sent",
 
     // Plan & Workout
     PLAN_ASSIGNED: "plan.assigned",

@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
     User, CreditCard, UserPlus, MessageSquare,
     CheckCircle2, Loader2, ArrowRight, Dumbbell,
-    Clock, Repeat, Settings2, Send, Smartphone,
+    Clock, Repeat, Settings2, Send, Smartphone, Wallet,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatCurrency } from "@/lib/tokens";
@@ -97,7 +97,7 @@ const MESSAGING_OPTIONS = [
     },
 ];
 
-const TOTAL_STEPS = 4;
+const TOTAL_STEPS = 5;
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -138,6 +138,8 @@ function SetupContent() {
     const [error, setError] = useState<string | null>(null);
     const [createdClient, setCreatedClient] = useState<CreatedClient | null>(null);
     const [completedStep3, setCompletedStep3] = useState(false);
+    const [stripeLoading, setStripeLoading] = useState(false);
+    const [stripeConnected, setStripeConnected] = useState(false);
 
     const [form, setForm] = useState<SetupState>({
         coachingName: "",
@@ -168,6 +170,10 @@ function SetupContent() {
                     return;
                 }
 
+                if (coach.stripeConnected) {
+                    setStripeConnected(true);
+                }
+
                 setForm((prev) => ({
                     ...prev,
                     coachingName: coach.name || "",
@@ -175,6 +181,23 @@ function SetupContent() {
                     activeClientRange: coach.activeClientRange || "",
                     paymentModel: coach.defaultPaymentModel || "",
                 }));
+
+                // Handle Stripe redirect back to setup
+                const params = new URLSearchParams(window.location.search);
+                const stripeStatus = params.get("stripe");
+                if (stripeStatus === "success") {
+                    setStripeConnected(true);
+                    setStep(TOTAL_STEPS + 1); // Advance to success screen
+                    // Clean up the URL
+                    window.history.replaceState({}, "", window.location.pathname);
+                    return;
+                }
+                if (stripeStatus === "refresh") {
+                    // Account link expired — resume at Stripe step
+                    setStep(5);
+                    window.history.replaceState({}, "", window.location.pathname);
+                    return;
+                }
 
                 setStep(Math.max(1, (coach.onboardingStep || 0) + 1));
             } catch {
@@ -229,6 +252,8 @@ function SetupContent() {
                 return;
             } else if (step === 4) {
                 await saveStep(4, {});
+            } else if (step === 5) {
+                await saveStep(5, {});
             }
 
             setStep((s) => s + 1);
@@ -327,6 +352,29 @@ function SetupContent() {
             router.replace("/dashboard");
         } catch {
             router.replace("/dashboard");
+        }
+    };
+
+    const handleStripeConnect = async () => {
+        setStripeLoading(true);
+        setError(null);
+        try {
+            const headers = await getAuthHeaders();
+            const res = await fetch(`${API_URL}/coaches/stripe/connect`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", ...headers },
+                body: JSON.stringify({ returnPath: "/setup" }),
+            });
+            const data = await res.json();
+            if (data.url) {
+                window.location.href = data.url;
+            } else {
+                setError(data.error || "Failed to connect Stripe.");
+            }
+        } catch {
+            setError("Failed to connect Stripe. Try again or skip for now.");
+        } finally {
+            setStripeLoading(false);
         }
     };
 
@@ -431,6 +479,12 @@ function SetupContent() {
                                     </span>
                                 </div>
                             )}
+                            {stripeConnected && (
+                                <div className="flex items-center gap-3">
+                                    <CheckCircle2 className="w-4 h-4 text-brand-green flex-shrink-0" />
+                                    <span className="text-sm text-text-secondary">Stripe account connected</span>
+                                </div>
+                            )}
 
                             {/* Next actions */}
                             {createdClient && (
@@ -487,6 +541,7 @@ function SetupContent() {
                         {step === 2 && "How do you charge your clients?"}
                         {step === 3 && "Add your first client to activate your dashboard."}
                         {step === 4 && "Connect a messaging channel to deliver workouts."}
+                        {step === 5 && "Connect Stripe to receive client payments directly."}
                     </p>
                 </div>
 
@@ -761,6 +816,58 @@ function SetupContent() {
                                         </p>
                                     </>
                                 )}
+
+                                {/* ---- Step 5: Connect Stripe ---- */}
+                                {step === 5 && (
+                                    <>
+                                        <div className="flex items-center gap-3 mb-2">
+                                            <Wallet className="h-5 w-5 text-brand-green" />
+                                            <h2 className="text-xl font-semibold text-balance">Get paid</h2>
+                                        </div>
+
+                                        {stripeConnected ? (
+                                            <div className="flex items-center gap-3 p-4 rounded-xl bg-brand-green/10 border border-brand-green/20">
+                                                <CheckCircle2 className="w-5 h-5 text-brand-green flex-shrink-0" />
+                                                <div>
+                                                    <p className="text-sm font-medium text-white">Stripe account connected</p>
+                                                    <p className="text-xs text-text-faint mt-0.5">
+                                                        Client payments will go directly to your bank account.
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <>
+                                                <p className="text-sm text-text-secondary">
+                                                    Connect your Stripe account so client payments go directly to your
+                                                    bank account. FitFlow takes a small 10% platform fee &mdash; you keep the rest.
+                                                </p>
+
+                                                <button
+                                                    type="button"
+                                                    onClick={handleStripeConnect}
+                                                    disabled={stripeLoading}
+                                                    className="btn-primary w-full"
+                                                >
+                                                    {stripeLoading ? (
+                                                        <>
+                                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                            CONNECTING...
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <Wallet className="mr-2 h-4 w-4" />
+                                                            Connect Stripe
+                                                        </>
+                                                    )}
+                                                </button>
+                                            </>
+                                        )}
+
+                                        <p className="text-xs text-text-faint">
+                                            You can also set this up later in Settings &gt; Integrations.
+                                        </p>
+                                    </>
+                                )}
                             </div>
 
                             {/* Error */}
@@ -808,9 +915,9 @@ function SetupContent() {
                                             SAVING...
                                         </>
                                     ) : step === 3 ? (
-                                        "Add client & finish"
-                                    ) : step === 4 ? (
-                                        completedStep3 ? "Finish" : "Skip to dashboard"
+                                        "Add client"
+                                    ) : step === 5 ? (
+                                        stripeConnected ? "Finish" : "Skip"
                                     ) : (
                                         "Next"
                                     )}

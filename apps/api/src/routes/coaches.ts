@@ -52,6 +52,7 @@ router.get("/me", authenticate, async (req: AuthRequest, res: Response) => {
             defaultPricePerSession: coach.defaultPricePerSession,
             defaultSessionsPerBlock: coach.defaultSessionsPerBlock,
             defaultMonthlyRate: coach.defaultMonthlyRate,
+            bankDetails: coach.bankDetails,
             stripeConnected: !!coach.stripeAccountId,
             whatsappConnected: true, // Managed at platform level for now
             telegramConnected: !!botUsername,
@@ -76,6 +77,7 @@ router.patch("/me", authenticate, async (req: AuthRequest, res: Response) => {
         bio, avatarUrl, profileVisible, showRatesPublicly,
         showWhatsapp, showTelegram,
         defaultPricePerSession, defaultSessionsPerBlock, defaultMonthlyRate,
+        bankDetails,
     } = req.body;
 
     // Validate reserved slugs
@@ -143,6 +145,7 @@ router.patch("/me", authenticate, async (req: AuthRequest, res: Response) => {
                 ...(defaultPricePerSession !== undefined && { defaultPricePerSession }),
                 ...(defaultSessionsPerBlock !== undefined && { defaultSessionsPerBlock }),
                 ...(defaultMonthlyRate !== undefined && { defaultMonthlyRate }),
+                ...(bankDetails !== undefined && { bankDetails }),
             },
         });
 
@@ -166,7 +169,7 @@ router.post("/onboarding/complete", authenticate, async (req: AuthRequest, res: 
             where: { id: coachId },
             data: {
                 onboardingCompleted: true,
-                onboardingStep: 5,
+                onboardingStep: 6,
             },
         });
 
@@ -238,11 +241,16 @@ router.post("/stripe/connect", authenticate, async (req: AuthRequest, res: Respo
             });
         }
 
+        // Accept returnPath from request body (used by setup wizard and settings page)
+        const { returnPath } = req.body || {};
+        const allowedPaths = ["/setup", "/dashboard/settings"];
+        const basePath = allowedPaths.includes(returnPath) ? returnPath : "/dashboard/settings";
+
         const webUrl = process.env.WEB_URL || "http://localhost:3000";
         const accountLink = await createAccountLink(
             accountId,
-            `${webUrl}/dashboard/settings?stripe=refresh`,
-            `${webUrl}/dashboard/settings?stripe=success`
+            `${webUrl}${basePath}?stripe=refresh`,
+            `${webUrl}${basePath}?stripe=success`
         );
 
         res.json({ url: accountLink.url });

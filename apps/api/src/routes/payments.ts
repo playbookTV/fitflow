@@ -14,23 +14,50 @@ const router: Router = Router();
 // POST /payments/checkout - Create a Stripe checkout session for a client
 router.post("/checkout", authenticate, requireTier("PRO", "STUDIO"), async (req: AuthRequest, res: Response) => {
     const coachId = req.user?.id as string;
-    const { clientId } = req.body;
+    const { clientId, amount: overrideAmount, currency: overrideCurrency } = req.body;
 
     if (!coachId) return res.status(401).json({ error: "Unauthorized" });
 
     try {
-        const client = await prisma.client.findFirst({
-            where: { id: clientId, coachId },
-        });
+        const [client, coach] = await Promise.all([
+            prisma.client.findFirst({ where: { id: clientId, coachId } }),
+            prisma.coach.findUnique({
+                where: { id: coachId },
+                select: { stripeAccountId: true, defaultMonthlyRate: true, billingCurrency: true },
+            }),
+        ]);
 
         if (!client) return res.status(404).json({ error: "Client not found" });
 
+        if (!coach?.stripeAccountId) {
+            return res.status(400).json({
+                error: "Connect your Stripe account before accepting payments. Go to Settings > Integrations.",
+                code: "STRIPE_NOT_CONNECTED",
+            });
+        }
+
+        // Resolve payment amount: explicit override > client rate > coach default
+        const amountCents = overrideAmount
+            ? Math.round(Number(overrideAmount))
+            : client.monthlyRate ?? coach.defaultMonthlyRate ?? null;
+
+        if (!amountCents || amountCents <= 0) {
+            return res.status(400).json({
+                error: "No payment amount configured. Set a rate on the client or in your coach settings.",
+                code: "NO_AMOUNT_CONFIGURED",
+            });
+        }
+
+        const currency = overrideCurrency || coach.billingCurrency || "gbp";
         const successUrl = `${process.env.WEB_URL}/dashboard/clients/${clientId}?payment=success`;
         const cancelUrl = `${process.env.WEB_URL}/dashboard/clients/${clientId}?payment=cancel`;
 
         const session = await createCheckoutSession(
             clientId,
             coachId,
+            coach.stripeAccountId,
+            amountCents,
+            currency,
             successUrl,
             cancelUrl
         );
@@ -43,15 +70,15 @@ router.post("/checkout", authenticate, requireTier("PRO", "STUDIO"), async (req:
             where: { stripeSessionId: session.id },
             update: {
                 clientId,
-                amount: session.amount_total ?? 5000,
-                currency: session.currency ?? "gbp",
+                amount: amountCents,
+                currency,
                 status: "PENDING",
             },
             create: {
                 clientId,
                 stripeSessionId: session.id,
-                amount: session.amount_total ?? 5000,
-                currency: session.currency ?? "gbp",
+                amount: amountCents,
+                currency,
                 status: "PENDING",
             },
         });
@@ -66,10 +93,10 @@ router.post("/checkout", authenticate, requireTier("PRO", "STUDIO"), async (req:
 // POST /payments/confirm-bank-transfer - Coach manually confirms a bank transfer
 router.post("/confirm-bank-transfer", authenticate, requireTier("PRO", "STUDIO"), async (req: AuthRequest, res: Response) => {
     const coachId = req.user?.id as string;
-    const { clientId, amount, currency } = req.body;
+    const { clientId, amount, currency, paymentId, force } = req.body;
 
     if (!coachId) return res.status(401).json({ error: "Unauthorized" });
-    if (!clientId || !amount) return res.status(400).json({ error: "clientId and amount are required" });
+    if (!clientId) return res.status(400).json({ error: "clientId is required" });
 
     try {
         const client = await prisma.client.findFirst({
@@ -78,17 +105,56 @@ router.post("/confirm-bank-transfer", authenticate, requireTier("PRO", "STUDIO")
 
         if (!client) return res.status(404).json({ error: "Client not found" });
 
-        // Create payment record
-        const payment = await prisma.payment.create({
-            data: {
-                clientId,
-                amount: Math.round(amount),
-                currency: currency || "gbp",
-                status: "SUCCEEDED",
-                paymentMethod: "BANK_TRANSFER",
-                confirmedBy: coachId,
-            },
-        });
+        let payment;
+
+        if (paymentId) {
+            // Two-step flow: confirm an existing PENDING bank transfer
+            const existing = await prisma.payment.findFirst({
+                where: { id: paymentId, clientId, status: "PENDING", paymentMethod: "BANK_TRANSFER" },
+            });
+            if (!existing) return res.status(404).json({ error: "Pending bank transfer not found" });
+
+            payment = await prisma.payment.update({
+                where: { id: paymentId },
+                data: { status: "SUCCEEDED", confirmedBy: coachId },
+            });
+        } else {
+            // Direct confirmation: create new SUCCEEDED payment
+            if (!amount) return res.status(400).json({ error: "amount is required" });
+
+            // Duplicate payment guard
+            if (!force) {
+                const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+                const duplicate = await prisma.payment.findFirst({
+                    where: {
+                        clientId,
+                        paymentMethod: "BANK_TRANSFER",
+                        status: "SUCCEEDED",
+                        amount: Math.round(amount),
+                        createdAt: { gte: twentyFourHoursAgo },
+                    },
+                });
+                if (duplicate) {
+                    return res.status(409).json({
+                        error: "duplicate_payment",
+                        message: "A bank transfer of the same amount was already confirmed for this client in the last 24 hours.",
+                        existingPaymentId: duplicate.id,
+                        existingPaymentDate: duplicate.createdAt,
+                    });
+                }
+            }
+
+            payment = await prisma.payment.create({
+                data: {
+                    clientId,
+                    amount: Math.round(amount),
+                    currency: currency || "gbp",
+                    status: "SUCCEEDED",
+                    paymentMethod: "BANK_TRANSFER",
+                    confirmedBy: coachId,
+                },
+            });
+        }
 
         // Transition client status if pending payment
         if (client.status === "PENDING_PAYMENT") {
@@ -97,13 +163,11 @@ router.post("/confirm-bank-transfer", authenticate, requireTier("PRO", "STUDIO")
                 data: { status: "INTAKE_SENT" },
             });
 
-            // Enqueue onboarding
             await onboardingQueue.add(JobType.ONBOARDING_INTAKE, {
                 clientId: client.id,
                 coachId,
             });
 
-            // Send bank transfer confirmed template to the client
             await onboardingQueue.add(JobType.PAYMENT_CONFIRMED, {
                 clientId: client.id,
                 coachId,
@@ -113,13 +177,77 @@ router.post("/confirm-bank-transfer", authenticate, requireTier("PRO", "STUDIO")
         await logEvent(EventType.BANK_TRANSFER_CONFIRMED, {
             coachId,
             clientId,
-            metadata: { paymentId: payment.id, amount, currency: currency || "gbp" },
+            metadata: { paymentId: payment.id, amount: payment.amount, currency: payment.currency },
         });
 
         res.json({ success: true, payment });
     } catch (error) {
         console.error("[POST /payments/confirm-bank-transfer]", error);
         res.status(500).json({ error: "Failed to confirm bank transfer" });
+    }
+});
+
+// POST /payments/send-bank-details - Send bank details to a client and create pending payment
+router.post("/send-bank-details", authenticate, requireTier("PRO", "STUDIO"), async (req: AuthRequest, res: Response) => {
+    const coachId = req.user?.id as string;
+    const { clientId, amount, bankTransferDetails, currency } = req.body;
+
+    if (!coachId) return res.status(401).json({ error: "Unauthorized" });
+    if (!clientId || !amount || !bankTransferDetails) {
+        return res.status(400).json({ error: "clientId, amount, and bankTransferDetails are required" });
+    }
+
+    try {
+        const client = await prisma.client.findFirst({
+            where: { id: clientId, coachId },
+            include: { coach: { select: { name: true, bankDetails: true } } },
+        });
+
+        if (!client) return res.status(404).json({ error: "Client not found" });
+
+        // Send bank details template to client
+        const channel = await getChannel(client.preferredChannel, coachId);
+        const recipientId = getRecipientId(client);
+        const offerName = client.goals || `${client.coach.name}'s Coaching`;
+
+        await channel.sendTemplate(recipientId, TemplateId.SYSTEM_BANK_DETAILS, {
+            client_first_name: client.name.split(" ")[0],
+            coach_first_name: client.coach.name?.split(" ")[0] ?? "Coach",
+            offer_name: offerName,
+            bank_transfer_details: bankTransferDetails,
+        }, client.id);
+
+        // Save bank details to coach profile if not already saved
+        if (!client.coach.bankDetails) {
+            await prisma.coach.update({
+                where: { id: coachId },
+                data: { bankDetails: bankTransferDetails },
+            });
+        }
+
+        // Create PENDING bank transfer payment
+        const payment = await prisma.payment.create({
+            data: {
+                clientId,
+                amount: Math.round(amount),
+                currency: currency || "gbp",
+                status: "PENDING",
+                paymentMethod: "BANK_TRANSFER",
+                confirmedBy: coachId,
+            },
+        });
+
+        await logEvent(EventType.BANK_TRANSFER_SENT, {
+            coachId,
+            clientId,
+            channel: client.preferredChannel,
+            metadata: { paymentId: payment.id, amount: Math.round(amount) },
+        });
+
+        res.json({ success: true, payment });
+    } catch (error) {
+        console.error("[POST /payments/send-bank-details]", error);
+        res.status(500).json({ error: "Failed to send bank details" });
     }
 });
 
@@ -163,7 +291,7 @@ router.post("/:paymentId/remind", authenticate, async (req: AuthRequest, res: Re
             where: { id: paymentId },
             include: {
                 client: {
-                    include: { coach: { select: { name: true } } },
+                    include: { coach: { select: { name: true, stripeAccountId: true, billingCurrency: true } } },
                 },
             },
         });
@@ -180,9 +308,25 @@ router.post("/:paymentId/remind", authenticate, async (req: AuthRequest, res: Re
         if (payment.status !== "PENDING") {
             return res.status(400).json({ error: "Can only remind for pending payments" });
         }
+
+        if (!client.coach.stripeAccountId) {
+            return res.status(400).json({
+                error: "Connect your Stripe account before sending payment reminders.",
+                code: "STRIPE_NOT_CONNECTED",
+            });
+        }
+
         const successUrl = `${process.env.WEB_URL}/dashboard/clients/${client.id}?payment=success`;
         const cancelUrl = `${process.env.WEB_URL}/dashboard/clients/${client.id}?payment=cancel`;
-        const session = await createCheckoutSession(client.id, coachId, successUrl, cancelUrl);
+        const session = await createCheckoutSession(
+            client.id,
+            coachId,
+            client.coach.stripeAccountId,
+            payment.amount,
+            payment.currency,
+            successUrl,
+            cancelUrl
+        );
 
         const channel = await getChannel(client.preferredChannel, coachId);
         const recipientId = getRecipientId(client);
@@ -208,7 +352,7 @@ router.post("/:paymentId/remind", authenticate, async (req: AuthRequest, res: Re
     }
 });
 
-// GET /payments/:paymentId/receipt - Get Stripe receipt URL
+// GET /payments/:paymentId/receipt - Get receipt (Stripe URL or HTML for bank transfers)
 router.get("/:paymentId/receipt", authenticate, async (req: AuthRequest, res: Response) => {
     const coachId = req.user?.id as string;
     const paymentId = req.params.paymentId as string;
@@ -217,17 +361,56 @@ router.get("/:paymentId/receipt", authenticate, async (req: AuthRequest, res: Re
     try {
         const payment = await prisma.payment.findUnique({
             where: { id: paymentId },
-            include: { client: { select: { coachId: true } } },
+            include: {
+                client: {
+                    include: { coach: { select: { name: true, businessName: true } } },
+                },
+            },
         });
 
         if (!payment || payment.client.coachId !== coachId) {
             return res.status(404).json({ error: "Payment not found" });
         }
 
+        // Bank transfer: return HTML receipt
         if (payment.paymentMethod === "BANK_TRANSFER" || !payment.stripeSessionId) {
-            return res.status(404).json({ error: "No receipt available for this payment" });
+            const amountFormatted = (payment.amount / 100).toFixed(2);
+            const currencySymbol = payment.currency.toUpperCase() === "GBP" ? "\u00a3" : payment.currency.toUpperCase() + " ";
+            const dateFormatted = payment.createdAt.toLocaleDateString("en-GB", {
+                day: "numeric", month: "long", year: "numeric",
+            });
+            const coachDisplay = payment.client.coach.businessName || payment.client.coach.name || "Coach";
+
+            const html = `<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Payment Receipt</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;max-width:600px;margin:40px auto;padding:20px;color:#1a1a1a}
+h1{font-size:20px;margin-bottom:24px;padding-bottom:12px;border-bottom:2px solid #111}
+.row{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #eee}
+.row:last-child{border-bottom:none}
+.label{color:#666;font-size:14px}
+.value{font-weight:600;font-size:14px;text-align:right}
+.amount{font-size:24px;font-weight:700;margin:20px 0;text-align:center;padding:16px;background:#f8f8f8;border-radius:8px}
+.footer{margin-top:32px;padding-top:16px;border-top:1px solid #eee;font-size:12px;color:#999;text-align:center}
+@media print{body{margin:0;padding:20px}}
+</style></head><body>
+<h1>Payment Receipt</h1>
+<div class="amount">${currencySymbol}${amountFormatted}</div>
+<div class="row"><span class="label">Client</span><span class="value">${payment.client.name}</span></div>
+<div class="row"><span class="label">Coach</span><span class="value">${coachDisplay}</span></div>
+<div class="row"><span class="label">Method</span><span class="value">Bank Transfer</span></div>
+<div class="row"><span class="label">Status</span><span class="value">${payment.status === "SUCCEEDED" ? "Paid" : payment.status}</span></div>
+<div class="row"><span class="label">Date</span><span class="value">${dateFormatted}</span></div>
+<div class="row"><span class="label">Reference</span><span class="value" style="font-size:11px">${payment.id}</span></div>
+<div class="footer">Generated by FitFlow</div>
+</body></html>`;
+
+            return res.status(200).header("Content-Type", "text/html").send(html);
         }
 
+        // Stripe: return receipt URL
         const session = await stripe.checkout.sessions.retrieve(payment.stripeSessionId, {
             expand: ["payment_intent.latest_charge"],
         });

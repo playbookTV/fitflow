@@ -5,9 +5,15 @@ const stripe = new Stripe(env.STRIPE_SECRET_KEY, {
     apiVersion: "2025-02-24.acacia",
 });
 
+// Platform fee percentage taken from each client payment (goes to FitFlow)
+export const PLATFORM_FEE_PERCENT = 10;
+
 export const createCheckoutSession = async (
     clientId: string,
     coachId: string,
+    coachStripeAccountId: string,
+    amountCents: number,
+    currency: string,
     successUrl: string,
     cancelUrl: string
 ) => {
@@ -16,12 +22,12 @@ export const createCheckoutSession = async (
         line_items: [
             {
                 price_data: {
-                    currency: "gbp",
+                    currency,
                     product_data: {
                         name: "FitFlow Personal Training Subscription",
                         description: "Monthly coaching and workout plans",
                     },
-                    unit_amount: 5000, // £50.00
+                    unit_amount: amountCents,
                     recurring: {
                         interval: "month",
                     },
@@ -30,6 +36,13 @@ export const createCheckoutSession = async (
             },
         ],
         mode: "subscription",
+        // Route funds to the coach's connected Stripe account with a platform fee
+        subscription_data: {
+            transfer_data: {
+                destination: coachStripeAccountId,
+            },
+            application_fee_percent: PLATFORM_FEE_PERCENT,
+        },
         success_url: successUrl,
         cancel_url: cancelUrl,
         metadata: {

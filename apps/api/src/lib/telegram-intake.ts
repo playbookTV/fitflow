@@ -312,14 +312,31 @@ export async function handleIntakeCallback(
         try {
             const client = await convertLeadToClient(lead.id, lead.coachId);
 
-            // Generate Stripe checkout and send payment link
+            // Fetch coach data for Stripe Connect and pricing
+            const coach = await prisma.coach.findUnique({
+                where: { id: lead.coachId },
+                select: { stripeAccountId: true, defaultMonthlyRate: true, billingCurrency: true },
+            });
+
+            // Generate Stripe checkout and send payment link (only if coach has Stripe connected and a rate set)
+            const amountCents = client.monthlyRate ?? coach?.defaultMonthlyRate;
+            if (!coach?.stripeAccountId || !amountCents) {
+                console.warn(`[TG Intake] Skipping payment link — coach ${lead.coachId} missing Stripe account or rate`);
+                // Still log the conversion below, just skip the payment link
+            }
+
             const webUrl = process.env.WEB_URL || "http://localhost:3000";
-            const session = await createCheckoutSession(
-                client.id,
-                lead.coachId,
-                `${webUrl}/pay/success`,
-                `${webUrl}/pay/cancel`
-            );
+            const session = coach?.stripeAccountId && amountCents
+                ? await createCheckoutSession(
+                    client.id,
+                    lead.coachId,
+                    coach.stripeAccountId,
+                    amountCents,
+                    coach.billingCurrency || "gbp",
+                    `${webUrl}/pay/success`,
+                    `${webUrl}/pay/cancel`
+                )
+                : null;
 
             const freshLead = await prisma.lead.findUnique({
                 where: { id: lead.id },
@@ -327,14 +344,23 @@ export async function handleIntakeCallback(
             });
             const offerName = freshLead?.offer?.name || "coaching programme";
 
-            await sendTelegramMessage(
-                botToken,
-                chatId,
-                `\u{2705} You're all set, ${intake.name}!\n\n` +
-                    `Complete your payment to secure your spot on ${offerName}:\n\n` +
-                    `${session.url}\n\n` +
-                    `${coachName} will activate your programme as soon as payment goes through. \u{1F680}`
-            );
+            if (session?.url) {
+                await sendTelegramMessage(
+                    botToken,
+                    chatId,
+                    `\u{2705} You're all set, ${intake.name}!\n\n` +
+                        `Complete your payment to secure your spot on ${offerName}:\n\n` +
+                        `${session.url}\n\n` +
+                        `${coachName} will activate your programme as soon as payment goes through. \u{1F680}`
+                );
+            } else {
+                await sendTelegramMessage(
+                    botToken,
+                    chatId,
+                    `\u{2705} You're all set, ${intake.name}!\n\n` +
+                        `${coachName} will be in touch shortly to get you started on ${offerName}. \u{1F680}`
+                );
+            }
 
             await logEvent(EventType.LEAD_CONVERTED, {
                 coachId: lead.coachId,
