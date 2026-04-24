@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
     Plus, Search, GripVertical, Save, Trash2, ChevronDown, ChevronRight, Sparkles, Loader2
 } from "lucide-react";
@@ -68,6 +68,16 @@ export default function PlanBuilder({ planId }: PlanBuilderProps) {
     const [aiClientId, setAiClientId] = useState("");
     const [aiInstructions, setAiInstructions] = useState("");
     const [aiError, setAiError] = useState("");
+    const aiAbortRef = useRef<AbortController | null>(null);
+
+    const closeAiModal = () => {
+        if (aiAbortRef.current) {
+            aiAbortRef.current.abort();
+            aiAbortRef.current = null;
+        }
+        setShowAiModal(false);
+        setIsGenerating(false);
+    };
 
     // Load existing plan data when editing
     useEffect(() => {
@@ -208,6 +218,8 @@ export default function PlanBuilder({ planId }: PlanBuilderProps) {
     const handleGenerate = async () => {
         setIsGenerating(true);
         setAiError("");
+        const abort = new AbortController();
+        aiAbortRef.current = abort;
         try {
             const headers = await getAuthHeaders();
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/plans/generate`, {
@@ -217,6 +229,7 @@ export default function PlanBuilder({ planId }: PlanBuilderProps) {
                     ...(aiClientId ? { clientId: aiClientId } : {}),
                     ...(aiInstructions ? { instructions: aiInstructions } : {}),
                 }),
+                signal: abort.signal,
             });
 
             if (!res.ok) {
@@ -246,8 +259,10 @@ export default function PlanBuilder({ planId }: PlanBuilderProps) {
             );
             setShowAiModal(false);
         } catch (err) {
+            if (err instanceof DOMException && err.name === "AbortError") return;
             setAiError(err instanceof Error ? err.message : "Something went wrong");
         } finally {
+            aiAbortRef.current = null;
             setIsGenerating(false);
         }
     };
@@ -508,14 +523,14 @@ export default function PlanBuilder({ planId }: PlanBuilderProps) {
                 </div>
 
                 {/* AI Generation Modal */}
-                <Modal open={showAiModal} onOpenChange={(open) => !isGenerating && setShowAiModal(open)}>
+                <Modal open={showAiModal} onOpenChange={(open) => { if (!open) closeAiModal(); }}>
                     <ModalContent>
                         <ModalHeader>
                             <ModalTitle className="flex items-center gap-2">
                                 <Sparkles className="w-5 h-5 text-brand-green" aria-hidden="true" />
                                 Generate with AI
                             </ModalTitle>
-                            <ModalClose disabled={isGenerating} />
+                            <ModalClose />
                         </ModalHeader>
                         <div className="p-6 space-y-5">
                             <div className="form-field">
@@ -556,9 +571,8 @@ export default function PlanBuilder({ planId }: PlanBuilderProps) {
 
                             <div className="flex justify-end gap-3 pt-2">
                                 <button
-                                    onClick={() => setShowAiModal(false)}
+                                    onClick={closeAiModal}
                                     className="btn-secondary"
-                                    disabled={isGenerating}
                                 >
                                     Cancel
                                 </button>
