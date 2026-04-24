@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { Suspense, useEffect, useState, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { PricingTiers } from "@/components/PricingTiers";
@@ -61,6 +61,20 @@ function formatCurrency(cents: number, currency: string = "usd") {
 }
 
 export default function SubscriptionPage() {
+    return (
+        <Suspense fallback={
+            <DashboardLayout title="Subscription">
+                <div className="flex items-center justify-center py-20">
+                    <Loader2 className="w-6 h-6 animate-spin text-text-faint" />
+                </div>
+            </DashboardLayout>
+        }>
+            <SubscriptionPageInner />
+        </Suspense>
+    );
+}
+
+function SubscriptionPageInner() {
     const sub = useSubscription();
     const searchParams = useSearchParams();
     const router = useRouter();
