@@ -241,18 +241,18 @@ export default function PlanBuilder({ planId }: PlanBuilderProps) {
             setTitle(plan.title || "AI Generated Plan");
             setDescription(plan.description || "");
             setDays(
-                plan.days.map((day: { dayNumber: number; title: string; exercises: { exerciseId: string; exerciseName: string; sets: number; reps: string; rest: string; notes: string }[] }) => ({
+                (plan.days ?? []).map((day: { dayNumber: number; title: string; exercises: { exerciseId: string; exerciseName: string; sets: number; reps: string; rest: string; notes: string }[] }, idx: number) => ({
                     id: crypto.randomUUID(),
-                    dayNumber: day.dayNumber,
-                    title: day.title,
+                    dayNumber: day.dayNumber ?? idx + 1,
+                    title: day.title || `Day ${idx + 1}`,
                     isOpen: true,
-                    exercises: day.exercises.map((ex: { exerciseId: string; exerciseName: string; sets: number; reps: string; rest: string; notes: string }) => ({
+                    exercises: (day.exercises ?? []).map((ex: { exerciseId: string; exerciseName: string; sets: number; reps: string; rest: string; notes: string }) => ({
                         id: crypto.randomUUID(),
                         exerciseId: ex.exerciseId,
-                        name: ex.exerciseName,
-                        sets: ex.sets,
-                        reps: ex.reps,
-                        rest: ex.rest,
+                        name: ex.exerciseName || "Unknown",
+                        sets: ex.sets ?? 3,
+                        reps: ex.reps || "10-12",
+                        rest: ex.rest || "60s",
                         notes: ex.notes || "",
                     })),
                 }))
@@ -524,7 +524,7 @@ export default function PlanBuilder({ planId }: PlanBuilderProps) {
 
                 {/* AI Generation Modal */}
                 <Modal open={showAiModal} onOpenChange={(open) => { if (!open) closeAiModal(); }}>
-                    <ModalContent>
+                    <ModalContent aria-describedby={undefined}>
                         <ModalHeader>
                             <ModalTitle className="flex items-center gap-2">
                                 <Sparkles className="w-5 h-5 text-brand-green" aria-hidden="true" />
