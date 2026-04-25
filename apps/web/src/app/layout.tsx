@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { DM_Sans, IBM_Plex_Mono, Newsreader } from "next/font/google";
 import { SkipNav } from "@/components/ui/SkipNav";
 import { ToastProvider } from "@/components/ui/Toast";
@@ -30,6 +30,9 @@ export const metadata: Metadata = {
     title: "FitFlow — Coaching Operations Platform",
     description:
         "Manage your coaching business from one dashboard. Clients interact via WhatsApp or Telegram.",
+};
+
+export const viewport: Viewport = {
     themeColor: "#0a0a0b",
 };
 

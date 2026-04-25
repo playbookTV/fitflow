@@ -358,6 +358,7 @@ model MealPlan {
   ownerCoach    Coach?   @relation("CoachMealTemplates", fields: [ownerCoachId], references: [id])
   title         String
   description   String?
+  tags          String[]  @default([])
   days          MealDay[]
   assignments   MealAssignment[]
   createdAt     DateTime @default(now()) @map("created_at")

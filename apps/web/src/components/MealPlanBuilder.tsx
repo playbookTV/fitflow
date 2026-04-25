@@ -1,9 +1,16 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Plus, Search, Save, Trash2, ChevronDown, ChevronRight } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Plus, Search, Save, Trash2, ChevronDown, ChevronRight, Sparkles, Loader2 } from "lucide-react";
 import { getAuthHeaders } from "@/lib/auth";
 import { useRouter } from "next/navigation";
+import { Modal, ModalContent, ModalHeader, ModalTitle, ModalClose } from "@/components/ui/Modal";
+
+interface AiClient {
+    id: string;
+    name: string;
+    goals?: string;
+}
 
 interface NutritionResult {
     id: number;
@@ -58,6 +65,117 @@ export default function MealPlanBuilder({ planId }: MealPlanBuilderProps) {
     const [activeCategory, setActiveCategory] = useState("breakfast");
     const [isSaving, setIsSaving] = useState(false);
     const [loading, setLoading] = useState(!!planId);
+
+    // AI generation state
+    const [showAiModal, setShowAiModal] = useState(false);
+    const [isGenerating, setIsGenerating] = useState(false);
+    const [aiClients, setAiClients] = useState<AiClient[]>([]);
+    const [aiClientId, setAiClientId] = useState("");
+    const [aiInstructions, setAiInstructions] = useState("");
+    const [aiError, setAiError] = useState("");
+    const aiAbortRef = useRef<AbortController | null>(null);
+
+    const closeAiModal = () => {
+        if (aiAbortRef.current) {
+            aiAbortRef.current.abort();
+            aiAbortRef.current = null;
+        }
+        setShowAiModal(false);
+        setIsGenerating(false);
+    };
+
+    const openAiModal = async () => {
+        setShowAiModal(true);
+        setAiError("");
+        setAiClientId("");
+        setAiInstructions("");
+        try {
+            const headers = await getAuthHeaders();
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/clients`, { headers });
+            if (res.ok) setAiClients(await res.json());
+        } catch {
+            // Non-critical — client list is optional
+        }
+    };
+
+    const handleGenerate = async () => {
+        setIsGenerating(true);
+        setAiError("");
+        const abort = new AbortController();
+        aiAbortRef.current = abort;
+        try {
+            const headers = await getAuthHeaders();
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/meal-plans/generate`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", ...headers },
+                body: JSON.stringify({
+                    ...(aiClientId ? { clientId: aiClientId } : {}),
+                    ...(aiInstructions ? { instructions: aiInstructions } : {}),
+                }),
+                signal: abort.signal,
+            });
+
+            if (!res.ok) {
+                const data = await res.json().catch(() => ({}));
+                throw new Error(data.error || "Failed to generate meal plan");
+            }
+
+            const plan = await res.json();
+
+            // Fetch full meal data for macro info
+            const mealIds = (plan.days ?? []).flatMap((d: { entries: { mealId: string }[] }) =>
+                (d.entries ?? []).map((e: { mealId: string }) => e.mealId)
+            );
+            const mealMap = new Map<string, { category: string; calories: number | null; protein: number | null; carbs: number | null; fat: number | null }>();
+            if (mealIds.length > 0) {
+                try {
+                    const mealHeaders = await getAuthHeaders();
+                    const mealRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/meals?ids=${mealIds.join(",")}`, { headers: mealHeaders });
+                    if (mealRes.ok) {
+                        const mealsData = await mealRes.json();
+                        for (const m of mealsData) {
+                            mealMap.set(m.id, { category: m.category, calories: m.calories, protein: m.protein, carbs: m.carbs, fat: m.fat });
+                        }
+                    }
+                } catch {
+                    // Non-critical — macros will show as 0
+                }
+            }
+
+            setTitle(plan.title || "AI Generated Meal Plan");
+            setDescription(plan.description || "");
+            setDays(
+                (plan.days ?? []).map((day: { dayNumber: number; title: string; entries: { mealId: string; mealName: string; servingSize: string; notes: string }[] }, idx: number) => ({
+                    id: crypto.randomUUID(),
+                    dayNumber: day.dayNumber ?? idx + 1,
+                    title: day.title || `Day ${idx + 1}`,
+                    isOpen: true,
+                    entries: (day.entries ?? []).map((entry: { mealId: string; mealName: string; servingSize: string; notes: string }) => {
+                        const mealData = mealMap.get(entry.mealId);
+                        return {
+                            id: crypto.randomUUID(),
+                            mealId: entry.mealId,
+                            name: entry.mealName || "Unknown",
+                            category: mealData?.category || "snack",
+                            calories: mealData?.calories ?? null,
+                            protein: mealData?.protein ?? null,
+                            carbs: mealData?.carbs ?? null,
+                            fat: mealData?.fat ?? null,
+                            servingSize: entry.servingSize || "",
+                            notes: entry.notes || "",
+                        };
+                    }),
+                }))
+            );
+            setShowAiModal(false);
+        } catch (err) {
+            if (err instanceof DOMException && err.name === "AbortError") return;
+            setAiError(err instanceof Error ? err.message : "Something went wrong");
+        } finally {
+            aiAbortRef.current = null;
+            setIsGenerating(false);
+        }
+    };
 
     // Load existing plan when editing
     useEffect(() => {
@@ -290,14 +408,23 @@ export default function MealPlanBuilder({ planId }: MealPlanBuilderProps) {
                             placeholder="Add a description\u2026"
                         />
                     </div>
-                    <button
-                        onClick={handleSave}
-                        disabled={isSaving}
-                        className="btn-primary flex items-center gap-2"
-                    >
-                        <Save aria-hidden="true" className="w-4 h-4" />
-                        {isSaving ? "Saving..." : "Save Plan"}
-                    </button>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={openAiModal}
+                            className="btn-secondary"
+                        >
+                            <Sparkles size={14} />
+                            GENERATE WITH AI
+                        </button>
+                        <button
+                            onClick={handleSave}
+                            disabled={isSaving}
+                            className="btn-primary flex items-center gap-2"
+                        >
+                            <Save aria-hidden="true" className="w-4 h-4" />
+                            {isSaving ? "Saving..." : "Save Plan"}
+                        </button>
+                    </div>
                 </div>
 
                 {/* Days */}
@@ -460,6 +587,82 @@ export default function MealPlanBuilder({ planId }: MealPlanBuilderProps) {
                     <Plus aria-hidden="true" className="w-4 h-4" />
                     Add Day
                 </button>
+
+                {/* AI Generation Modal */}
+                <Modal open={showAiModal} onOpenChange={(open) => { if (!open) closeAiModal(); }}>
+                    <ModalContent aria-describedby={undefined}>
+                        <ModalHeader>
+                            <ModalTitle className="flex items-center gap-2">
+                                <Sparkles className="w-5 h-5 text-brand-green" aria-hidden="true" />
+                                Generate with AI
+                            </ModalTitle>
+                            <ModalClose />
+                        </ModalHeader>
+                        <div className="p-6 space-y-5">
+                            <div className="form-field">
+                                <label className="label-mono" htmlFor="aiMealClient">Client (optional)</label>
+                                <select
+                                    id="aiMealClient"
+                                    name="aiMealClient"
+                                    value={aiClientId}
+                                    onChange={(e) => setAiClientId(e.target.value)}
+                                    className="select w-full"
+                                    disabled={isGenerating}
+                                >
+                                    <option value="">No client — general plan</option>
+                                    {aiClients.map((c) => (
+                                        <option key={c.id} value={c.id}>{c.name}</option>
+                                    ))}
+                                </select>
+                                <p className="text-xs text-text-faint mt-1">
+                                    Selecting a client personalises the plan to their goals and history.
+                                </p>
+                            </div>
+
+                            <div className="form-field">
+                                <label className="label-mono" htmlFor="aiMealInstructions">Instructions</label>
+                                <textarea
+                                    id="aiMealInstructions"
+                                    name="aiMealInstructions"
+                                    value={aiInstructions}
+                                    onChange={(e) => setAiInstructions(e.target.value)}
+                                    placeholder="e.g., 7-day high-protein plan for muscle gain, 2000 calories…"
+                                    className="input w-full resize-none h-24"
+                                    maxLength={1000}
+                                    disabled={isGenerating}
+                                />
+                            </div>
+
+                            {aiError && <p className="text-sm text-brand-red">{aiError}</p>}
+
+                            <div className="flex justify-end gap-3 pt-2">
+                                <button
+                                    onClick={closeAiModal}
+                                    className="btn-secondary"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleGenerate}
+                                    disabled={isGenerating}
+                                    className="btn-primary disabled:opacity-50"
+                                >
+                                    {isGenerating ? (
+                                        <>
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                            Generating…
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Sparkles className="w-4 h-4" />
+                                            Generate Plan
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+                    </ModalContent>
+                </Modal>
             </div>
         </div>
     );

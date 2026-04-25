@@ -29,6 +29,7 @@ import mealAssignmentsRouter from "./routes/meal-assignments";
 import shortLinksRouter from "./routes/short-links";
 import subscriptionsRouter from "./routes/subscriptions";
 import subscriptionWebhookRouter from "./routes/subscription-webhook";
+import adminRouter from "./routes/admin";
 import { prisma } from "./lib/prisma";
 import { startDailyScheduler } from "./jobs/daily-scheduler";
 import { startWeeklyCheckinScheduler } from "./jobs/weekly-checkin";
@@ -138,6 +139,7 @@ app.use("/meal-plans", mealPlansRouter);
 app.use("/clients", mealAssignmentsRouter);
 app.use("/short-links", shortLinksRouter);
 app.use("/subscriptions", subscriptionsRouter);
+app.use("/admin", adminRouter);
 
 // GET /go/:code — Short link resolve (returns JSON for web app redirect)
 app.get("/go/:code", async (req: Request, res: Response) => {

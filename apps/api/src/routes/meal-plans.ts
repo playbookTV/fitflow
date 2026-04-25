@@ -2,6 +2,9 @@ import { Router, Response } from "express";
 import { authenticate, AuthRequest } from "../middleware/auth";
 import { enforceLimit } from "../middleware/subscription";
 import { prisma } from "../lib/prisma";
+import { generateMealPlan } from "../services/aiMealPlanGenerator";
+import { PlanGenerationError } from "../services/aiPlanGenerator";
+import { logEvent, EventType } from "../lib/event-logger";
 
 const router: Router = Router();
 
@@ -67,6 +70,123 @@ router.post("/", authenticate, enforceLimit("mealPlans"), async (req: AuthReques
     } catch (error) {
         console.error("[POST /meal-plans]", error);
         res.status(500).json({ error: "Failed to create meal plan" });
+    }
+});
+
+// POST /meal-plans/generate — AI-generate a meal plan
+router.post("/generate", authenticate, enforceLimit("mealPlans"), async (req: AuthRequest, res: Response) => {
+    const coachId = req.user?.id as string;
+    if (!coachId) return res.status(401).json({ error: "Unauthorized" });
+
+    const { clientId, instructions } = req.body;
+
+    try {
+        const plan = await generateMealPlan({ coachId, clientId, instructions });
+
+        logEvent(EventType.AI_MEAL_PLAN_GENERATED, {
+            coachId,
+            metadata: { instructionLength: instructions?.length ?? 0 },
+        });
+
+        res.json(plan);
+    } catch (error) {
+        if (error instanceof PlanGenerationError) {
+            return res.status(error.statusCode).json({ error: error.message });
+        }
+        console.error("[POST /meal-plans/generate]", error);
+        res.status(500).json({ error: "Failed to generate meal plan" });
+    }
+});
+
+// GET /meal-plans/templates — browse meal plan templates
+router.get("/templates", authenticate, async (req: AuthRequest, res: Response) => {
+    const coachId = req.user?.id as string;
+    if (!coachId) return res.status(401).json({ error: "Unauthorized" });
+
+    const tagFilter = typeof req.query.tags === "string"
+        ? req.query.tags.split(",").map((t) => t.trim().toLowerCase()).filter(Boolean)
+        : [];
+
+    try {
+        const templates = await prisma.mealPlan.findMany({
+            where: {
+                isTemplate: true,
+                ...(tagFilter.length > 0 ? { tags: { hasSome: tagFilter } } : {}),
+            },
+            include: {
+                days: {
+                    include: { entries: { include: { meal: true }, orderBy: { order: "asc" } } },
+                    orderBy: { dayNumber: "asc" },
+                },
+            },
+            orderBy: { title: "asc" },
+        });
+
+        res.json(templates.map((t) => ({
+            ...t,
+            daysPerWeek: t.days.length,
+            totalMeals: t.days.reduce((sum, d) => sum + d.entries.length, 0),
+        })));
+    } catch (error) {
+        console.error("[GET /meal-plans/templates]", error);
+        res.status(500).json({ error: "Failed to fetch templates" });
+    }
+});
+
+// POST /meal-plans/templates/:id/use — create a meal plan from a template
+router.post("/templates/:id/use", authenticate, enforceLimit("mealPlans"), async (req: AuthRequest, res: Response) => {
+    const coachId = req.user?.id as string;
+    if (!coachId) return res.status(401).json({ error: "Unauthorized" });
+
+    try {
+        const template = await prisma.mealPlan.findFirst({
+            where: { id: req.params.id as string, isTemplate: true },
+            include: {
+                days: {
+                    include: { entries: true },
+                    orderBy: { dayNumber: "asc" },
+                },
+            },
+        });
+
+        if (!template) return res.status(404).json({ error: "Template not found" });
+
+        const plan = await prisma.mealPlan.create({
+            data: {
+                coachId,
+                title: template.title,
+                description: template.description,
+                isTemplate: false,
+                days: {
+                    create: template.days.map((day) => ({
+                        dayNumber: day.dayNumber,
+                        title: day.title,
+                        entries: {
+                            create: day.entries.map((entry) => ({
+                                mealId: entry.mealId,
+                                order: entry.order,
+                                servingSize: entry.servingSize,
+                                notes: entry.notes,
+                            })),
+                        },
+                    })),
+                },
+            },
+            include: {
+                days: { include: { entries: { include: { meal: true } } } },
+                _count: { select: { assignments: true } },
+            },
+        });
+
+        logEvent(EventType.MEAL_TEMPLATE_USED, {
+            coachId,
+            metadata: { templateId: template.id, templateTitle: template.title },
+        });
+
+        res.status(201).json({ ...plan, daysPerWeek: plan.days.length });
+    } catch (error) {
+        console.error("[POST /meal-plans/templates/:id/use]", error);
+        res.status(500).json({ error: "Failed to create plan from template" });
     }
 });
 

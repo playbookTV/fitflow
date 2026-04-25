@@ -5,6 +5,25 @@ import {
     Plus, Search, GripVertical, Save, Trash2, ChevronDown, ChevronRight, Sparkles, Loader2
 } from "lucide-react";
 import Image from "next/image";
+import {
+    DndContext,
+    closestCenter,
+    KeyboardSensor,
+    PointerSensor,
+    useSensor,
+    useSensors,
+    DragEndEvent,
+    DragOverlay,
+    DragStartEvent,
+} from "@dnd-kit/core";
+import {
+    arrayMove,
+    SortableContext,
+    sortableKeyboardCoordinates,
+    useSortable,
+    verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { getAuthHeaders } from "@/lib/auth";
 import { useToast } from "@/components/ui/Toast";
 import { Modal, ModalContent, ModalHeader, ModalTitle, ModalClose } from "@/components/ui/Modal";
@@ -48,6 +67,95 @@ interface PlanBuilderProps {
     planId?: string;
 }
 
+/* ─── Sortable Exercise Row ─── */
+function SortableExercise({
+    ex,
+    dayIdx,
+    exIdx,
+    onUpdate,
+    onRemove,
+}: {
+    ex: PlanExercise;
+    dayIdx: number;
+    exIdx: number;
+    onUpdate: (dayIdx: number, exIdx: number, field: string, value: string | number) => void;
+    onRemove: (dayIdx: number, exIdx: number) => void;
+}) {
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        transform,
+        transition,
+        isDragging,
+    } = useSortable({ id: ex.id });
+
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.4 : 1,
+    };
+
+    return (
+        <div ref={setNodeRef} style={style} className="flex items-center gap-4 group">
+            <button
+                type="button"
+                className="text-text-muted cursor-grab shrink-0 opacity-0 group-hover:opacity-100 transition-opacity touch-none"
+                aria-label={`Drag to reorder ${ex.name}`}
+                {...attributes}
+                {...listeners}
+            >
+                <GripVertical size={14} />
+            </button>
+            {ex.demoVideoUrl && (
+                <Image src={ex.demoVideoUrl} alt="" width={28} height={28} className="w-7 h-7 rounded object-cover shrink-0" />
+            )}
+            <span className="text-sm text-text-primary flex-1 truncate font-medium">
+                {ex.name}
+            </span>
+
+            <div className="flex items-center gap-3 shrink-0">
+                <div className="flex flex-col gap-0.5">
+                    <span className="label-mono text-[9px]">SETS</span>
+                    <input
+                        type="number"
+                        value={ex.sets}
+                        onChange={(e) => onUpdate(dayIdx, exIdx, "sets", Number.parseInt(e.target.value) || 0)}
+                        className="w-12 bg-bg-secondary border border-border rounded px-2 py-1 text-xs text-text-primary focus-visible:outline-transparent focus-visible:ring-2 focus-visible:ring-brand-green/50 focus:border-brand-green/30"
+                        aria-label="Sets"
+                    />
+                </div>
+                <div className="flex flex-col gap-0.5">
+                    <span className="label-mono text-[9px]">REPS</span>
+                    <input
+                        value={ex.reps}
+                        onChange={(e) => onUpdate(dayIdx, exIdx, "reps", e.target.value)}
+                        className="w-16 bg-bg-secondary border border-border rounded px-2 py-1 text-xs text-text-primary focus-visible:outline-transparent focus-visible:ring-2 focus-visible:ring-brand-green/50 focus:border-brand-green/30"
+                        aria-label="Reps"
+                    />
+                </div>
+                <div className="flex flex-col gap-0.5">
+                    <span className="label-mono text-[9px]">REST</span>
+                    <input
+                        value={ex.rest}
+                        onChange={(e) => onUpdate(dayIdx, exIdx, "rest", e.target.value)}
+                        className="w-16 bg-bg-secondary border border-border rounded px-2 py-1 text-xs text-text-primary focus-visible:outline-transparent focus-visible:ring-2 focus-visible:ring-brand-green/50 focus:border-brand-green/30"
+                        aria-label="Rest"
+                    />
+                </div>
+            </div>
+
+            <button
+                onClick={() => onRemove(dayIdx, exIdx)}
+                className="btn-icon-danger opacity-0 group-hover:opacity-100 transition-[opacity,background-color,color]"
+                aria-label={`Remove ${ex.name}`}
+            >
+                <Trash2 size={14} />
+            </button>
+        </div>
+    );
+}
+
 export default function PlanBuilder({ planId }: PlanBuilderProps) {
     const { toast } = useToast();
     const [title, setTitle] = useState("New Workout Plan");
@@ -69,6 +177,15 @@ export default function PlanBuilder({ planId }: PlanBuilderProps) {
     const [aiInstructions, setAiInstructions] = useState("");
     const [aiError, setAiError] = useState("");
     const aiAbortRef = useRef<AbortController | null>(null);
+
+    // Drag state
+    const [activeDragId, setActiveDragId] = useState<string | null>(null);
+    const [activeDragType, setActiveDragType] = useState<"day" | "exercise" | null>(null);
+
+    const sensors = useSensors(
+        useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+        useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+    );
 
     const closeAiModal = () => {
         if (aiAbortRef.current) {
@@ -189,6 +306,15 @@ export default function PlanBuilder({ planId }: PlanBuilderProps) {
         }
     };
 
+    const updateExerciseField = (dayIdx: number, exIdx: number, field: string, value: string | number) => {
+        const newDays = [...days];
+        const exercise = newDays[dayIdx].exercises[exIdx];
+        if (field === "sets") exercise.sets = value as number;
+        else if (field === "reps") exercise.reps = value as string;
+        else if (field === "rest") exercise.rest = value as string;
+        setDays(newDays);
+    };
+
     const removeExercise = (dayIdx: number, exIdx: number) => {
         const newDays = [...days];
         newDays[dayIdx].exercises.splice(exIdx, 1);
@@ -199,6 +325,48 @@ export default function PlanBuilder({ planId }: PlanBuilderProps) {
         const newDays = [...days];
         newDays[idx].isOpen = !newDays[idx].isOpen;
         setDays(newDays);
+    };
+
+    /* ─── Day drag handlers ─── */
+    const handleDayDragStart = (event: DragStartEvent) => {
+        setActiveDragId(String(event.active.id));
+        setActiveDragType("day");
+    };
+
+    const handleDayDragEnd = (event: DragEndEvent) => {
+        setActiveDragId(null);
+        setActiveDragType(null);
+        const { active, over } = event;
+        if (!over || active.id === over.id) return;
+
+        setDays((prev) => {
+            const oldIdx = prev.findIndex((d) => d.id === active.id);
+            const newIdx = prev.findIndex((d) => d.id === over.id);
+            const reordered = arrayMove(prev, oldIdx, newIdx);
+            return reordered.map((d, i) => ({ ...d, dayNumber: i + 1 }));
+        });
+    };
+
+    /* ─── Exercise drag handlers (scoped per day) ─── */
+    const handleExerciseDragStart = (event: DragStartEvent) => {
+        setActiveDragId(String(event.active.id));
+        setActiveDragType("exercise");
+    };
+
+    const handleExerciseDragEnd = (dayIdx: number) => (event: DragEndEvent) => {
+        setActiveDragId(null);
+        setActiveDragType(null);
+        const { active, over } = event;
+        if (!over || active.id === over.id) return;
+
+        setDays((prev) => {
+            const newDays = [...prev];
+            const exercises = [...newDays[dayIdx].exercises];
+            const oldIdx = exercises.findIndex((e) => e.id === active.id);
+            const newIdx = exercises.findIndex((e) => e.id === over.id);
+            newDays[dayIdx] = { ...newDays[dayIdx], exercises: arrayMove(exercises, oldIdx, newIdx) };
+            return newDays;
+        });
     };
 
     const openAiModal = async () => {
@@ -306,6 +474,10 @@ export default function PlanBuilder({ planId }: PlanBuilderProps) {
         }
     };
 
+    const activeDragDay = activeDragType === "day" && activeDragId
+        ? days.find((d) => d.id === activeDragId)
+        : null;
+
     if (loading) {
         return (
             <div className="min-h-dvh bg-mesh-gradient flex items-center justify-center">
@@ -330,8 +502,8 @@ export default function PlanBuilder({ planId }: PlanBuilderProps) {
                         <textarea
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
-                            className="w-full bg-transparent border-none text-text-secondary focus-visible:outline-transparent focus-visible:ring-2 focus-visible:ring-brand-green/50 resize-none h-8 mt-2 placeholder:opacity-30"
-                            placeholder="Add a description\u2026"
+                            className="w-full bg-transparent border-none text-text-secondary focus-visible:outline-transparent focus-visible:ring-2 focus-visible:ring-brand-green/50 resize-y min-h-[2.5rem] mt-2 placeholder:opacity-30"
+                            placeholder="Add a description…"
                             aria-label="Plan Description"
                         />
                     </div>
@@ -348,179 +520,66 @@ export default function PlanBuilder({ planId }: PlanBuilderProps) {
                         className="btn-primary disabled:opacity-50"
                     >
                         <Save size={14} />
-                        {isSaving ? "SAVING\u2026" : planId ? "UPDATE PLAN" : "SAVE PLAN"}
+                        {isSaving ? "SAVING…" : planId ? "UPDATE PLAN" : "SAVE PLAN"}
                     </button>
                 </div>
 
-                {/* Days */}
-                <div className="space-y-6">
-                    {days.map((day, dayIdx) => (
-                        <div key={day.id} className="card overflow-hidden">
-                            {/* Day Header */}
-                            <div
-                                role="button"
-                                tabIndex={0}
-                                className="flex items-center gap-3 px-5 py-4 bg-bg-secondary/50 cursor-pointer hover:bg-bg-secondary transition-colors"
-                                onClick={() => toggleDay(dayIdx)}
-                                onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && toggleDay(dayIdx)}
-                                aria-expanded={day.isOpen}
-                            >
-                                {day.isOpen ? (
-                                    <ChevronDown size={16} className="text-text-faint" />
-                                ) : (
-                                    <ChevronRight size={16} className="text-text-faint" />
-                                )}
-                                <input
-                                    value={day.title}
-                                    onClick={(e) => e.stopPropagation()}
-                                    onChange={(e) => {
-                                        const newDays = [...days];
-                                        newDays[dayIdx].title = e.target.value;
-                                        setDays(newDays);
-                                    }}
-                                    className="bg-transparent border-none text-sm font-semibold text-text-primary focus-visible:outline-transparent focus-visible:ring-2 focus-visible:ring-brand-green/50 flex-1"
-                                    aria-label={`Title for Day ${day.dayNumber}`}
+                {/* Days — sortable */}
+                <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragStart={handleDayDragStart}
+                    onDragEnd={handleDayDragEnd}
+                >
+                    <SortableContext items={days.map((d) => d.id)} strategy={verticalListSortingStrategy}>
+                        <div className="space-y-6">
+                            {days.map((day, dayIdx) => (
+                                <SortableDayCard
+                                    key={day.id}
+                                    day={day}
+                                    dayIdx={dayIdx}
+                                    days={days}
+                                    setDays={setDays}
+                                    searchTerm={searchTerm}
+                                    setSearchTerm={setSearchTerm}
+                                    activeDayIdx={activeDayIdx}
+                                    setActiveDayIdx={setActiveDayIdx}
+                                    unifiedResults={unifiedResults}
+                                    sensors={sensors}
+                                    toggleDay={toggleDay}
+                                    updateExerciseField={updateExerciseField}
+                                    removeExercise={removeExercise}
+                                    handleResultClick={handleResultClick}
+                                    handleExerciseDragStart={handleExerciseDragStart}
+                                    handleExerciseDragEnd={handleExerciseDragEnd}
                                 />
-                                <span className="badge badge-blue tabular-nums">
-                                    {day.exercises.length} exercises
-                                </span>
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        const newDays = days.filter((_, i) => i !== dayIdx);
-                                        setDays(newDays);
-                                    }}
-                                    className="btn-icon-danger"
-                                    aria-label={`Delete Day ${day.dayNumber}`}
-                                >
-                                    <Trash2 size={14} />
-                                </button>
-                            </div>
+                            ))}
 
-                            {/* Exercises */}
-                            {day.isOpen && (
-                                <div className="p-5 space-y-3">
-                                    {day.exercises.map((ex, exIdx) => (
-                                        <div key={ex.id} className="flex items-center gap-4 group animate-slide-up">
-                                            <GripVertical size={14} className="text-text-muted cursor-grab shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
-                                            {ex.demoVideoUrl && (
-                                                <Image src={ex.demoVideoUrl} alt="" width={28} height={28} className="w-7 h-7 rounded object-cover shrink-0" />
-                                            )}
-                                            <span className="text-sm text-text-primary flex-1 truncate font-medium">
-                                                {ex.name}
-                                            </span>
-
-                                            <div className="flex items-center gap-3 shrink-0">
-                                                <div className="flex flex-col gap-0.5">
-                                                    <span className="label-mono text-[9px]">SETS</span>
-                                                    <input
-                                                        type="number"
-                                                        value={ex.sets}
-                                                        onChange={(e) => {
-                                                            const newDays = [...days];
-                                                            newDays[dayIdx].exercises[exIdx].sets = Number.parseInt(e.target.value) || 0;
-                                                            setDays(newDays);
-                                                        }}
-                                                        className="w-12 bg-bg-secondary border border-border rounded px-2 py-1 text-xs text-text-primary focus-visible:outline-transparent focus-visible:ring-2 focus-visible:ring-brand-green/50 focus:border-brand-green/30"
-                                                        aria-label="Sets"
-                                                    />
-                                                </div>
-                                                <div className="flex flex-col gap-0.5">
-                                                    <span className="label-mono text-[9px]">REPS</span>
-                                                    <input
-                                                        value={ex.reps}
-                                                        onChange={(e) => {
-                                                            const newDays = [...days];
-                                                            newDays[dayIdx].exercises[exIdx].reps = e.target.value;
-                                                            setDays(newDays);
-                                                        }}
-                                                        className="w-16 bg-bg-secondary border border-border rounded px-2 py-1 text-xs text-text-primary focus-visible:outline-transparent focus-visible:ring-2 focus-visible:ring-brand-green/50 focus:border-brand-green/30"
-                                                        aria-label="Reps"
-                                                    />
-                                                </div>
-                                                <div className="flex flex-col gap-0.5">
-                                                    <span className="label-mono text-[9px]">REST</span>
-                                                    <input
-                                                        value={ex.rest}
-                                                        onChange={(e) => {
-                                                            const newDays = [...days];
-                                                            newDays[dayIdx].exercises[exIdx].rest = e.target.value;
-                                                            setDays(newDays);
-                                                        }}
-                                                        className="w-16 bg-bg-secondary border border-border rounded px-2 py-1 text-xs text-text-primary focus-visible:outline-transparent focus-visible:ring-2 focus-visible:ring-brand-green/50 focus:border-brand-green/30"
-                                                        aria-label="Rest"
-                                                    />
-                                                </div>
-                                            </div>
-
-                                            <button
-                                                onClick={() => removeExercise(dayIdx, exIdx)}
-                                                className="btn-icon-danger opacity-0 group-hover:opacity-100 transition-[opacity,background-color,color]"
-                                                aria-label={`Remove ${ex.name}`}
-                                            >
-                                                <Trash2 size={14} />
-                                            </button>
-                                        </div>
-                                    ))}
-
-                                    {/* Search / Add Exercise */}
-                                    <div className="mt-4 relative">
-                                        <div className="flex items-center gap-2 px-3 py-2.5 bg-bg-secondary/30 rounded-xl border border-dashed border-border hover:border-text-faint transition-colors cursor-text">
-                                            <Search size={14} className="text-text-faint" />
-                                            <input
-                                                placeholder="Search exercises\u2026"
-                                                value={activeDayIdx === dayIdx ? searchTerm : ""}
-                                                onFocus={() => setActiveDayIdx(dayIdx)}
-                                                onChange={(e) => setSearchTerm(e.target.value)}
-                                                className="bg-transparent border-none text-sm text-text-primary focus-visible:outline-transparent focus-visible:ring-2 focus-visible:ring-brand-green/50 flex-1 placeholder:text-text-faint"
-                                                aria-label="Search exercises to add"
-                                            />
-                                        </div>
-
-                                        {activeDayIdx === dayIdx && unifiedResults.length > 0 && (
-                                            <div className="dropdown top-full left-0 right-0 mt-2 animate-scale-in" role="listbox">
-                                                {unifiedResults.map((result) => (
-                                                    <button
-                                                        type="button"
-                                                        key={`${result.source}-${result.id}`}
-                                                        onClick={() => handleResultClick(dayIdx, result)}
-                                                        className="dropdown-item flex items-center gap-3 w-full text-left"
-                                                        role="option"
-                                                        aria-selected={false}
-                                                    >
-                                                        {result.thumbnailUrl ? (
-                                                            <Image src={result.thumbnailUrl} alt="" width={32} height={32} className="w-8 h-8 rounded-lg object-cover" />
-                                                        ) : (
-                                                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm ${result.source === "ymove" ? "bg-blue-500/10 border border-blue-500/20 text-blue-400" : "bg-brand-green-glow border border-brand-green-border text-brand-green"}`}>
-                                                                {result.source === "ymove" ? "\u{1F3AC}" : "\u{1F3CB}\u{FE0F}"}
-                                                            </div>
-                                                        )}
-                                                        <div>
-                                                            <p className="text-sm font-medium text-text-primary">{result.name}</p>
-                                                            <p className="text-xs text-text-faint">{result.category} · {result.muscles.join(", ")}</p>
-                                                        </div>
-                                                        {result.source === "ymove" && (
-                                                            <span className="ml-auto badge badge-blue text-[9px]">YMOVE</span>
-                                                        )}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            )}
+                            {/* Add Day Button */}
+                            <button
+                                onClick={addDay}
+                                className="w-full h-14 flex items-center justify-center gap-2 border border-dashed border-border rounded-2xl text-text-faint hover:text-text-secondary hover:border-text-faint transition-[color,border-color,background-color] hover:bg-bg-card font-mono text-[10px] tracking-[0.2em]"
+                            >
+                                <Plus size={14} />
+                                ADD NEW DAY
+                            </button>
                         </div>
-                    ))}
+                    </SortableContext>
 
-                    {/* Add Day Button */}
-                    <button
-                        onClick={addDay}
-                        className="w-full h-14 flex items-center justify-center gap-2 border border-dashed border-border rounded-2xl text-text-faint hover:text-text-secondary hover:border-text-faint transition-[color,border-color,background-color] hover:bg-bg-card font-mono text-[10px] tracking-[0.2em]"
-                    >
-                        <Plus size={14} />
-                        ADD NEW DAY
-                    </button>
-                </div>
+                    <DragOverlay>
+                        {activeDragDay && (
+                            <div className="card opacity-90 shadow-2xl rotate-1">
+                                <div className="flex items-center gap-3 px-5 py-4 bg-bg-secondary/50 rounded-t-2xl">
+                                    <GripVertical size={14} className="text-text-muted" />
+                                    <span className="text-sm font-semibold text-text-primary">{activeDragDay.title}</span>
+                                    <span className="badge badge-blue tabular-nums ml-auto">
+                                        {activeDragDay.exercises.length} exercises
+                                    </span>
+                                </div>
+                            </div>
+                        )}
+                    </DragOverlay>
+                </DndContext>
 
                 {/* AI Generation Modal */}
                 <Modal open={showAiModal} onOpenChange={(open) => { if (!open) closeAiModal(); }}>
@@ -543,7 +602,7 @@ export default function PlanBuilder({ planId }: PlanBuilderProps) {
                                     className="select w-full"
                                     disabled={isGenerating}
                                 >
-                                    <option value="">No client \u2014 general plan</option>
+                                    <option value="">No client — general plan</option>
                                     {aiClients.map((c) => (
                                         <option key={c.id} value={c.id}>{c.name}</option>
                                     ))}
@@ -560,7 +619,7 @@ export default function PlanBuilder({ planId }: PlanBuilderProps) {
                                     name="aiInstructions"
                                     value={aiInstructions}
                                     onChange={(e) => setAiInstructions(e.target.value)}
-                                    placeholder="e.g., 3-day upper/lower split, focus on hypertrophy\u2026"
+                                    placeholder="e.g., 3-day upper/lower split, focus on hypertrophy…"
                                     className="input w-full resize-none h-24"
                                     maxLength={1000}
                                     disabled={isGenerating}
@@ -584,7 +643,7 @@ export default function PlanBuilder({ planId }: PlanBuilderProps) {
                                     {isGenerating ? (
                                         <>
                                             <Loader2 className="w-4 h-4 animate-spin" />
-                                            Generating\u2026
+                                            Generating…
                                         </>
                                     ) : (
                                         <>
@@ -598,6 +657,183 @@ export default function PlanBuilder({ planId }: PlanBuilderProps) {
                     </ModalContent>
                 </Modal>
             </div>
+        </div>
+    );
+}
+
+/* ─── Sortable Day Card (extracted to use useSortable hook) ─── */
+function SortableDayCard({
+    day,
+    dayIdx,
+    days,
+    setDays,
+    searchTerm,
+    setSearchTerm,
+    activeDayIdx,
+    setActiveDayIdx,
+    unifiedResults,
+    sensors,
+    toggleDay,
+    updateExerciseField,
+    removeExercise,
+    handleResultClick,
+    handleExerciseDragStart,
+    handleExerciseDragEnd,
+}: {
+    day: PlanDay;
+    dayIdx: number;
+    days: PlanDay[];
+    setDays: React.Dispatch<React.SetStateAction<PlanDay[]>>;
+    searchTerm: string;
+    setSearchTerm: (v: string) => void;
+    activeDayIdx: number | null;
+    setActiveDayIdx: (v: number | null) => void;
+    unifiedResults: UnifiedResult[];
+    sensors: ReturnType<typeof useSensors>;
+    toggleDay: (idx: number) => void;
+    updateExerciseField: (dayIdx: number, exIdx: number, field: string, value: string | number) => void;
+    removeExercise: (dayIdx: number, exIdx: number) => void;
+    handleResultClick: (dayIdx: number, result: UnifiedResult) => void;
+    handleExerciseDragStart: (event: DragStartEvent) => void;
+    handleExerciseDragEnd: (dayIdx: number) => (event: DragEndEvent) => void;
+}) {
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        transform,
+        transition,
+        isDragging,
+    } = useSortable({ id: day.id });
+
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.4 : 1,
+    };
+
+    return (
+        <div ref={setNodeRef} style={style} className="card">
+            {/* Day Header */}
+            <div
+                className="flex items-center gap-3 px-5 py-4 bg-bg-secondary/50 cursor-pointer hover:bg-bg-secondary transition-colors rounded-t-2xl"
+            >
+                <button
+                    type="button"
+                    className="text-text-muted cursor-grab shrink-0 touch-none"
+                    aria-label={`Drag to reorder ${day.title}`}
+                    {...attributes}
+                    {...listeners}
+                >
+                    <GripVertical size={14} />
+                </button>
+                <button
+                    type="button"
+                    className="shrink-0 text-text-faint"
+                    onClick={() => toggleDay(dayIdx)}
+                    aria-expanded={day.isOpen}
+                    aria-label={day.isOpen ? `Collapse ${day.title}` : `Expand ${day.title}`}
+                >
+                    {day.isOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                </button>
+                <input
+                    value={day.title}
+                    onChange={(e) => {
+                        const newDays = [...days];
+                        newDays[dayIdx].title = e.target.value;
+                        setDays(newDays);
+                    }}
+                    className="bg-transparent border-none text-sm font-semibold text-text-primary focus-visible:outline-transparent focus-visible:ring-2 focus-visible:ring-brand-green/50 flex-1"
+                    aria-label={`Title for Day ${day.dayNumber}`}
+                />
+                <span className="badge badge-blue tabular-nums">
+                    {day.exercises.length} exercises
+                </span>
+                <button
+                    onClick={() => {
+                        const newDays = days.filter((_, i) => i !== dayIdx);
+                        setDays(newDays);
+                    }}
+                    className="btn-icon-danger"
+                    aria-label={`Delete Day ${day.dayNumber}`}
+                >
+                    <Trash2 size={14} />
+                </button>
+            </div>
+
+            {/* Exercises — sortable within day */}
+            {day.isOpen && (
+                <div className="p-5 space-y-3">
+                    <DndContext
+                        sensors={sensors}
+                        collisionDetection={closestCenter}
+                        onDragStart={handleExerciseDragStart}
+                        onDragEnd={handleExerciseDragEnd(dayIdx)}
+                    >
+                        <SortableContext items={day.exercises.map((e) => e.id)} strategy={verticalListSortingStrategy}>
+                            {day.exercises.map((ex, exIdx) => (
+                                <SortableExercise
+                                    key={ex.id}
+                                    ex={ex}
+                                    dayIdx={dayIdx}
+                                    exIdx={exIdx}
+                                    onUpdate={updateExerciseField}
+                                    onRemove={removeExercise}
+                                />
+                            ))}
+                        </SortableContext>
+
+                        <DragOverlay>
+                            {/* Exercise drag overlay is handled by the outer context — no per-day overlay needed */}
+                        </DragOverlay>
+                    </DndContext>
+
+                    {/* Search / Add Exercise */}
+                    <div className="mt-4 relative">
+                        <div className="flex items-center gap-2 px-3 py-2.5 bg-bg-secondary/30 rounded-xl border border-dashed border-border hover:border-text-faint transition-colors cursor-text">
+                            <Search size={14} className="text-text-faint" />
+                            <input
+                                placeholder="Search exercises…"
+                                value={activeDayIdx === dayIdx ? searchTerm : ""}
+                                onFocus={() => setActiveDayIdx(dayIdx)}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="bg-transparent border-none text-sm text-text-primary focus-visible:outline-transparent focus-visible:ring-2 focus-visible:ring-brand-green/50 flex-1 placeholder:text-text-faint"
+                                aria-label="Search exercises to add"
+                            />
+                        </div>
+
+                        {activeDayIdx === dayIdx && unifiedResults.length > 0 && (
+                            <div className="dropdown top-full left-0 right-0 mt-2 animate-scale-in" role="listbox">
+                                {unifiedResults.map((result) => (
+                                    <button
+                                        type="button"
+                                        key={`${result.source}-${result.id}`}
+                                        onClick={() => handleResultClick(dayIdx, result)}
+                                        className="dropdown-item flex items-center gap-3 w-full text-left"
+                                        role="option"
+                                        aria-selected={false}
+                                    >
+                                        {result.thumbnailUrl ? (
+                                            <Image src={result.thumbnailUrl} alt="" width={32} height={32} className="w-8 h-8 rounded-lg object-cover" />
+                                        ) : (
+                                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm ${result.source === "ymove" ? "bg-blue-500/10 border border-blue-500/20 text-blue-400" : "bg-brand-green-glow border border-brand-green-border text-brand-green"}`}>
+                                                {result.source === "ymove" ? "\u{1F3AC}" : "\u{1F3CB}\u{FE0F}"}
+                                            </div>
+                                        )}
+                                        <div>
+                                            <p className="text-sm font-medium text-text-primary">{result.name}</p>
+                                            <p className="text-xs text-text-faint">{result.category} · {result.muscles.join(", ")}</p>
+                                        </div>
+                                        {result.source === "ymove" && (
+                                            <span className="ml-auto badge badge-blue text-[9px]">YMOVE</span>
+                                        )}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

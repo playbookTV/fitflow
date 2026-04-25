@@ -32,6 +32,7 @@ export const EventType = {
 
     // Meal Plan
     MEAL_PLAN_ASSIGNED: "meal_plan.assigned",
+    MEAL_TEMPLATE_USED: "meal_plan.template_used",
     MEAL_DELIVERED: "meal.delivered",
     MEAL_COMPLETED: "meal.completed",
 
@@ -92,6 +93,7 @@ export const EventType = {
 
     // AI features
     AI_PLAN_GENERATED: "ai.plan_generated",
+    AI_MEAL_PLAN_GENERATED: "ai.meal_plan_generated",
     RISK_SCORE_COMPUTED: "risk.score_computed",
 } as const;
 
