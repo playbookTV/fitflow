@@ -158,6 +158,7 @@ function SettingsContent() {
     }, []);
 
     const handleStripeDashboard = useCallback(async () => {
+        setStripeLoading(true);
         try {
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/coaches/stripe/dashboard`, {
                 headers: await getAuthHeaders(),
@@ -165,9 +166,14 @@ function SettingsContent() {
             if (res.ok) {
                 const { url } = await res.json();
                 window.open(url, "_blank");
+            } else {
+                const data = await res.json().catch(() => ({}));
+                console.error("Stripe dashboard error:", data);
             }
         } catch (error) {
             console.error("Failed to open Stripe dashboard:", error);
+        } finally {
+            setStripeLoading(false);
         }
     }, []);
 
@@ -960,7 +966,7 @@ function SettingsContent() {
                                                         : "btn-primary"
                                                 )}
                                             >
-                                                {stripeLoading ? "Connecting..." : profile.stripeConnected ? "Dashboard" : "Connect"}
+                                                {stripeLoading ? (profile.stripeConnected ? "Opening..." : "Connecting...") : profile.stripeConnected ? "Dashboard" : "Connect"}
                                                 <ExternalLink className="w-3.5 h-3.5" />
                                             </button>
                                         </div>
