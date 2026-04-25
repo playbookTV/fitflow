@@ -9,8 +9,7 @@ import {
     Dumbbell,
     UtensilsCrossed,
     Link2,
-    UserPlus,
-    Crown,
+
     Activity,
     Mail,
     Phone,

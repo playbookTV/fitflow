@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { Search, ChevronLeft, ChevronRight } from "lucide-react";
 import { AdminLayout } from "@/components/admin/AdminLayout";
-import { fetchCoaches, type CoachListItem, type CoachListResponse } from "@/lib/admin-api";
+import { fetchCoaches, type CoachListResponse } from "@/lib/admin-api";
 import { formatCurrency } from "@/lib/tokens";
 import { cn } from "@/lib/utils";
 

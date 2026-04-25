@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Search, ChevronLeft, ChevronRight, Activity } from "lucide-react";
+import { ChevronLeft, ChevronRight, Activity } from "lucide-react";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { fetchEvents, type EventLogResponse } from "@/lib/admin-api";
 import { formatRelative, cn } from "@/lib/utils";
