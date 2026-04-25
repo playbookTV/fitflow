@@ -19,7 +19,7 @@ export const TIER_LIMITS: Record<SubscriptionTier, TierLimits> = {
         maxChannels: 1,
         maxBots: 1,
         analytics: false,
-        paymentCollection: false,
+        paymentCollection: true,
         checkinSequences: false,
         whiteLabel: false,
     },

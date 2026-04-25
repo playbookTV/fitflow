@@ -19,7 +19,7 @@ describe("Subscription Tier Configuration", () => {
             expect(s.maxChannels).toBe(1);
             expect(s.maxBots).toBe(1);
             expect(s.analytics).toBe(false);
-            expect(s.paymentCollection).toBe(false);
+            expect(s.paymentCollection).toBe(true);
             expect(s.checkinSequences).toBe(false);
             expect(s.whiteLabel).toBe(false);
         });

@@ -12,7 +12,7 @@ import { TemplateId } from "@fitflow/shared";
 const router: Router = Router();
 
 // POST /payments/checkout - Create a Stripe checkout session for a client
-router.post("/checkout", authenticate, requireTier("PRO", "STUDIO"), async (req: AuthRequest, res: Response) => {
+router.post("/checkout", authenticate, requireTier("STARTER", "PRO", "STUDIO"), async (req: AuthRequest, res: Response) => {
     const coachId = req.user?.id as string;
     const { clientId, amount: overrideAmount, currency: overrideCurrency } = req.body;
 
