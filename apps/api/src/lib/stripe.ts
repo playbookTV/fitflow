@@ -78,6 +78,15 @@ export const createAccountLink = async (
     });
 };
 
+export const getConnectAccountStatus = async (accountId: string) => {
+    const account = await stripe.accounts.retrieve(accountId);
+    return {
+        detailsSubmitted: account.details_submitted ?? false,
+        chargesEnabled: account.charges_enabled ?? false,
+        payoutsEnabled: account.payouts_enabled ?? false,
+    };
+};
+
 export const createLoginLink = async (accountId: string) => {
     return await stripe.accounts.createLoginLink(accountId);
 };

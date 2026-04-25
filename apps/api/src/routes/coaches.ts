@@ -2,7 +2,7 @@ import { Router, Response } from "express";
 import { authenticate, AuthRequest } from "../middleware/auth";
 import { prisma } from "../lib/prisma";
 import { getSharedBotUsername } from "../lib/bot-provisioner";
-import { createConnectAccount, createAccountLink, createLoginLink } from "../lib/stripe";
+import { createConnectAccount, createAccountLink, createLoginLink, getConnectAccountStatus } from "../lib/stripe";
 import { logEvent, EventType } from "../lib/event-logger";
 
 const router: Router = Router();
@@ -29,6 +29,17 @@ router.get("/me", authenticate, async (req: AuthRequest, res: Response) => {
             ? `https://t.me/${botUsername}?start=${coach.slug}`
             : null;
 
+        // Check actual Stripe onboarding status, not just whether an account ID exists
+        let stripeConnected = false;
+        if (coach.stripeAccountId) {
+            try {
+                const status = await getConnectAccountStatus(coach.stripeAccountId);
+                stripeConnected = status.detailsSubmitted;
+            } catch {
+                // If Stripe call fails, fall back to false — don't show as connected
+            }
+        }
+
         res.json({
             id: coach.id,
             name: coach.name,
@@ -53,7 +64,7 @@ router.get("/me", authenticate, async (req: AuthRequest, res: Response) => {
             defaultSessionsPerBlock: coach.defaultSessionsPerBlock,
             defaultMonthlyRate: coach.defaultMonthlyRate,
             bankDetails: coach.bankDetails,
-            stripeConnected: !!coach.stripeAccountId,
+            stripeConnected,
             whatsappConnected: true, // Managed at platform level for now
             telegramConnected: !!botUsername,
             telegramBotUsername: botUsername,
