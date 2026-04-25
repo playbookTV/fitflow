@@ -50,6 +50,17 @@ interface Client {
     telegramChatId?: string | null;
 }
 
+const STATUS_OPTIONS = [
+    { value: "", label: "All Statuses" },
+    { value: "ACTIVE", label: "Active" },
+    { value: "PENDING_PAYMENT", label: "Pending Payment" },
+    { value: "INTAKE_SENT", label: "Intake Sent" },
+    { value: "INTAKE_COMPLETE", label: "Intake Complete" },
+    { value: "PLAN_ASSIGNED", label: "Plan Assigned" },
+    { value: "PAUSED", label: "Paused" },
+    { value: "INACTIVE", label: "Inactive" },
+];
+
 export default function DashboardPage() {
     const [stats, setStats] = useState<Stats>({
         totalClients: 0,
@@ -62,6 +73,8 @@ export default function DashboardPage() {
     const [clients, setClients] = useState<Client[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
+    const [statusFilter, setStatusFilter] = useState("");
+    const [showFilterMenu, setShowFilterMenu] = useState(false);
     const [analyticsLocked, setAnalyticsLocked] = useState(false);
     const [analyticsLockCode, setAnalyticsLockCode] = useState<string | null>(null);
 
@@ -116,9 +129,11 @@ export default function DashboardPage() {
         fetchData();
     }, []);
 
-    const filteredClients = clients.filter(client =>
-        client.name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const filteredClients = clients.filter(client => {
+        const matchesSearch = client.name.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesStatus = !statusFilter || client.status === statusFilter;
+        return matchesSearch && matchesStatus;
+    });
 
     const getAnalyticsBannerCopy = () => {
         if (analyticsLockCode === "NO_SUBSCRIPTION") {
@@ -161,9 +176,34 @@ export default function DashboardPage() {
                             className="input-with-icon w-48"
                         />
                     </div>
-                    <button className="btn-icon hidden sm:flex" aria-label="Filter">
-                        <Filter className="w-4 h-4" aria-hidden="true" />
-                    </button>
+                    <div className="relative hidden sm:block">
+                        <button
+                            className={cn("btn-icon", statusFilter && "text-brand-violet")}
+                            aria-label="Filter by status"
+                            onClick={() => setShowFilterMenu((v) => !v)}
+                        >
+                            <Filter className="w-4 h-4" aria-hidden="true" />
+                        </button>
+                        {showFilterMenu && (
+                            <div className="absolute right-0 top-full mt-2 w-48 rounded-xl bg-bg-card border border-border shadow-lg z-50 py-1">
+                                {STATUS_OPTIONS.map((opt) => (
+                                    <button
+                                        key={opt.value}
+                                        className={cn(
+                                            "w-full text-left px-4 py-2 text-sm hover:bg-bg-hover transition-colors",
+                                            statusFilter === opt.value ? "text-brand-violet font-medium" : "text-text-secondary"
+                                        )}
+                                        onClick={() => {
+                                            setStatusFilter(opt.value);
+                                            setShowFilterMenu(false);
+                                        }}
+                                    >
+                                        {opt.label}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
                     <button
                         onClick={fetchData}
                         className="btn-icon"

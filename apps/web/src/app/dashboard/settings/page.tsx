@@ -1090,7 +1090,26 @@ function SettingsContent() {
                                                     Analytics dashboard
                                                 </li>
                                             </ul>
-                                            <button className="btn-secondary w-full">
+                                            <button
+                                                className="btn-secondary w-full"
+                                                onClick={async () => {
+                                                    try {
+                                                        const res = await fetch(
+                                                            `${process.env.NEXT_PUBLIC_API_URL}/subscriptions/portal`,
+                                                            {
+                                                                method: "POST",
+                                                                headers: await getAuthHeaders(),
+                                                            }
+                                                        );
+                                                        if (res.ok) {
+                                                            const { url } = await res.json();
+                                                            window.open(url, "_blank");
+                                                        }
+                                                    } catch (error) {
+                                                        console.error("Failed to open billing portal:", error);
+                                                    }
+                                                }}
+                                            >
                                                 Manage Subscription
                                             </button>
                                         </div>

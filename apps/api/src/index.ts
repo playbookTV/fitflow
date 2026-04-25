@@ -4,6 +4,8 @@ import express, { Express, Request, Response, NextFunction } from "express";
 import cors from "cors";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
+import swaggerUi from "swagger-ui-express";
+import openApiSpec from "../openapi.json";
 import clientsRouter from "./routes/clients";
 import exercisesRouter from "./routes/exercises";
 import plansRouter from "./routes/plans";
@@ -109,6 +111,12 @@ app.use("/intake", strictLimiter);
 app.use("/p", strictLimiter);
 app.use("/webhooks", webhookLimiter);
 app.use("/telegram/webhook", webhookLimiter);
+
+// API Documentation (Swagger UI)
+app.use("/docs", swaggerUi.serve, swaggerUi.setup(openApiSpec, {
+    customSiteTitle: "FitFlow API Documentation",
+    customCss: ".swagger-ui .topbar { display: none }",
+}));
 
 // Health check
 app.get("/health", (_req: Request, res: Response) => {

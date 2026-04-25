@@ -555,6 +555,7 @@ export default function ClientProfilePage() {
         factors: { compliance: number; engagement: number; activity: number; behavioral: number; payment: number };
     } | null>(null);
     const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
+    const [weightRange, setWeightRange] = useState<"7D" | "30D">("30D");
 
     useEffect(() => {
         const fetchClient = async () => {
@@ -649,10 +650,15 @@ export default function ClientProfilePage() {
 
     if (!client) return null;
 
-    const weightData = [...client.checkIns].reverse().map((c) => ({
-        date: formatDate(c.createdAt),
-        weight: c.weight,
-    }));
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - (weightRange === "7D" ? 7 : 30));
+    const weightData = [...client.checkIns]
+        .reverse()
+        .filter((c) => new Date(c.createdAt) >= cutoff)
+        .map((c) => ({
+            date: formatDate(c.createdAt),
+            weight: c.weight,
+        }));
 
     const activeAssignment = client.assignments.find((a) => a.isActive);
 
@@ -746,8 +752,17 @@ export default function ClientProfilePage() {
                                         Weight Trend
                                     </h3>
                                     <div className="tabs" role="tablist">
-                                        <button className="tab" role="tab" aria-selected="false">7D</button>
-                                        <button className="tab-active" role="tab" aria-selected="true">30D</button>
+                                        {(["7D", "30D"] as const).map((range) => (
+                                            <button
+                                                key={range}
+                                                className={weightRange === range ? "tab-active" : "tab"}
+                                                role="tab"
+                                                aria-selected={weightRange === range}
+                                                onClick={() => setWeightRange(range)}
+                                            >
+                                                {range}
+                                            </button>
+                                        ))}
                                     </div>
                                 </div>
                                 <div className="h-[300px] w-full">
