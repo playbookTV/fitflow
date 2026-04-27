@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import {
-    Plus, Search, GripVertical, Save, Trash2, ChevronDown, ChevronRight, Sparkles, Loader2
+    Plus, Search, GripVertical, Save, Trash2, ChevronDown, ChevronRight, Sparkles, Loader2, ArrowLeft
 } from "lucide-react";
 import Image from "next/image";
 import {
@@ -25,6 +25,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { getAuthHeaders } from "@/lib/auth";
+import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ui/Toast";
 import { Modal, ModalContent, ModalHeader, ModalTitle, ModalClose } from "@/components/ui/Modal";
 
@@ -97,24 +98,36 @@ function SortableExercise({
     };
 
     return (
-        <div ref={setNodeRef} style={style} className="flex items-center gap-4 group">
-            <button
-                type="button"
-                className="text-text-muted cursor-grab shrink-0 opacity-0 group-hover:opacity-100 transition-opacity touch-none"
-                aria-label={`Drag to reorder ${ex.name}`}
-                {...attributes}
-                {...listeners}
-            >
-                <GripVertical size={14} />
-            </button>
-            {ex.demoVideoUrl && (
-                <Image src={ex.demoVideoUrl} alt="" width={28} height={28} className="w-7 h-7 rounded object-cover shrink-0" />
-            )}
-            <span className="text-sm text-text-primary flex-1 truncate font-medium">
-                {ex.name}
-            </span>
+        <div ref={setNodeRef} style={style} className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 group">
+            {/* Name row */}
+            <div className="flex items-center gap-2 sm:gap-4 flex-1 min-w-0">
+                <button
+                    type="button"
+                    className="text-text-muted cursor-grab shrink-0 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity touch-none"
+                    aria-label={`Drag to reorder ${ex.name}`}
+                    {...attributes}
+                    {...listeners}
+                >
+                    <GripVertical size={14} />
+                </button>
+                {ex.demoVideoUrl && (
+                    <Image src={ex.demoVideoUrl} alt="" width={28} height={28} className="w-7 h-7 rounded object-cover shrink-0" />
+                )}
+                <span className="text-sm text-text-primary flex-1 truncate font-medium">
+                    {ex.name}
+                </span>
+                {/* Delete — visible on mobile, hover on desktop */}
+                <button
+                    onClick={() => onRemove(dayIdx, exIdx)}
+                    className="btn-icon-danger sm:hidden"
+                    aria-label={`Remove ${ex.name}`}
+                >
+                    <Trash2 size={14} />
+                </button>
+            </div>
 
-            <div className="flex items-center gap-3 shrink-0">
+            {/* Inputs row */}
+            <div className="flex items-center gap-2 sm:gap-3 shrink-0 pl-7 sm:pl-0">
                 <div className="flex flex-col gap-0.5">
                     <span className="label-mono text-[9px]">SETS</span>
                     <input
@@ -145,9 +158,10 @@ function SortableExercise({
                 </div>
             </div>
 
+            {/* Delete — desktop only */}
             <button
                 onClick={() => onRemove(dayIdx, exIdx)}
-                className="btn-icon-danger opacity-0 group-hover:opacity-100 transition-[opacity,background-color,color]"
+                className="btn-icon-danger hidden sm:block md:opacity-0 md:group-hover:opacity-100 transition-[opacity,background-color,color]"
                 aria-label={`Remove ${ex.name}`}
             >
                 <Trash2 size={14} />
@@ -157,6 +171,7 @@ function SortableExercise({
 }
 
 export default function PlanBuilder({ planId }: PlanBuilderProps) {
+    const router = useRouter();
     const { toast } = useToast();
     const [title, setTitle] = useState("New Workout Plan");
     const [description, setDescription] = useState("");
@@ -488,40 +503,51 @@ export default function PlanBuilder({ planId }: PlanBuilderProps) {
 
     return (
         <div className="min-h-dvh bg-mesh-gradient">
-            <div className="max-w-4xl mx-auto px-6 py-10 animate-fade-in">
+            <div className="max-w-4xl mx-auto px-4 py-6 sm:px-6 sm:py-10 animate-fade-in">
                 {/* Header */}
-                <div className="flex items-center justify-between mb-10">
-                    <div className="flex-1 mr-8">
-                        <input
-                            value={title}
-                            onChange={(e) => setTitle(e.target.value)}
-                            className="w-full bg-transparent border-none font-display text-4xl font-semibold text-text-primary focus-visible:outline-transparent focus-visible:ring-2 focus-visible:ring-brand-green/50 placeholder:opacity-30"
-                            placeholder="Untitled Plan"
-                            aria-label="Plan Title"
-                        />
-                        <textarea
-                            value={description}
-                            onChange={(e) => setDescription(e.target.value)}
-                            className="w-full bg-transparent border-none text-text-secondary focus-visible:outline-transparent focus-visible:ring-2 focus-visible:ring-brand-green/50 resize-y min-h-[2.5rem] mt-2 placeholder:opacity-30"
-                            placeholder="Add a description…"
-                            aria-label="Plan Description"
-                        />
+                <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-6 sm:mb-10">
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <button
+                            onClick={() => router.push("/dashboard/plans")}
+                            className="btn-ghost !p-2 shrink-0"
+                            aria-label="Back to plans"
+                        >
+                            <ArrowLeft className="w-5 h-5" />
+                        </button>
+                        <div className="flex-1 min-w-0">
+                            <input
+                                value={title}
+                                onChange={(e) => setTitle(e.target.value)}
+                                className="w-full bg-transparent border-none font-display text-2xl sm:text-4xl font-semibold text-text-primary focus-visible:outline-transparent focus-visible:ring-2 focus-visible:ring-brand-green/50 placeholder:opacity-30"
+                                placeholder="Untitled Plan"
+                                aria-label="Plan Title"
+                            />
+                            <textarea
+                                value={description}
+                                onChange={(e) => setDescription(e.target.value)}
+                                className="w-full bg-transparent border-none text-text-secondary focus-visible:outline-transparent focus-visible:ring-2 focus-visible:ring-brand-green/50 resize-y min-h-[2.5rem] mt-2 placeholder:opacity-30"
+                                placeholder="Add a description…"
+                                aria-label="Plan Description"
+                            />
+                        </div>
                     </div>
-                    <button
-                        onClick={openAiModal}
-                        className="btn-secondary"
-                    >
-                        <Sparkles size={14} />
-                        GENERATE WITH AI
-                    </button>
-                    <button
-                        onClick={savePlan}
-                        disabled={isSaving}
-                        className="btn-primary disabled:opacity-50"
-                    >
-                        <Save size={14} />
-                        {isSaving ? "SAVING…" : planId ? "UPDATE PLAN" : "SAVE PLAN"}
-                    </button>
+                    <div className="flex items-center gap-2 shrink-0">
+                        <button
+                            onClick={openAiModal}
+                            className="btn-secondary"
+                        >
+                            <Sparkles size={14} />
+                            <span className="hidden sm:inline">GENERATE WITH AI</span>
+                        </button>
+                        <button
+                            onClick={savePlan}
+                            disabled={isSaving}
+                            className="btn-primary disabled:opacity-50"
+                        >
+                            <Save size={14} />
+                            {isSaving ? "SAVING…" : planId ? "UPDATE" : "SAVE"}
+                        </button>
+                    </div>
                 </div>
 
                 {/* Days — sortable */}
@@ -532,7 +558,7 @@ export default function PlanBuilder({ planId }: PlanBuilderProps) {
                     onDragEnd={handleDayDragEnd}
                 >
                     <SortableContext items={days.map((d) => d.id)} strategy={verticalListSortingStrategy}>
-                        <div className="space-y-6">
+                        <div className="space-y-4 sm:space-y-6">
                             {days.map((day, dayIdx) => (
                                 <SortableDayCard
                                     key={day.id}
@@ -763,7 +789,7 @@ function SortableDayCard({
 
             {/* Exercises — sortable within day */}
             {day.isOpen && (
-                <div className="p-5 space-y-3">
+                <div className="p-3 sm:p-5 space-y-3">
                     <DndContext
                         sensors={sensors}
                         collisionDetection={closestCenter}

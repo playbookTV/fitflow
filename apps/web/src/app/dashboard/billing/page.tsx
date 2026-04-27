@@ -21,8 +21,10 @@ import {
     ClipboardCopy,
     Check,
 } from "lucide-react";
+import { Modal, ModalContent, ModalHeader, ModalTitle, ModalClose } from "@/components/ui/Modal";
 import { cn, formatDate } from "@/lib/utils";
 import { formatCurrency } from "@/lib/tokens";
+
 
 interface Payment {
     id: string;
@@ -344,166 +346,57 @@ export default function BillingPage() {
                 </div>
             }
         >
-            {/* Bank Transfer Panel */}
-            {showBankTransfer && (
-                <div className="card p-6 mb-8 animate-fade-in">
-                    <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2 text-balance">
-                        <Landmark className="w-5 h-5 text-brand-violet" />
-                        Bank Transfer
-                    </h3>
-
-                    {/* Mode tabs */}
-                    <div className="tabs mb-4">
-                        <button
-                            onClick={() => setBankTransferMode("send")}
-                            className={cn("tab", bankTransferMode === "send" && "tab-active")}
-                        >
-                            Send Details
-                        </button>
-                        <button
-                            onClick={() => setBankTransferMode("confirm")}
-                            className={cn("tab", bankTransferMode === "confirm" && "tab-active")}
-                        >
-                            Confirm Receipt
-                        </button>
-                    </div>
-
-                    {bankTransferMode === "send" ? (
-                        /* Send Details mode */
-                        <div>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-                                <div className="form-field">
-                                    <label htmlFor="bank-send-client" className="label">Client</label>
-                                    <select
-                                        id="bank-send-client"
-                                        value={bankTransferForm.clientId}
-                                        onChange={(e) =>
-                                            setBankTransferForm({ ...bankTransferForm, clientId: e.target.value })
-                                        }
-                                        className="select"
-                                    >
-                                        <option value="">Select a client...</option>
-                                        {clients.map((c) => (
-                                            <option key={c.id} value={c.id}>{c.name}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                                <div className="form-field">
-                                    <label htmlFor="bank-send-amount" className="label">Amount (GBP)</label>
-                                    <input
-                                        id="bank-send-amount"
-                                        type="number"
-                                        step="0.01"
-                                        min="0"
-                                        value={bankTransferForm.amount}
-                                        onChange={(e) =>
-                                            setBankTransferForm({ ...bankTransferForm, amount: e.target.value })
-                                        }
-                                        className="input"
-                                        placeholder="50.00"
-                                    />
-                                </div>
-                            </div>
-                            <div className="form-field mb-4">
-                                <label htmlFor="bank-send-details" className="label">Bank Details</label>
-                                <textarea
-                                    id="bank-send-details"
-                                    value={bankTransferForm.bankDetails}
-                                    onChange={(e) =>
-                                        setBankTransferForm({ ...bankTransferForm, bankDetails: e.target.value })
-                                    }
-                                    className="input min-h-[80px]"
-                                    placeholder={"Account: 12345678\nSort Code: 12-34-56\nReference: Your name"}
-                                    rows={3}
-                                />
-                                {coachBankDetails && (
-                                    <p className="text-xs text-text-faint mt-1">Pre-filled from your saved bank details</p>
-                                )}
-                            </div>
-                            <div className="flex gap-3 justify-end">
-                                <button onClick={() => setShowBankTransfer(false)} className="btn-ghost">
-                                    Cancel
-                                </button>
-                                <button
-                                    onClick={handleSendBankDetails}
-                                    disabled={confirmingTransfer || !bankTransferForm.clientId || !bankTransferForm.amount || !bankTransferForm.bankDetails}
-                                    className="btn-primary"
-                                >
-                                    {confirmingTransfer ? (
-                                        <>
-                                            <Loader2 className="w-4 h-4 animate-spin" />
-                                            Sending...
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Send className="w-4 h-4" />
-                                            Send to Client
-                                        </>
-                                    )}
-                                </button>
-                            </div>
+            {/* Bank Transfer Modal */}
+            <Modal open={showBankTransfer} onOpenChange={setShowBankTransfer}>
+                <ModalContent size="lg">
+                    <ModalHeader>
+                        <ModalTitle className="flex items-center gap-2">
+                            <Landmark className="w-5 h-5 text-brand-violet" />
+                            Bank Transfer
+                        </ModalTitle>
+                        <ModalClose />
+                    </ModalHeader>
+                    <div className="px-6 pb-6">
+                        {/* Mode tabs */}
+                        <div className="tabs mb-4">
+                            <button
+                                onClick={() => setBankTransferMode("send")}
+                                className={cn("tab", bankTransferMode === "send" && "tab-active")}
+                            >
+                                Send Details
+                            </button>
+                            <button
+                                onClick={() => setBankTransferMode("confirm")}
+                                className={cn("tab", bankTransferMode === "confirm" && "tab-active")}
+                            >
+                                Confirm Receipt
+                            </button>
                         </div>
-                    ) : (
-                        /* Confirm Receipt mode */
-                        <div>
-                            {pendingBankTransfers.length === 0 ? (
-                                <div className="text-center py-8">
-                                    <p className="text-sm text-text-secondary">No pending bank transfers to confirm.</p>
-                                    <p className="text-xs text-text-faint mt-1">Send bank details to a client first, or confirm directly below.</p>
-                                </div>
-                            ) : (
-                                <div className="space-y-3 mb-4">
-                                    {pendingBankTransfers.map((p) => (
-                                        <div key={p.id} className="flex items-center justify-between p-3 rounded-lg bg-surface-secondary">
-                                            <div>
-                                                <p className="text-sm font-medium text-white">{p.clientName}</p>
-                                                <p className="text-xs text-text-faint">
-                                                    {formatPaymentCurrency(p.amount, p.currency)} &middot; {formatDate(p.createdAt)}
-                                                </p>
-                                            </div>
-                                            <button
-                                                onClick={() => handleConfirmBankTransfer(p.id, p.clientId, p.amount)}
-                                                disabled={confirmingTransfer}
-                                                className="btn-primary !py-1.5 !px-3 !text-xs"
-                                            >
-                                                {confirmingTransfer ? (
-                                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                                ) : (
-                                                    <>
-                                                        <CheckCircle2 className="w-3.5 h-3.5" />
-                                                        Confirm
-                                                    </>
-                                                )}
-                                            </button>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
 
-                            {/* Direct confirm fallback */}
-                            <div className="border-t border-border pt-4">
-                                <p className="text-xs text-text-faint mb-3">Or confirm a transfer manually:</p>
+                        {bankTransferMode === "send" ? (
+                            /* Send Details mode */
+                            <div>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                                     <div className="form-field">
-                                        <label htmlFor="bank-confirm-client" className="label">Client</label>
+                                        <label htmlFor="bank-send-client" className="label-mono">Client</label>
                                         <select
-                                            id="bank-confirm-client"
+                                            id="bank-send-client"
                                             value={bankTransferForm.clientId}
                                             onChange={(e) =>
                                                 setBankTransferForm({ ...bankTransferForm, clientId: e.target.value })
                                             }
                                             className="select"
                                         >
-                                            <option value="">Select a client...</option>
+                                            <option value="">Select a client…</option>
                                             {clients.map((c) => (
                                                 <option key={c.id} value={c.id}>{c.name}</option>
                                             ))}
                                         </select>
                                     </div>
                                     <div className="form-field">
-                                        <label htmlFor="bank-confirm-amount" className="label">Amount (GBP)</label>
+                                        <label htmlFor="bank-send-amount" className="label-mono">Amount (GBP)</label>
                                         <input
-                                            id="bank-confirm-amount"
+                                            id="bank-send-amount"
                                             type="number"
                                             step="0.01"
                                             min="0"
@@ -516,30 +409,143 @@ export default function BillingPage() {
                                         />
                                     </div>
                                 </div>
+                                <div className="form-field mb-4">
+                                    <label htmlFor="bank-send-details" className="label-mono">Bank Details</label>
+                                    <textarea
+                                        id="bank-send-details"
+                                        value={bankTransferForm.bankDetails}
+                                        onChange={(e) =>
+                                            setBankTransferForm({ ...bankTransferForm, bankDetails: e.target.value })
+                                        }
+                                        className="input min-h-[80px]"
+                                        placeholder={"Account: 12345678\nSort Code: 12-34-56\nReference: Your name"}
+                                        rows={3}
+                                    />
+                                    {coachBankDetails && (
+                                        <p className="text-xs text-text-faint mt-1">Pre-filled from your profile</p>
+                                    )}
+                                </div>
                                 <div className="flex gap-3 justify-end">
                                     <button onClick={() => setShowBankTransfer(false)} className="btn-ghost">
                                         Cancel
                                     </button>
                                     <button
-                                        onClick={() => handleConfirmBankTransfer()}
-                                        disabled={confirmingTransfer || !bankTransferForm.clientId || !bankTransferForm.amount}
+                                        onClick={handleSendBankDetails}
+                                        disabled={confirmingTransfer || !bankTransferForm.clientId || !bankTransferForm.amount || !bankTransferForm.bankDetails}
                                         className="btn-primary"
                                     >
                                         {confirmingTransfer ? (
                                             <>
                                                 <Loader2 className="w-4 h-4 animate-spin" />
-                                                Confirming...
+                                                Sending…
                                             </>
                                         ) : (
-                                            "Confirm Payment"
+                                            <>
+                                                <Send className="w-4 h-4" />
+                                                Send to Client
+                                            </>
                                         )}
                                     </button>
                                 </div>
                             </div>
-                        </div>
-                    )}
-                </div>
-            )}
+                        ) : (
+                            /* Confirm Receipt mode */
+                            <div>
+                                {pendingBankTransfers.length === 0 ? (
+                                    <div className="text-center py-8">
+                                        <p className="text-sm text-text-secondary">No pending bank transfers to confirm.</p>
+                                        <p className="text-xs text-text-faint mt-1">Send bank details to a client first, or confirm directly below.</p>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-3 mb-4">
+                                        {pendingBankTransfers.map((p) => (
+                                            <div key={p.id} className="flex items-center justify-between p-3 rounded-lg bg-surface-secondary">
+                                                <div>
+                                                    <p className="text-sm font-medium text-white">{p.clientName}</p>
+                                                    <p className="text-xs text-text-faint">
+                                                        {formatPaymentCurrency(p.amount, p.currency)} &middot; {formatDate(p.createdAt)}
+                                                    </p>
+                                                </div>
+                                                <button
+                                                    onClick={() => handleConfirmBankTransfer(p.id, p.clientId, p.amount)}
+                                                    disabled={confirmingTransfer}
+                                                    className="btn-primary !py-1.5 !px-3 !text-xs"
+                                                >
+                                                    {confirmingTransfer ? (
+                                                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                                    ) : (
+                                                        <>
+                                                            <CheckCircle2 className="w-3.5 h-3.5" />
+                                                            Confirm
+                                                        </>
+                                                    )}
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+
+                                {/* Direct confirm fallback */}
+                                <div className="border-t border-border pt-4">
+                                    <p className="text-xs text-text-faint mb-3">Or confirm a transfer manually:</p>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                                        <div className="form-field">
+                                            <label htmlFor="bank-confirm-client" className="label-mono">Client</label>
+                                            <select
+                                                id="bank-confirm-client"
+                                                value={bankTransferForm.clientId}
+                                                onChange={(e) =>
+                                                    setBankTransferForm({ ...bankTransferForm, clientId: e.target.value })
+                                                }
+                                                className="select"
+                                            >
+                                                <option value="">Select a client…</option>
+                                                {clients.map((c) => (
+                                                    <option key={c.id} value={c.id}>{c.name}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        <div className="form-field">
+                                            <label htmlFor="bank-confirm-amount" className="label-mono">Amount (GBP)</label>
+                                            <input
+                                                id="bank-confirm-amount"
+                                                type="number"
+                                                step="0.01"
+                                                min="0"
+                                                value={bankTransferForm.amount}
+                                                onChange={(e) =>
+                                                    setBankTransferForm({ ...bankTransferForm, amount: e.target.value })
+                                                }
+                                                className="input"
+                                                placeholder="50.00"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="flex gap-3 justify-end">
+                                        <button onClick={() => setShowBankTransfer(false)} className="btn-ghost">
+                                            Cancel
+                                        </button>
+                                        <button
+                                            onClick={() => handleConfirmBankTransfer()}
+                                            disabled={confirmingTransfer || !bankTransferForm.clientId || !bankTransferForm.amount}
+                                            className="btn-primary"
+                                        >
+                                            {confirmingTransfer ? (
+                                                <>
+                                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                                    Confirming…
+                                                </>
+                                            ) : (
+                                                "Confirm Payment"
+                                            )}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </ModalContent>
+            </Modal>
 
             {/* Create Invoice Modal */}
             {showCreateInvoice && (
@@ -588,7 +594,7 @@ export default function BillingPage() {
                         ) : (
                             <div className="space-y-4">
                                 <div className="form-field">
-                                    <label htmlFor="billing-invoice-client" className="label">Client</label>
+                                    <label htmlFor="billing-invoice-client" className="label-mono">Client</label>
                                     <select
                                         id="billing-invoice-client"
                                         name="invoiceClientId"
@@ -648,7 +654,7 @@ export default function BillingPage() {
             )}
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 sm:mb-8">
                 <div className="stat-card">
                     <div className="flex items-center gap-2 mb-3">
                         <div className="w-8 h-8 rounded-lg bg-brand-green/10 flex items-center justify-center">
@@ -782,8 +788,8 @@ export default function BillingPage() {
                     </div>
                 ) : (
                     <div className="card overflow-hidden">
-                        {/* Header */}
-                        <div className="data-table-header grid-cols-[1fr_100px_100px_100px_100px_80px]">
+                        {/* Header — visible on md+ */}
+                        <div className="data-table-header md:grid-cols-[1fr_100px_100px_100px_100px_80px]">
                             <span className="label-mono">Client</span>
                             <span className="label-mono">Amount</span>
                             <span className="label-mono">Method</span>
@@ -792,7 +798,7 @@ export default function BillingPage() {
                             <span></span>
                         </div>
 
-                        {/* Rows */}
+                        {/* Rows — card on mobile, grid on md+ */}
                         {filteredPayments.map((payment) => {
                             const config = statusConfig[payment.status];
                             const StatusIcon = config.icon;
@@ -800,76 +806,82 @@ export default function BillingPage() {
                             return (
                                 <div
                                     key={payment.id}
-                                    className="data-table-row grid-cols-[1fr_100px_100px_100px_100px_80px] group"
+                                    className="data-table-row md:grid-cols-[1fr_100px_100px_100px_100px_80px] group"
                                 >
-                                    <div className="flex flex-col gap-0.5">
-                                        <Link
-                                            href={`/dashboard/clients/${payment.clientId}`}
-                                            className="text-sm font-medium text-white hover:text-brand-green transition-colors"
-                                        >
-                                            {payment.clientName}
-                                        </Link>
-                                        <span className="text-xs text-text-faint">
-                                            {payment.description}
+                                    {/* Mobile: top row — client name + amount */}
+                                    <div className="flex items-center justify-between md:contents">
+                                        <div className="flex flex-col gap-0.5 min-w-0">
+                                            <Link
+                                                href={`/dashboard/clients/${payment.clientId}`}
+                                                className="text-sm font-medium text-white hover:text-brand-green transition-colors truncate"
+                                            >
+                                                {payment.clientName}
+                                            </Link>
+                                            <span className="text-xs text-text-faint truncate">
+                                                {payment.description}
+                                            </span>
+                                        </div>
+
+                                        <span className="text-sm font-mono text-white tabular-nums shrink-0 ml-3 md:ml-0">
+                                            {formatPaymentCurrency(payment.amount, payment.currency)}
                                         </span>
                                     </div>
 
-                                    <span className="text-sm font-mono text-white tabular-nums">
-                                        {formatPaymentCurrency(payment.amount, payment.currency)}
-                                    </span>
-
-                                    <span className="text-[10px] font-bold text-text-faint uppercase tracking-wider">
-                                        {payment.paymentMethod === "BANK_TRANSFER" ? "Bank" : "Stripe"}
-                                    </span>
-
-                                    <div className="flex">
-                                        <span className={cn("badge flex items-center gap-1.5", config.className)}>
-                                            <StatusIcon className="w-3 h-3" />
-                                            {config.label}
+                                    {/* Mobile: bottom row — method + status + date + actions */}
+                                    <div className="flex items-center gap-3 flex-wrap md:contents">
+                                        <span className="text-[10px] font-bold text-text-faint uppercase tracking-wider">
+                                            {payment.paymentMethod === "BANK_TRANSFER" ? "Bank" : "Stripe"}
                                         </span>
-                                    </div>
 
-                                    <span className="text-xs text-text-faint font-mono">
-                                        {formatDate(payment.createdAt)}
-                                    </span>
+                                        <div className="flex">
+                                            <span className={cn("badge flex items-center gap-1.5", config.className)}>
+                                                <StatusIcon className="w-3 h-3" />
+                                                {config.label}
+                                            </span>
+                                        </div>
 
-                                    <div className="flex justify-end gap-1">
-                                        {payment.status === "pending" && payment.paymentMethod === "BANK_TRANSFER" && (
-                                            <button
-                                                onClick={() => handleConfirmBankTransfer(payment.id, payment.clientId, payment.amount)}
-                                                disabled={confirmingTransfer}
-                                                className="btn-icon !p-1.5 opacity-0 group-hover:opacity-100 transition-opacity"
-                                                aria-label="Confirm bank transfer"
-                                                title="Confirm payment received"
-                                            >
-                                                <CheckCircle2 className="w-3.5 h-3.5 text-brand-green" />
-                                            </button>
-                                        )}
-                                        {payment.status === "pending" && payment.paymentMethod !== "BANK_TRANSFER" && (
-                                            <button
-                                                onClick={() => handleSendReminder(payment.id)}
-                                                disabled={sendingReminderId === payment.id}
-                                                className="btn-icon !p-1.5 opacity-0 group-hover:opacity-100 transition-opacity"
-                                                aria-label="Send reminder"
-                                            >
-                                                {sendingReminderId === payment.id ? (
-                                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                                ) : reminderSentId === payment.id ? (
-                                                    <Check className="w-3.5 h-3.5 text-brand-green" />
-                                                ) : (
-                                                    <Send className="w-3.5 h-3.5" />
-                                                )}
-                                            </button>
-                                        )}
-                                        {payment.status === "succeeded" && (
-                                            <button
-                                                onClick={() => handleDownloadReceipt(payment.id)}
-                                                className="btn-icon !p-1.5 opacity-0 group-hover:opacity-100 transition-opacity"
-                                                aria-label="Download receipt"
-                                            >
-                                                <Download className="w-3.5 h-3.5" />
-                                            </button>
-                                        )}
+                                        <span className="text-xs text-text-faint font-mono">
+                                            {formatDate(payment.createdAt)}
+                                        </span>
+
+                                        <div className="flex gap-1 ml-auto md:ml-0 md:justify-end">
+                                            {payment.status === "pending" && payment.paymentMethod === "BANK_TRANSFER" && (
+                                                <button
+                                                    onClick={() => handleConfirmBankTransfer(payment.id, payment.clientId, payment.amount)}
+                                                    disabled={confirmingTransfer}
+                                                    className="btn-icon !p-1.5 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
+                                                    aria-label="Confirm bank transfer"
+                                                    title="Confirm payment received"
+                                                >
+                                                    <CheckCircle2 className="w-3.5 h-3.5 text-brand-green" />
+                                                </button>
+                                            )}
+                                            {payment.status === "pending" && payment.paymentMethod !== "BANK_TRANSFER" && (
+                                                <button
+                                                    onClick={() => handleSendReminder(payment.id)}
+                                                    disabled={sendingReminderId === payment.id}
+                                                    className="btn-icon !p-1.5 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
+                                                    aria-label="Send reminder"
+                                                >
+                                                    {sendingReminderId === payment.id ? (
+                                                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                                    ) : reminderSentId === payment.id ? (
+                                                        <Check className="w-3.5 h-3.5 text-brand-green" />
+                                                    ) : (
+                                                        <Send className="w-3.5 h-3.5" />
+                                                    )}
+                                                </button>
+                                            )}
+                                            {payment.status === "succeeded" && (
+                                                <button
+                                                    onClick={() => handleDownloadReceipt(payment.id)}
+                                                    className="btn-icon !p-1.5 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
+                                                    aria-label="Download receipt"
+                                                >
+                                                    <Download className="w-3.5 h-3.5" />
+                                                </button>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             );

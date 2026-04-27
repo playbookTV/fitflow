@@ -636,8 +636,8 @@ export default function ClientProfilePage() {
             <DashboardLayout title="Client Profile" subtitle="Loading...">
                 <div className="animate-pulse">
                     <div className="skeleton h-8 w-48 rounded-lg mb-8" />
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                        <div className="lg:col-span-2 space-y-8">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
+                        <div className="lg:col-span-2 space-y-4 sm:space-y-6 lg:space-y-8">
                             <div className="skeleton h-64 rounded-2xl" />
                             <div className="skeleton h-64 rounded-2xl" />
                         </div>
@@ -667,7 +667,7 @@ export default function ClientProfilePage() {
             title={client.name}
             subtitle="Client Profile"
             actions={
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
                     {saveStatus === "saving" && (
                         <span className="flex items-center gap-1.5 text-xs text-text-faint">
                             <Loader2 className="w-3 h-3 animate-spin" /> Saving...
@@ -683,14 +683,14 @@ export default function ClientProfilePage() {
                         onClick={() => setShowAssignModal(true)}
                     >
                         <Dumbbell className="w-4 h-4" />
-                        Assign Plan
+                        <span className="hidden sm:inline">Assign Plan</span>
                     </button>
                     <button
                         className="btn-secondary"
                         onClick={() => setShowMealAssignModal(true)}
                     >
                         <UtensilsCrossed className="w-4 h-4" />
-                        Assign Meals
+                        <span className="hidden sm:inline">Assign Meals</span>
                     </button>
                     <button
                         className="btn-icon"
@@ -705,26 +705,26 @@ export default function ClientProfilePage() {
             {/* Back Nav */}
             <Link
                 href="/dashboard/clients"
-                className="inline-flex items-center gap-2 text-text-faint hover:text-white transition-colors mb-8 group"
+                className="inline-flex items-center gap-2 text-text-faint hover:text-white transition-colors mb-6 sm:mb-8 group"
             >
                 <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
                 Back to Clients
             </Link>
 
             {/* Profile Header */}
-            <div className="flex flex-col lg:flex-row lg:items-center gap-6 mb-12">
-                <div className="flex items-center gap-6">
+            <div className="flex flex-col lg:flex-row lg:items-center gap-4 sm:gap-6 mb-8 sm:mb-12">
+                <div className="flex items-center gap-4 sm:gap-6">
                     <div className="avatar-lg bg-gradient-to-br from-brand-blue to-brand-violet text-white shadow-glow-blue">
                         {client.name.charAt(0)}
                     </div>
                     <div>
-                        <div className="flex items-center gap-3 mb-1">
-                            <h1 className="text-3xl font-bold text-white tracking-tight text-balance">
+                        <div className="flex items-center gap-3 mb-1 flex-wrap">
+                            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white tracking-tight text-balance">
                                 {client.name}
                             </h1>
                             <StatusBadge status={client.status} />
                         </div>
-                        <div className="flex items-center gap-4 text-text-secondary text-sm">
+                        <div className="flex items-center gap-3 sm:gap-4 flex-wrap text-text-secondary text-sm">
                             {client.email && (
                                 <span className="flex items-center gap-1.5">
                                     <Mail className="w-3.5 h-3.5" />
@@ -740,9 +740,9 @@ export default function ClientProfilePage() {
                 </div>
             </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
                     {/* Main Content */}
-                    <div className="lg:col-span-2 space-y-8">
+                    <div className="lg:col-span-2 space-y-4 sm:space-y-6 lg:space-y-8">
                         {/* Weight Trend */}
                         {weightData.length > 0 && (
                             <div className="chart-container">
@@ -961,7 +961,7 @@ export default function ClientProfilePage() {
                                     onSave={(val) => updateField("email", val)}
                                     label="Email"
                                     type="email"
-                                    placeholder="Add email address\u2026"
+                                    placeholder="Add email address…"
                                 />
                             </div>
                             <div className="divider !my-4" />
@@ -974,7 +974,7 @@ export default function ClientProfilePage() {
                                     onSave={(val) => updateField("phone", val)}
                                     label="Phone"
                                     type="tel"
-                                    placeholder="Add phone number\u2026"
+                                    placeholder="Add phone number…"
                                 />
                             </div>
                         </div>
@@ -990,7 +990,7 @@ export default function ClientProfilePage() {
                                     onSave={(val) => updateField("goals", val)}
                                     label="Goals"
                                     multiline
-                                    placeholder="Add client goals\u2026"
+                                    placeholder="Add client goals…"
                                 />
                             </div>
                             <div className="divider !my-4" />
@@ -1003,7 +1003,7 @@ export default function ClientProfilePage() {
                                     onSave={(val) => updateField("notes", val)}
                                     label="Notes"
                                     multiline
-                                    placeholder="Add private notes\u2026"
+                                    placeholder="Add private notes…"
                                 />
                             </div>
                         </div>

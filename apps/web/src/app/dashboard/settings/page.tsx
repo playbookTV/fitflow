@@ -9,7 +9,6 @@ import {
     User,
     Building2,
     Bell,
-    CreditCard,
     MessageSquare,
     Globe,
     Save,
@@ -19,11 +18,9 @@ import {
     Send,
     Copy,
     Link2,
-    QrCode,
-    Download,
-    MousePointerClick,
     Eye,
     EyeOff,
+    CreditCard,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AvatarUpload } from "@/components/ui/AvatarUpload";
@@ -52,6 +49,7 @@ interface CoachProfile {
     defaultPricePerSession?: number;
     defaultSessionsPerBlock?: number;
     defaultMonthlyRate?: number;
+    billingCurrency?: string;
     stripeConnected: boolean;
     whatsappConnected: boolean;
     telegramConnected: boolean;
@@ -59,14 +57,13 @@ interface CoachProfile {
     telegramDeepLink: string | null;
 }
 
-type TabId = "profile" | "public-profile" | "notifications" | "integrations" | "billing";
+type TabId = "profile" | "public-profile" | "notifications" | "integrations";
 
 const tabs: { id: TabId; label: string; icon: React.ElementType }[] = [
     { id: "profile", label: "Profile", icon: User },
     { id: "public-profile", label: "Public Profile", icon: Globe },
     { id: "notifications", label: "Notifications", icon: Bell },
     { id: "integrations", label: "Integrations", icon: MessageSquare },
-    { id: "billing", label: "Billing", icon: CreditCard },
 ];
 
 const timezones = [
@@ -135,8 +132,6 @@ function SettingsContent() {
     const [waLink, setWaLink] = useState<string | null>(null);
     const [waPhoneNumber, setWaPhoneNumber] = useState<string | null>(null);
     const [stripeLoading, setStripeLoading] = useState(false);
-    const [shortLinks, setShortLinks] = useState<{ id: string; code: string; targetUrl: string; label: string | null; clicks: number; shortUrl: string }[]>([]);
-    const [showQrId, setShowQrId] = useState<string | null>(null);
     const searchParams = useSearchParams();
 
     const handleStripeConnect = useCallback(async () => {
@@ -223,16 +218,6 @@ function SettingsContent() {
         };
         fetchChannels();
 
-        const fetchShortLinks = async () => {
-            try {
-                const res = await fetch(
-                    `${process.env.NEXT_PUBLIC_API_URL}/short-links`,
-                    { headers: await getAuthHeaders() }
-                );
-                if (res.ok) setShortLinks(await res.json());
-            } catch { /* silent */ }
-        };
-        fetchShortLinks();
     }, []);
 
     const handleSave = async () => {
@@ -322,10 +307,10 @@ function SettingsContent() {
                 </button>
             }
         >
-            <div className="flex flex-col lg:flex-row gap-8">
+            <div className="flex flex-col md:flex-row gap-4 md:gap-6 lg:gap-8">
                 {/* Tab Navigation */}
-                <div className="lg:w-64 flex-shrink-0">
-                    <nav className="flex lg:flex-col gap-2">
+                <div className="md:w-48 lg:w-64 flex-shrink-0">
+                    <nav className="flex md:flex-col gap-2 overflow-x-auto">
                         {tabs.map((tab) => {
                             const Icon = tab.icon;
                             return (
@@ -367,7 +352,7 @@ function SettingsContent() {
                                         </h3>
                                         <div className="space-y-5">
                                             <div className="form-field">
-                                                <label htmlFor="settings-name" className="label">Full Name</label>
+                                                <label htmlFor="settings-name" className="label-mono">Full Name</label>
                                                 <input
                                                     id="settings-name"
                                                     type="text"
@@ -382,7 +367,7 @@ function SettingsContent() {
                                                 />
                                             </div>
                                             <div className="form-field">
-                                                <label htmlFor="settings-email" className="label">Email Address</label>
+                                                <label htmlFor="settings-email" className="label-mono">Email Address</label>
                                                 <input
                                                     id="settings-email"
                                                     type="email"
@@ -397,7 +382,7 @@ function SettingsContent() {
                                                 </p>
                                             </div>
                                             <div className="form-field">
-                                                <label htmlFor="settings-phone" className="label">Phone Number</label>
+                                                <label htmlFor="settings-phone" className="label-mono">Phone Number</label>
                                                 <input
                                                     id="settings-phone"
                                                     type="tel"
@@ -412,7 +397,7 @@ function SettingsContent() {
                                                 />
                                             </div>
                                             <div className="form-field">
-                                                <label htmlFor="settings-slug" className="label">Slug</label>
+                                                <label htmlFor="settings-slug" className="label-mono">Slug</label>
                                                 <input
                                                     id="settings-slug"
                                                     type="text"
@@ -439,7 +424,7 @@ function SettingsContent() {
                                         </h3>
                                         <div className="space-y-5">
                                             <div className="form-field">
-                                                <label htmlFor="settings-business-name" className="label">Business Name</label>
+                                                <label htmlFor="settings-business-name" className="label-mono">Business Name</label>
                                                 <input
                                                     id="settings-business-name"
                                                     type="text"
@@ -454,7 +439,7 @@ function SettingsContent() {
                                                 />
                                             </div>
                                             <div className="form-field">
-                                                <label htmlFor="settings-timezone" className="label flex items-center gap-2">
+                                                <label htmlFor="settings-timezone" className="label-mono flex items-center gap-2">
                                                     <Globe className="w-3.5 h-3.5" />
                                                     Timezone
                                                 </label>
@@ -525,7 +510,7 @@ function SettingsContent() {
                                             </div>
                                             <div className="flex-1 min-w-0 w-full">
                                                 <div className="form-field">
-                                                    <label htmlFor="settings-bio" className="label">Bio</label>
+                                                    <label htmlFor="settings-bio" className="label-mono">Bio</label>
                                                     <textarea
                                                         id="settings-bio"
                                                         name="bio"
@@ -536,7 +521,7 @@ function SettingsContent() {
                                                             }
                                                         }}
                                                         className="textarea"
-                                                        placeholder="Tell potential clients about yourself\u2026"
+                                                        placeholder="Tell potential clients about yourself…"
                                                         rows={3}
                                                     />
                                                     <p className="text-xs text-text-faint mt-1 text-right tabular-nums">
@@ -558,24 +543,17 @@ function SettingsContent() {
                                         </p>
                                         <div className="space-y-5">
                                             {(profile.defaultPaymentModel === "SESSION_BLOCKS" || profile.defaultPaymentModel === "PER_SESSION") && (
-                                                <div className="form-field">
-                                                    <label htmlFor="settings-price-per-session" className="label">Price per session (in smallest currency unit)</label>
-                                                    <input
-                                                        id="settings-price-per-session"
-                                                        type="number"
-                                                        name="defaultPricePerSession"
-                                                        value={profile.defaultPricePerSession || ""}
-                                                        onChange={(e) =>
-                                                            updateProfile({ defaultPricePerSession: e.target.value ? Number(e.target.value) : undefined })
-                                                        }
-                                                        className="input"
-                                                        placeholder="e.g. 4000 for £40"
-                                                    />
-                                                </div>
+                                                <RateField
+                                                    id="settings-price-per-session"
+                                                    label="Price per session"
+                                                    currency={profile.billingCurrency}
+                                                    value={profile.defaultPricePerSession}
+                                                    onChange={(v) => updateProfile({ defaultPricePerSession: v })}
+                                                />
                                             )}
                                             {profile.defaultPaymentModel === "SESSION_BLOCKS" && (
                                                 <div className="form-field">
-                                                    <label htmlFor="settings-sessions-per-block" className="label">Sessions per block</label>
+                                                    <label htmlFor="settings-sessions-per-block" className="label-mono">Sessions per block</label>
                                                     <input
                                                         id="settings-sessions-per-block"
                                                         type="number"
@@ -590,20 +568,13 @@ function SettingsContent() {
                                                 </div>
                                             )}
                                             {profile.defaultPaymentModel === "MONTHLY_RETAINER" && (
-                                                <div className="form-field">
-                                                    <label htmlFor="settings-monthly-rate" className="label">Monthly rate (in smallest currency unit)</label>
-                                                    <input
-                                                        id="settings-monthly-rate"
-                                                        type="number"
-                                                        name="defaultMonthlyRate"
-                                                        value={profile.defaultMonthlyRate || ""}
-                                                        onChange={(e) =>
-                                                            updateProfile({ defaultMonthlyRate: e.target.value ? Number(e.target.value) : undefined })
-                                                        }
-                                                        className="input"
-                                                        placeholder="e.g. 12000 for £120"
-                                                    />
-                                                </div>
+                                                <RateField
+                                                    id="settings-monthly-rate"
+                                                    label="Monthly rate"
+                                                    currency={profile.billingCurrency}
+                                                    value={profile.defaultMonthlyRate}
+                                                    onChange={(v) => updateProfile({ defaultMonthlyRate: v })}
+                                                />
                                             )}
                                             {!profile.defaultPaymentModel && (
                                                 <p className="text-sm text-text-secondary text-pretty">
@@ -752,23 +723,6 @@ function SettingsContent() {
 
                                             <label className="flex items-center justify-between p-4 rounded-xl bg-bg-hover cursor-pointer group">
                                                 <div>
-                                                    <p className="font-medium text-white">SMS Reminders</p>
-                                                    <p className="text-sm text-text-faint text-pretty">
-                                                        Get text reminders for important events
-                                                    </p>
-                                                </div>
-                                                <input
-                                                    type="checkbox"
-                                                    checked={profile.notifications.smsReminders}
-                                                    onChange={(e) =>
-                                                        updateNotification("smsReminders", e.target.checked)
-                                                    }
-                                                    className="toggle"
-                                                />
-                                            </label>
-
-                                            <label className="flex items-center justify-between p-4 rounded-xl bg-bg-hover cursor-pointer group">
-                                                <div>
                                                     <p className="font-medium text-white">Weekly Digest</p>
                                                     <p className="text-sm text-text-faint text-pretty">
                                                         Summary of client progress every Sunday
@@ -821,16 +775,11 @@ function SettingsContent() {
                                                     </p>
                                                 </div>
                                             </div>
-                                            <button
-                                                className={cn(
-                                                    profile.whatsappConnected
-                                                        ? "btn-secondary"
-                                                        : "btn-primary"
-                                                )}
-                                            >
-                                                {profile.whatsappConnected ? "Manage" : "Connect"}
-                                                <ExternalLink className="w-3.5 h-3.5" />
-                                            </button>
+                                            {profile.whatsappConnected ? (
+                                                <span className="badge badge-green">Active</span>
+                                            ) : (
+                                                <span className="badge text-text-faint">Platform-managed</span>
+                                            )}
                                         </div>
 
                                         {/* wa.me Link */}
@@ -972,166 +921,64 @@ function SettingsContent() {
                                         </div>
                                     </div>
 
-                                    {/* Short Links & QR Codes */}
-                                    <div className="card p-6">
-                                        <h3 className="text-lg font-semibold text-white mb-6 flex items-center gap-2">
-                                            <Link2 className="w-5 h-5 text-brand-cyan" />
-                                            Short Links & QR Codes
-                                        </h3>
-                                        {shortLinks.length === 0 ? (
-                                            <p className="text-sm text-text-secondary">
-                                                No short links yet. They&apos;ll be auto-generated when you create offers.
-                                            </p>
-                                        ) : (
-                                            <div className="space-y-3">
-                                                {shortLinks.map((link) => (
-                                                    <div key={link.id} className="p-4 rounded-xl bg-bg-hover">
-                                                        <div className="flex items-center justify-between mb-2">
-                                                            <div>
-                                                                <p className="text-sm font-medium text-white">
-                                                                    {link.label || link.code}
-                                                                </p>
-                                                                <p className="text-xs text-text-faint font-mono truncate">
-                                                                    {link.targetUrl}
-                                                                </p>
-                                                            </div>
-                                                            <div className="flex items-center gap-2">
-                                                                <span className="flex items-center gap-1 text-xs text-text-faint tabular-nums">
-                                                                    <MousePointerClick className="w-3 h-3" />
-                                                                    {link.clicks}
-                                                                </span>
-                                                                <button
-                                                                    onClick={() => {
-                                                                        navigator.clipboard.writeText(link.shortUrl);
-                                                                    }}
-                                                                    className="btn-ghost !p-1.5"
-                                                                    aria-label="Copy short link"
-                                                                >
-                                                                    <Copy className="w-3.5 h-3.5" />
-                                                                </button>
-                                                                <button
-                                                                    onClick={() => setShowQrId(showQrId === link.id ? null : link.id)}
-                                                                    className="btn-ghost !p-1.5"
-                                                                    aria-label="Show QR code"
-                                                                >
-                                                                    <QrCode className="w-3.5 h-3.5" />
-                                                                </button>
-                                                            </div>
-                                                        </div>
-                                                        <code className="text-xs text-brand-cyan bg-bg-primary px-2 py-1 rounded font-mono">
-                                                            {link.shortUrl}
-                                                        </code>
-
-                                                        {showQrId === link.id && (
-                                                            <div className="mt-4 flex flex-col items-center gap-3 p-4 rounded-xl bg-white">
-                                                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                                                <img
-                                                                    src={`${process.env.NEXT_PUBLIC_API_URL}/short-links/${link.id}/qr?size=200`}
-                                                                    alt={`QR code for ${link.code}`}
-                                                                    width={200}
-                                                                    height={200}
-                                                                />
-                                                                <a
-                                                                    href={`${process.env.NEXT_PUBLIC_API_URL}/short-links/${link.id}/qr?size=600`}
-                                                                    download={`${link.code}-qr.png`}
-                                                                    className="flex items-center gap-1.5 text-xs text-gray-600 hover:text-black transition-colors"
-                                                                >
-                                                                    <Download className="w-3.5 h-3.5" />
-                                                                    Download HD
-                                                                </a>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
                                 </motion.div>
                             )}
 
-                            {/* Billing Tab */}
-                            {activeTab === "billing" && (
-                                <motion.div key="billing" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.2 }} className="space-y-6">
-                                    <div className="card p-6">
-                                        <h3 className="text-lg font-semibold text-white mb-6 flex items-center gap-2">
-                                            <CreditCard className="w-5 h-5 text-brand-cyan" />
-                                            Current Plan
-                                        </h3>
-                                        <div className="p-6 rounded-xl bg-gradient-to-br from-brand-green/10 to-brand-cyan/10 border border-brand-green/20">
-                                            <div className="flex items-center justify-between mb-4">
-                                                <div>
-                                                    <p className="text-xs text-brand-green font-bold uppercase tracking-widest mb-1">
-                                                        Pro Plan
-                                                    </p>
-                                                    <p className="text-3xl font-bold text-white">
-                                                        ₦15,000
-                                                        <span className="text-sm text-text-secondary font-normal">
-                                                            /month
-                                                        </span>
-                                                    </p>
-                                                </div>
-                                                <span className="badge badge-green">Active</span>
-                                            </div>
-                                            <ul className="space-y-2 text-sm text-text-secondary mb-6">
-                                                <li className="flex items-center gap-2">
-                                                    <Check className="w-4 h-4 text-brand-green" />
-                                                    Unlimited clients
-                                                </li>
-                                                <li className="flex items-center gap-2">
-                                                    <Check className="w-4 h-4 text-brand-green" />
-                                                    WhatsApp workout delivery
-                                                </li>
-                                                <li className="flex items-center gap-2">
-                                                    <Check className="w-4 h-4 text-brand-green" />
-                                                    Payment collection
-                                                </li>
-                                                <li className="flex items-center gap-2">
-                                                    <Check className="w-4 h-4 text-brand-green" />
-                                                    Analytics dashboard
-                                                </li>
-                                            </ul>
-                                            <button
-                                                className="btn-secondary w-full"
-                                                onClick={async () => {
-                                                    try {
-                                                        const res = await fetch(
-                                                            `${process.env.NEXT_PUBLIC_API_URL}/subscriptions/portal`,
-                                                            {
-                                                                method: "POST",
-                                                                headers: await getAuthHeaders(),
-                                                            }
-                                                        );
-                                                        if (res.ok) {
-                                                            const { url } = await res.json();
-                                                            window.open(url, "_blank");
-                                                        }
-                                                    } catch (error) {
-                                                        console.error("Failed to open billing portal:", error);
-                                                    }
-                                                }}
-                                            >
-                                                Manage Subscription
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    <div className="card p-6">
-                                        <h3 className="text-lg font-semibold text-white mb-4">
-                                            Billing History
-                                        </h3>
-                                        <div className="text-center py-8">
-                                            <p className="text-text-faint text-sm">
-                                                No billing history available yet.
-                                            </p>
-                                        </div>
-                                    </div>
-                                </motion.div>
-                            )}
                         </AnimatePresence>
                     )}
                 </div>
             </div>
         </DashboardLayout>
+    );
+}
+
+const CURRENCY_CONFIG: Record<string, { symbol: string; name: string; subunit: string; divisor: number }> = {
+    usd: { symbol: "$", name: "USD", subunit: "cents", divisor: 100 },
+    gbp: { symbol: "£", name: "GBP", subunit: "pence", divisor: 100 },
+};
+
+function RateField({
+    id,
+    label,
+    currency,
+    value,
+    onChange,
+}: {
+    id: string;
+    label: string;
+    currency?: string;
+    value?: number;
+    onChange: (v: number | undefined) => void;
+}) {
+    const config = CURRENCY_CONFIG[currency || "usd"] || CURRENCY_CONFIG.usd;
+    const displayValue = value != null ? (value / config.divisor).toFixed(2) : "";
+
+    return (
+        <div className="form-field">
+            <label htmlFor={id} className="label-mono">
+                {label} ({config.name})
+            </label>
+            <div className="relative">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-text-faint pointer-events-none">
+                    {config.symbol}
+                </span>
+                <input
+                    id={id}
+                    type="number"
+                    name={id}
+                    step="0.01"
+                    min="0"
+                    value={displayValue}
+                    onChange={(e) => {
+                        const raw = e.target.value;
+                        if (!raw) return onChange(undefined);
+                        onChange(Math.round(parseFloat(raw) * config.divisor));
+                    }}
+                    className="input w-full pl-9"
+                    placeholder="0.00"
+                />
+            </div>
+        </div>
     );
 }
 

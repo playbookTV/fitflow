@@ -74,13 +74,13 @@ export default function ClientsPage() {
             }
         >
             {/* Toolbar */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4 sm:mb-6">
                 {/* Search */}
-                <div className="relative flex-1 max-w-md">
+                <div className="relative flex-1 w-full sm:max-w-md">
                     <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-faint" aria-hidden="true" />
                     <input
                         type="text"
-                        placeholder="Search clients\u2026"
+                        placeholder="Search clients…"
                         name="search"
                         autoComplete="off"
                         aria-label="Search clients"
@@ -91,7 +91,7 @@ export default function ClientsPage() {
                 </div>
 
                 {/* Status Tabs */}
-                <div className="tabs">
+                <div className="tabs overflow-x-auto flex-nowrap">
                     {[
                         { value: null, label: "All" },
                         { value: "ACTIVE", label: "Active" },
@@ -115,7 +115,7 @@ export default function ClientsPage() {
             {/* Table */}
             {loading ? (
                 <div className="card overflow-hidden">
-                    <div className="data-table-header grid-cols-[1fr_80px_160px_120px_100px_40px]">
+                    <div className="data-table-header md:grid-cols-[1fr_80px_160px_120px_100px_40px]">
                         <span className="label-mono">Name & Contact</span>
                         <span className="label-mono">Channel</span>
                         <span className="label-mono">Status</span>
@@ -149,8 +149,8 @@ export default function ClientsPage() {
                 </div>
             ) : (
                 <div className="card overflow-hidden">
-                    {/* Header */}
-                    <div className="data-table-header grid-cols-[1fr_80px_160px_120px_100px_40px]">
+                    {/* Header — visible on md+ */}
+                    <div className="data-table-header md:grid-cols-[1fr_80px_160px_120px_100px_40px]">
                         <span className="label-mono">Name & Contact</span>
                         <span className="label-mono">Channel</span>
                         <span className="label-mono">Status</span>
@@ -159,47 +159,56 @@ export default function ClientsPage() {
                         <span></span>
                     </div>
 
-                    {/* Rows */}
+                    {/* Rows — card on mobile, grid on md+ */}
                     {filteredClients.map((client) => (
                         <Link
                             key={client.id}
                             href={`/dashboard/clients/${client.id}`}
-                            className="data-table-row grid-cols-[1fr_80px_160px_120px_100px_40px] group"
+                            className="data-table-row md:grid-cols-[1fr_80px_160px_120px_100px_40px] group"
                         >
-                            <div className="flex flex-col gap-0.5">
-                                <span className="text-sm font-medium text-text-primary group-hover:text-brand-green transition-colors">
-                                    {client.name}
-                                </span>
+                            {/* Mobile: top row — name + channel + arrow */}
+                            <div className="flex items-center justify-between md:contents">
+                                <div className="flex items-center gap-3 min-w-0">
+                                    <div className="flex flex-col gap-0.5 min-w-0">
+                                        <span className="text-sm font-medium text-text-primary group-hover:text-brand-green transition-colors truncate">
+                                            {client.name}
+                                        </span>
+                                        <span className="text-xs text-text-faint font-mono">
+                                            {client.phone || "Telegram"}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                {/* Channel — inline on mobile, own column on md+ */}
+                                <div className="flex items-center md:order-none">
+                                    {client.preferredChannel === "TELEGRAM" ? (
+                                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-brand-blue">
+                                            <Send className="w-3 h-3" aria-hidden="true" />
+                                            TG
+                                        </span>
+                                    ) : (
+                                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-brand-green">
+                                            <MessageSquare className="w-3 h-3" aria-hidden="true" />
+                                            WA
+                                        </span>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Mobile: bottom row — status + compliance + last seen */}
+                            <div className="flex items-center gap-3 flex-wrap md:contents">
+                                <div className="flex">
+                                    <StatusBadge status={client.status} />
+                                </div>
+
+                                <ComplianceBar value={client.compliance || 0} />
+
                                 <span className="text-xs text-text-faint font-mono">
-                                    {client.phone || "Telegram"}
+                                    {client.lastCheckIn ? formatRelative(client.lastCheckIn) : "Never"}
                                 </span>
                             </div>
 
-                            <div className="flex items-center">
-                                {client.preferredChannel === "TELEGRAM" ? (
-                                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-brand-blue">
-                                        <Send className="w-3 h-3" aria-hidden="true" />
-                                        TG
-                                    </span>
-                                ) : (
-                                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-brand-green">
-                                        <MessageSquare className="w-3 h-3" aria-hidden="true" />
-                                        WA
-                                    </span>
-                                )}
-                            </div>
-
-                            <div className="flex">
-                                <StatusBadge status={client.status} />
-                            </div>
-
-                            <ComplianceBar value={client.compliance || 0} />
-
-                            <span className="text-xs text-text-faint font-mono">
-                                {client.lastCheckIn ? formatRelative(client.lastCheckIn) : "Never"}
-                            </span>
-
-                            <ArrowUpRight className="w-4 h-4 text-text-muted group-hover:text-brand-green transition-[color,transform] transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" aria-hidden="true" />
+                            <ArrowUpRight className="hidden md:block w-4 h-4 text-text-muted group-hover:text-brand-green transition-[color,transform] transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" aria-hidden="true" />
                         </Link>
                     ))}
                 </div>

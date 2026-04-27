@@ -92,15 +92,15 @@ export default function NewClientPage() {
                 {/* Back link */}
                 <Link
                     href="/dashboard"
-                    className="inline-flex items-center gap-2 text-text-faint hover:text-white transition-colors mb-8 group"
+                    className="inline-flex items-center gap-2 text-text-faint hover:text-white transition-colors mb-6 sm:mb-8 group"
                 >
                     <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" aria-hidden="true" />
                     Back to Dashboard
                 </Link>
 
-                <form onSubmit={handleSubmit} className="space-y-8">
+                <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">
                     {/* Basic Info Card */}
-                    <div className="card p-6">
+                    <div className="card p-4 sm:p-6">
                         <h2 className="text-lg font-bold text-white mb-6 flex items-center gap-2 text-balance">
                             <User className="w-5 h-5 text-brand-blue" aria-hidden="true" />
                             Basic Information
@@ -180,7 +180,7 @@ export default function NewClientPage() {
                                     value={formData.goals}
                                     onChange={handleChange}
                                     className="textarea w-full"
-                                    placeholder="e.g. Lose 10kg, build muscle, improve energy levels\u2026"
+                                    placeholder="e.g. Lose 10kg, build muscle, improve energy levels…"
                                     rows={3}
                                 />
                             </div>
@@ -196,7 +196,7 @@ export default function NewClientPage() {
                                     value={formData.notes}
                                     onChange={handleChange}
                                     className="textarea w-full"
-                                    placeholder="Any notes about this client (only visible to you)\u2026"
+                                    placeholder="Any notes about this client (only visible to you)…"
                                     rows={3}
                                 />
                             </div>

@@ -351,7 +351,7 @@ function MessagesPageContent() {
             subtitle="Conversations with clients across all channels"
             notifications={totalUnread}
         >
-            <div className="flex h-[calc(100dvh-180px)] rounded-2xl overflow-hidden border border-border bg-bg-card">
+            <div className="flex h-[calc(100dvh-140px)] sm:h-[calc(100dvh-180px)] rounded-2xl overflow-hidden border border-border bg-bg-card">
                 {/* Conversations List */}
                 <div className={cn(
                     "w-full md:w-80 lg:w-96 border-r border-border flex flex-col bg-bg-primary",
@@ -363,7 +363,7 @@ function MessagesPageContent() {
                             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-faint" />
                             <input
                                 type="text"
-                                placeholder="Search conversations\u2026"
+                                placeholder="Search conversations…"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 className="input-with-icon w-full"
@@ -588,7 +588,7 @@ function MessagesPageContent() {
                                             type="text"
                                             placeholder={!canSendFreeText && selectedConversation.channel === "WHATSAPP"
                                                 ? "Window closed \u2014 only templates available"
-                                                : "Type a message\u2026"}
+                                                : "Type a message…"}
                                             value={newMessage}
                                             onChange={(e) => setNewMessage(e.target.value)}
                                             onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}

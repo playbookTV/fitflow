@@ -2,7 +2,10 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { DashboardLayout } from "@/components/DashboardLayout";
+import { Modal, ModalContent, ModalHeader, ModalTitle, ModalClose } from "@/components/ui/Modal";
+import MealTemplatePicker from "@/components/MealTemplatePicker";
 import {
     Plus,
     Search,
@@ -33,10 +36,12 @@ const gridVariants = { hidden: {}, visible: { transition: { staggerChildren: 0.0
 const cardVariants = { hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0, transition: { duration: 0.35, ease: [0.25, 0.1, 0.25, 1] as const } } };
 
 export default function MealPlansPage() {
+    const router = useRouter();
     const [plans, setPlans] = useState<MealPlan[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
     const [activeMenu, setActiveMenu] = useState<string | null>(null);
+    const [showTemplatePicker, setShowTemplatePicker] = useState(false);
 
     useEffect(() => {
         const fetchPlans = async () => {
@@ -98,19 +103,19 @@ export default function MealPlansPage() {
             title="Meal Plans"
             subtitle="Manage your nutrition templates"
             actions={
-                <Link href="/dashboard/meal-plans/new" className="btn-primary">
+                <button onClick={() => setShowTemplatePicker(true)} className="btn-primary">
                     <Plus className="w-4 h-4" />
                     NEW MEAL PLAN
-                </Link>
+                </button>
             }
         >
             {/* Search */}
-            <div className="mb-8">
-                <div className="relative max-w-md">
+            <div className="mb-6 sm:mb-8">
+                <div className="relative w-full sm:max-w-md">
                     <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-faint" />
                     <input
                         type="text"
-                        placeholder="Search meal plans\u2026"
+                        placeholder="Search meal plans…"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="input-with-icon w-full"
@@ -123,7 +128,7 @@ export default function MealPlansPage() {
 
             {/* Plans Grid */}
             {loading ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                     {[1, 2, 3].map((i) => (
                         <div key={i} className="skeleton h-48 rounded-2xl" />
                     ))}
@@ -142,14 +147,14 @@ export default function MealPlansPage() {
                             : "Create your first meal plan template"}
                     </p>
                     {!searchQuery && (
-                        <Link href="/dashboard/meal-plans/new" className="btn-primary">
+                        <button onClick={() => setShowTemplatePicker(true)} className="btn-primary">
                             <Plus className="w-4 h-4" />
                             CREATE MEAL PLAN
-                        </Link>
+                        </button>
                     )}
                 </div>
             ) : (
-                <motion.div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" variants={gridVariants} initial="hidden" animate="visible">
+                <motion.div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6" variants={gridVariants} initial="hidden" animate="visible">
                     {filteredPlans.map((plan) => (
                         <motion.div key={plan.id} variants={cardVariants}>
                         <div className="card-interactive p-5 group relative">
@@ -230,9 +235,9 @@ export default function MealPlansPage() {
                     ))}
 
                     <motion.div variants={cardVariants}>
-                    <Link
-                        href="/dashboard/meal-plans/new"
-                        className="flex flex-col items-center justify-center p-5 rounded-2xl border border-dashed border-border-hover bg-transparent hover:bg-bg-hover hover:border-brand-green/30 transition-[color,background-color,border-color] duration-200 group min-h-[200px]"
+                    <button
+                        onClick={() => setShowTemplatePicker(true)}
+                        className="flex flex-col items-center justify-center p-5 rounded-2xl border border-dashed border-border-hover bg-transparent hover:bg-bg-hover hover:border-brand-green/30 transition-[color,background-color,border-color] duration-200 group min-h-[200px] w-full"
                     >
                         <div className="w-12 h-12 rounded-xl bg-bg-card border border-border flex items-center justify-center text-text-faint mb-3 group-hover:border-brand-green/30 group-hover:text-brand-green group-hover:scale-110 transition-[color,border-color,transform] duration-200">
                             <Plus className="w-5 h-5" />
@@ -240,10 +245,27 @@ export default function MealPlansPage() {
                         <p className="text-sm font-medium text-text-faint group-hover:text-text-secondary transition-colors">
                             Create New Meal Plan
                         </p>
-                    </Link>
+                    </button>
                     </motion.div>
                 </motion.div>
             )}
+            {/* Template Picker Modal */}
+            <Modal open={showTemplatePicker} onOpenChange={setShowTemplatePicker}>
+                <ModalContent size="xl">
+                    <ModalHeader>
+                        <ModalTitle>New Meal Plan</ModalTitle>
+                        <ModalClose />
+                    </ModalHeader>
+                    <div className="px-6 pb-6 max-h-[70vh] overflow-y-auto">
+                        <MealTemplatePicker
+                            onStartFromScratch={() => {
+                                setShowTemplatePicker(false);
+                                router.push("/dashboard/meal-plans/new?mode=scratch");
+                            }}
+                        />
+                    </div>
+                </ModalContent>
+            </Modal>
         </DashboardLayout>
     );
 }

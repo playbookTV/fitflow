@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Plus, Link2, Users, Trash2, Copy, MessageCircle, QrCode } from "lucide-react";
 import { Modal, ModalContent, ModalHeader, ModalTitle, ModalFooter, ModalClose } from "@/components/ui/Modal";
@@ -24,6 +25,8 @@ export default function OffersPage() {
     const [loading, setLoading] = useState(true);
     const [showCreate, setShowCreate] = useState(false);
     const [newOffer, setNewOffer] = useState({ name: "", slug: "" });
+    const [slugTouched, setSlugTouched] = useState(false);
+    const [slugError, setSlugError] = useState<string | null>(null);
     const [creating, setCreating] = useState(false);
     const [waLink, setWaLink] = useState<string | null>(null);
     const [showQrOffer, setShowQrOffer] = useState<string | null>(null);
@@ -92,6 +95,7 @@ export default function OffersPage() {
 
     const handleCreate = async () => {
         if (!newOffer.name || !newOffer.slug) return;
+        setSlugError(null);
         setCreating(true);
         try {
             const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/offers`, {
@@ -104,8 +108,11 @@ export default function OffersPage() {
             });
             if (res.ok) {
                 setNewOffer({ name: "", slug: "" });
+                setSlugTouched(false);
                 setShowCreate(false);
                 fetchOffers();
+            } else if (res.status === 409) {
+                setSlugError("This slug is already taken. Please choose a different one.");
             }
         } catch (error) {
             console.error("Failed to create offer:", error);
@@ -145,37 +152,55 @@ export default function OffersPage() {
             }
         >
             {showCreate && (
-                <div className="card p-6 mb-8 animate-fade-in">
+                <div className="card p-4 sm:p-6 mb-6 sm:mb-8 animate-fade-in">
                     <h3 className="text-lg font-semibold text-white mb-4 text-balance">Create Offer Link</h3>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                         <div className="form-field">
-                            <label htmlFor="offer-name" className="label">Offer Name</label>
+                            <label htmlFor="offer-name" className="label-mono">Offer Name</label>
                             <input
                                 id="offer-name"
                                 type="text"
                                 name="offerName"
                                 value={newOffer.name}
-                                onChange={(e) => setNewOffer({ ...newOffer, name: e.target.value })}
+                                onChange={(e) => {
+                                    const name = e.target.value;
+                                    const autoSlug = name
+                                        .toLowerCase()
+                                        .trim()
+                                        .replace(/[^a-z0-9\s-]/g, "")
+                                        .replace(/\s+/g, "-")
+                                        .replace(/-+/g, "-");
+                                    setNewOffer({
+                                        name,
+                                        slug: slugTouched ? newOffer.slug : autoSlug,
+                                    });
+                                    if (!slugTouched) setSlugError(null);
+                                }}
                                 className="input"
                                 placeholder="e.g. 12-Week Shred"
                             />
                         </div>
                         <div className="form-field">
-                            <label htmlFor="offer-slug" className="label">URL Slug</label>
+                            <label htmlFor="offer-slug" className="label-mono">URL Slug</label>
                             <input
                                 id="offer-slug"
                                 type="text"
                                 name="offerSlug"
                                 value={newOffer.slug}
-                                onChange={(e) =>
+                                onChange={(e) => {
+                                    setSlugTouched(true);
+                                    setSlugError(null);
                                     setNewOffer({
                                         ...newOffer,
                                         slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-"),
-                                    })
-                                }
-                                className="input"
+                                    });
+                                }}
+                                className={cn("input", slugError && "!border-brand-red !focus:ring-brand-red/50")}
                                 placeholder="e.g. 12-week-shred"
                             />
+                            {slugError && (
+                                <p className="form-error">{slugError}</p>
+                            )}
                         </div>
                     </div>
                     <div className="flex gap-3 justify-end">
@@ -212,10 +237,13 @@ export default function OffersPage() {
                             key={offer.id}
                             className="card p-5 flex items-center justify-between group hover:border-border-hover transition-colors"
                         >
-                            <div className="flex items-center gap-4">
+                            <Link
+                                href={`/dashboard/offers/${offer.id}`}
+                                className="flex items-center gap-4 flex-1 min-w-0"
+                            >
                                 <div
                                     className={cn(
-                                        "w-10 h-10 rounded-xl flex items-center justify-center",
+                                        "w-10 h-10 rounded-xl flex items-center justify-center shrink-0",
                                         offer.isActive
                                             ? "bg-brand-green/10 text-brand-green"
                                             : "bg-bg-hover text-text-faint"
@@ -223,18 +251,13 @@ export default function OffersPage() {
                                 >
                                     <Link2 className="w-5 h-5" />
                                 </div>
-                                <div>
-                                    <p className="font-medium text-white">{offer.name}</p>
-                                    <p className="text-sm text-text-faint font-mono">
+                                <div className="min-w-0">
+                                    <p className="font-medium text-white group-hover:text-brand-green transition-colors">{offer.name}</p>
+                                    <p className="text-sm text-text-faint font-mono truncate">
                                         {coachSlug ? `/${coachSlug}/${offer.slug}` : `/${offer.slug}`}
-                                        {offer.channelParam && (
-                                            <span className="ml-2 text-brand-blue">
-                                                ?ch={offer.channelParam === "WHATSAPP" ? "wa" : "tg"}
-                                            </span>
-                                        )}
                                     </p>
                                 </div>
-                            </div>
+                            </Link>
                             <div className="flex items-center gap-4">
                                 <div className="flex items-center gap-1.5 text-text-secondary text-sm tabular-nums">
                                     <Users className="w-4 h-4" />

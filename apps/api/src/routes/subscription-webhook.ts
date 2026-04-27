@@ -38,11 +38,16 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req: R
 
                 const status = mapStripeStatus(sub.status);
 
-                const currentPeriodStart = sub.current_period_start
-                    ? new Date(sub.current_period_start * 1000)
+                // Period dates live on the subscription item in recent Stripe API versions
+                const item = sub.items?.data?.[0];
+                const periodStart = item?.current_period_start ?? sub.current_period_start;
+                const periodEnd = item?.current_period_end ?? sub.current_period_end;
+
+                const currentPeriodStart = periodStart
+                    ? new Date(periodStart * 1000)
                     : new Date();
-                const currentPeriodEnd = sub.current_period_end
-                    ? new Date(sub.current_period_end * 1000)
+                const currentPeriodEnd = periodEnd
+                    ? new Date(periodEnd * 1000)
                     : new Date();
 
                 const existingSub = await prisma.subscription.findUnique({

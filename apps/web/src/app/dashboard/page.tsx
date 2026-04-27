@@ -167,7 +167,7 @@ export default function DashboardPage() {
                         <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-faint" aria-hidden="true" />
                         <input
                             type="text"
-                            placeholder="Search clients\u2026"
+                            placeholder="Search clients…"
                             name="search"
                             autoComplete="off"
                             aria-label="Search clients"
@@ -222,7 +222,7 @@ export default function DashboardPage() {
 
                 {/* Stats or Upgrade Prompt */}
                 {analyticsLocked && !loading ? (
-                    <div className="card p-6 mb-10 flex items-center gap-5 border-brand-violet/20 bg-brand-violet/5">
+                    <div className="card p-4 sm:p-6 mb-6 sm:mb-10 flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-5 border-brand-violet/20 bg-brand-violet/5">
                         <div className="p-3 rounded-xl bg-brand-violet-glow border border-brand-violet-border">
                             <BarChart3 className="w-5 h-5 text-brand-violet" aria-hidden="true" />
                         </div>
@@ -248,7 +248,7 @@ export default function DashboardPage() {
 
                         {/* Channel Breakdown & Leads */}
                         {!loading && (stats.channels || stats.newLeads) && (
-                            <div className="flex flex-wrap gap-4 mb-10 animate-fade-in">
+                            <div className="flex flex-wrap gap-3 sm:gap-4 mb-6 sm:mb-10 animate-fade-in">
                                 {stats.channels && (
                                     <div className="card p-4 flex items-center gap-4">
                                         <div className="flex items-center gap-2 text-sm">
@@ -279,14 +279,14 @@ export default function DashboardPage() {
 
                         {/* At Risk Alerts */}
                         {stats.atRiskClients?.length > 0 && (
-                            <div className="mb-10 animate-fade-in">
+                            <div className="mb-6 sm:mb-10 animate-fade-in">
                                 <div className="section-header">
                                     <h2 className="section-title flex items-center gap-2 text-balance">
                                         <div className="w-2 h-2 rounded-full bg-brand-red animate-pulse-glow" />
                                         Needs Attention
                                     </h2>
                                 </div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                                     {stats.atRiskClients.map((client) => (
                                         <RiskScoreCard key={client.id} client={client} />
                                     ))}
@@ -306,7 +306,7 @@ export default function DashboardPage() {
                     </div>
 
                     {loading ? (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
                             {[1, 2, 3, 4].map((i) => (
                                 <div key={i} className="skeleton h-44 rounded-2xl" />
                             ))}

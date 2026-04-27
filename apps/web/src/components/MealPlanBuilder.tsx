@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Plus, Search, Save, Trash2, ChevronDown, ChevronRight, Sparkles, Loader2 } from "lucide-react";
+import { Plus, Search, Save, Trash2, ChevronDown, ChevronRight, Sparkles, Loader2, ArrowLeft } from "lucide-react";
 import { getAuthHeaders } from "@/lib/auth";
 import { useRouter } from "next/navigation";
 import { Modal, ModalContent, ModalHeader, ModalTitle, ModalClose } from "@/components/ui/Modal";
@@ -387,34 +387,43 @@ export default function MealPlanBuilder({ planId }: MealPlanBuilderProps) {
         <div className="min-h-dvh bg-bg-primary">
             <div className="max-w-4xl mx-auto px-4 py-8">
                 {/* Header */}
-                <div className="flex items-center justify-between mb-8">
-                    <div className="flex-1">
-                        <input
-                            type="text"
-                            value={title}
-                            onChange={(e) => setTitle(e.target.value)}
-                            name="title"
-                            aria-label="Meal plan title"
-                            className="text-2xl font-bold bg-transparent text-white border-none focus-visible:outline-transparent focus-visible:ring-2 focus-visible:ring-brand-green/50 w-full"
-                            placeholder="Meal Plan Title"
-                        />
-                        <input
-                            type="text"
-                            value={description}
-                            onChange={(e) => setDescription(e.target.value)}
-                            name="description"
-                            aria-label="Meal plan description"
-                            className="text-sm text-text-faint bg-transparent border-none focus-visible:outline-transparent focus-visible:ring-2 focus-visible:ring-brand-green/50 w-full mt-1"
-                            placeholder="Add a description\u2026"
-                        />
+                <div className="flex flex-col sm:flex-row sm:items-center gap-4 mb-6 sm:mb-8">
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <button
+                            onClick={() => router.push("/dashboard/meal-plans")}
+                            className="btn-ghost !p-2 shrink-0"
+                            aria-label="Back to meal plans"
+                        >
+                            <ArrowLeft className="w-5 h-5" />
+                        </button>
+                        <div className="flex-1 min-w-0">
+                            <input
+                                type="text"
+                                value={title}
+                                onChange={(e) => setTitle(e.target.value)}
+                                name="title"
+                                aria-label="Meal plan title"
+                                className="text-xl sm:text-2xl font-bold bg-transparent text-white border-none focus-visible:outline-transparent focus-visible:ring-2 focus-visible:ring-brand-green/50 w-full"
+                                placeholder="Meal Plan Title"
+                            />
+                            <input
+                                type="text"
+                                value={description}
+                                onChange={(e) => setDescription(e.target.value)}
+                                name="description"
+                                aria-label="Meal plan description"
+                                className="text-sm text-text-faint bg-transparent border-none focus-visible:outline-transparent focus-visible:ring-2 focus-visible:ring-brand-green/50 w-full mt-1"
+                                placeholder="Add a description…"
+                            />
+                        </div>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 shrink-0">
                         <button
                             onClick={openAiModal}
                             className="btn-secondary"
                         >
                             <Sparkles size={14} />
-                            GENERATE WITH AI
+                            <span className="hidden sm:inline">GENERATE WITH AI</span>
                         </button>
                         <button
                             onClick={handleSave}
@@ -422,7 +431,7 @@ export default function MealPlanBuilder({ planId }: MealPlanBuilderProps) {
                             className="btn-primary flex items-center gap-2"
                         >
                             <Save aria-hidden="true" className="w-4 h-4" />
-                            {isSaving ? "Saving..." : "Save Plan"}
+                            {isSaving ? "Saving..." : "Save"}
                         </button>
                     </div>
                 </div>
@@ -443,7 +452,7 @@ export default function MealPlanBuilder({ planId }: MealPlanBuilderProps) {
                                         )
                                     }
                                     aria-expanded={day.isOpen}
-                    className="w-full px-5 py-4 flex items-center justify-between hover:bg-bg-hover transition-colors"
+                    className="w-full px-4 sm:px-5 py-4 flex flex-wrap items-center justify-between gap-2 hover:bg-bg-hover transition-colors"
                                 >
                                     <div className="flex items-center gap-3">
                                         {day.isOpen ? (
@@ -457,7 +466,7 @@ export default function MealPlanBuilder({ planId }: MealPlanBuilderProps) {
                                         </span>
                                     </div>
                                     <div className="flex items-center gap-4">
-                                        <span className="text-xs text-brand-green font-mono tabular-nums">
+                                        <span className="text-[10px] sm:text-xs text-brand-green font-mono tabular-nums">
                                             {macros.calories} cal | P:{Math.round(macros.protein)}g C:{Math.round(macros.carbs)}g F:{Math.round(macros.fat)}g
                                         </span>
                                         {days.length > 1 && (
@@ -477,7 +486,7 @@ export default function MealPlanBuilder({ planId }: MealPlanBuilderProps) {
 
                                 {/* Day content */}
                                 {day.isOpen && (
-                                    <div className="px-5 pb-5 border-t border-border">
+                                    <div className="px-3 sm:px-5 pb-4 sm:pb-5 border-t border-border">
                                         {/* Entries list */}
                                         {day.entries.length > 0 && (
                                             <div className="mt-4 space-y-2">
@@ -502,7 +511,7 @@ export default function MealPlanBuilder({ planId }: MealPlanBuilderProps) {
                                                         <button
                                                             onClick={() => removeEntry(dayIdx, entryIdx)}
                                                             aria-label="Remove meal"
-                                                            className="text-text-faint hover:text-brand-red opacity-0 group-hover:opacity-100 transition-opacity"
+                                                            className="text-text-faint hover:text-brand-red md:opacity-0 md:group-hover:opacity-100 transition-opacity"
                                                         >
                                                             <Trash2 aria-hidden="true" className="w-4 h-4" />
                                                         </button>
@@ -513,7 +522,7 @@ export default function MealPlanBuilder({ planId }: MealPlanBuilderProps) {
 
                                         {/* Add meal section */}
                                         <div className="mt-4">
-                                            <div className="flex items-center gap-2 mb-3">
+                                            <div className="flex flex-wrap items-center gap-2 mb-3">
                                                 <select
                                                     value={activeCategory}
                                                     onChange={(e) => setActiveCategory(e.target.value)}
@@ -537,11 +546,11 @@ export default function MealPlanBuilder({ planId }: MealPlanBuilderProps) {
                                                     <option value="recipes">Recipes</option>
                                                     <option value="ingredients">Ingredients</option>
                                                 </select>
-                                                <div className="relative flex-1">
+                                                <div className="relative flex-1 min-w-[200px]">
                                                     <Search aria-hidden="true" className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-faint" />
                                                     <input
                                                         type="text"
-                                                        placeholder={`Search ${searchType}\u2026`}
+                                                        placeholder={`Search ${searchType}…`}
                                                         value={searchTerm}
                                                         onFocus={() => setActiveDayIdx(dayIdx)}
                                                         onChange={(e) => setSearchTerm(e.target.value)}

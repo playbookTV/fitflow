@@ -120,7 +120,7 @@ interface DashboardStatsProps {
 export const DashboardStats = ({ stats, loading }: DashboardStatsProps) => {
     if (loading) {
         return (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 md:gap-6 mb-6 sm:mb-10">
                 <StatItem label="Total Clients" value={0} icon={Users} color="blue" loading />
                 <StatItem label="Active Plans" value={0} icon={Activity} color="violet" loading />
                 <StatItem label="Avg Compliance" value="0%" icon={CheckCircle2} color="green" loading />
@@ -131,7 +131,7 @@ export const DashboardStats = ({ stats, loading }: DashboardStatsProps) => {
 
     return (
         <motion.div
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10"
+            className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 md:gap-6 mb-6 sm:mb-10"
             variants={gridVariants}
             initial="hidden"
             animate="visible"

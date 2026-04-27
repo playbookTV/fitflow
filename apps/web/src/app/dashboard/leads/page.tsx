@@ -240,7 +240,7 @@ export default function LeadsPage() {
                 ))}
             </div>
 
-            <div className="flex h-[calc(100dvh-220px)] rounded-2xl overflow-hidden border border-border bg-bg-card">
+            <div className="flex h-[calc(100dvh-180px)] sm:h-[calc(100dvh-220px)] rounded-2xl overflow-hidden border border-border bg-bg-card">
                 {/* Lead List */}
                 <div className={cn(
                     "w-full md:w-80 lg:w-96 border-r border-border flex flex-col bg-bg-primary",
@@ -457,7 +457,7 @@ export default function LeadsPage() {
                                     <div className="flex items-center gap-3">
                                         <input
                                             type="text"
-                                            placeholder="Type a message\u2026"
+                                            placeholder="Type a message…"
                                             value={newMessage}
                                             onChange={(e) => setNewMessage(e.target.value)}
                                             onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}

@@ -63,6 +63,7 @@ router.get("/me", authenticate, async (req: AuthRequest, res: Response) => {
             defaultPricePerSession: coach.defaultPricePerSession,
             defaultSessionsPerBlock: coach.defaultSessionsPerBlock,
             defaultMonthlyRate: coach.defaultMonthlyRate,
+            billingCurrency: coach.billingCurrency,
             bankDetails: coach.bankDetails,
             stripeConnected,
             whatsappConnected: true, // Managed at platform level for now

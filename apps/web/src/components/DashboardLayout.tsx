@@ -50,6 +50,17 @@ const bottomNavItems: NavItem[] = [
     { href: "/dashboard/settings", label: "Settings", icon: Settings },
 ];
 
+function getInitials(name: string | null): string {
+    if (!name) return "?";
+    return name
+        .split(" ")
+        .map((w) => w[0])
+        .filter(Boolean)
+        .slice(0, 2)
+        .join("")
+        .toUpperCase();
+}
+
 interface NotificationEvent {
     id: string;
     eventType: string;
@@ -198,6 +209,11 @@ export function DashboardLayout({
     const [notifEvents, setNotifEvents] = useState<NotificationEvent[]>([]);
     const [notifLoading, setNotifLoading] = useState(false);
     const notifRef = useRef<HTMLDivElement>(null);
+    const [coachName, setCoachName] = useState<string | null>(null);
+    const [coachEmail, setCoachEmail] = useState<string | null>(null);
+    const [coachAvatarUrl, setCoachAvatarUrl] = useState<string | null>(null);
+    const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+    const profileRef = useRef<HTMLDivElement>(null);
 
     const fetchNotifications = useCallback(async () => {
         setNotifLoading(true);
@@ -214,17 +230,39 @@ export function DashboardLayout({
         }
     }, []);
 
-    // Close flyout on outside click
+    // Fetch coach profile for avatar
     useEffect(() => {
-        if (!notifOpen) return;
+        const fetchCoach = async () => {
+            try {
+                const res = await fetch(
+                    `${process.env.NEXT_PUBLIC_API_URL}/coaches/me`,
+                    { headers: await getAuthHeaders() }
+                );
+                if (res.ok) {
+                    const data = await res.json();
+                    setCoachName(data.name || null);
+                    setCoachEmail(data.email || null);
+                    setCoachAvatarUrl(data.avatarUrl || null);
+                }
+            } catch { /* silent */ }
+        };
+        fetchCoach();
+    }, []);
+
+    // Close flyouts on outside click
+    useEffect(() => {
+        if (!notifOpen && !profileMenuOpen) return;
         const handleClick = (e: MouseEvent) => {
-            if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
+            if (notifOpen && notifRef.current && !notifRef.current.contains(e.target as Node)) {
                 setNotifOpen(false);
+            }
+            if (profileMenuOpen && profileRef.current && !profileRef.current.contains(e.target as Node)) {
+                setProfileMenuOpen(false);
             }
         };
         document.addEventListener("mousedown", handleClick);
         return () => document.removeEventListener("mousedown", handleClick);
-    }, [notifOpen]);
+    }, [notifOpen, profileMenuOpen]);
 
     useEffect(() => {
         const {
@@ -367,7 +405,7 @@ export function DashboardLayout({
             {/* Main Content */}
             <div className="flex-1 flex flex-col min-h-dvh">
                 {/* Top Header */}
-                <header className="sticky top-0 z-30 h-16 bg-bg-primary/80 backdrop-blur-xl border-b border-border flex items-center justify-between px-6 shrink-0">
+                <header className="sticky top-0 z-30 h-16 bg-bg-primary/80 backdrop-blur-xl border-b border-border flex items-center justify-between px-4 sm:px-6 shrink-0">
                     <div className="flex items-center gap-4">
                         {/* Mobile menu toggle */}
                         <button
@@ -381,7 +419,7 @@ export function DashboardLayout({
                         {/* Page title */}
                         {title && (
                             <div>
-                                <h1 className="text-xl font-bold text-white tracking-tight" style={{ letterSpacing: "-0.02em" }}>{title}</h1>
+                                <h1 className="text-lg sm:text-xl font-bold text-white tracking-tight" style={{ letterSpacing: "-0.02em" }}>{title}</h1>
                                 {subtitle && (
                                     <p className="text-xs text-text-faint mt-0.5">{subtitle}</p>
                                 )}
@@ -417,7 +455,7 @@ export function DashboardLayout({
                                     animate={{ opacity: 1, y: 0, scale: 1 }}
                                     exit={{ opacity: 0, y: -4, scale: 0.97 }}
                                     transition={{ duration: 0.15, ease: "easeOut" }}
-                                    className="absolute right-0 top-full mt-2 w-80 max-h-96 bg-bg-secondary border border-border rounded-2xl shadow-card overflow-hidden z-50">
+                                    className="absolute right-0 top-full mt-2 w-[calc(100vw-2rem)] sm:w-80 max-h-96 bg-bg-secondary border border-border rounded-2xl shadow-card overflow-hidden z-50">
                                     <div className="flex items-center justify-between px-4 py-3 border-b border-border">
                                         <h3 className="text-sm font-semibold text-white">Notifications</h3>
                                         <Link
@@ -466,14 +504,62 @@ export function DashboardLayout({
                             )}
                             </AnimatePresence>
                         </div>
-                        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-violet to-brand-blue flex items-center justify-center text-white font-bold text-sm cursor-pointer hover:shadow-glow-violet transition-shadow">
-                            T
+                        <div className="relative" ref={profileRef}>
+                            <button
+                                onClick={() => setProfileMenuOpen(!profileMenuOpen)}
+                                className="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-violet to-brand-blue flex items-center justify-center text-white font-bold text-sm hover:shadow-glow-violet transition-shadow overflow-hidden"
+                                aria-label="Profile menu"
+                            >
+                                {coachAvatarUrl ? (
+                                    // eslint-disable-next-line @next/next/no-img-element
+                                    <img src={coachAvatarUrl} alt="" className="w-full h-full object-cover" />
+                                ) : (
+                                    getInitials(coachName)
+                                )}
+                            </button>
+
+                            <AnimatePresence>
+                                {profileMenuOpen && (
+                                    <motion.div
+                                        key="profile-dropdown"
+                                        initial={{ opacity: 0, y: -4, scale: 0.97 }}
+                                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                                        exit={{ opacity: 0, y: -4, scale: 0.97 }}
+                                        transition={{ duration: 0.15, ease: "easeOut" }}
+                                        className="absolute right-0 top-full mt-2 w-56 bg-bg-secondary border border-border rounded-2xl shadow-card overflow-hidden z-50"
+                                    >
+                                        <div className="px-4 py-3 border-b border-border">
+                                            <p className="text-sm font-medium text-white truncate">{coachName || "Coach"}</p>
+                                            {coachEmail && (
+                                                <p className="text-xs text-text-faint truncate">{coachEmail}</p>
+                                            )}
+                                        </div>
+                                        <div className="py-1">
+                                            <Link
+                                                href="/dashboard/settings"
+                                                onClick={() => setProfileMenuOpen(false)}
+                                                className="dropdown-item flex items-center gap-2"
+                                            >
+                                                <Settings className="w-4 h-4" />
+                                                Settings
+                                            </Link>
+                                            <button
+                                                onClick={() => { setProfileMenuOpen(false); handleLogout(); }}
+                                                className="dropdown-item flex items-center gap-2 w-full text-left text-brand-red hover:!text-brand-red"
+                                            >
+                                                <LogOut className="w-4 h-4" />
+                                                Log out
+                                            </button>
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
                         </div>
                     </div>
                 </header>
 
                 {/* Page Content */}
-                <main id="main-content" className="flex-1 p-6">
+                <main id="main-content" className="flex-1 p-3 sm:p-4 md:p-6">
                     {children}
                 </main>
             </div>

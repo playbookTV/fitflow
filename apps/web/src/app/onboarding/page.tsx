@@ -101,7 +101,7 @@ function OnboardingContent() {
 
             <div className="w-full max-w-xl relative z-10">
                 <div className="mb-8 text-center animation-fade-in">
-                    <h1 className="text-3xl font-bold tracking-tight mb-2 text-balance">Welcome to FitFlow</h1>
+                    <h1 className="text-2xl sm:text-3xl font-bold tracking-tight mb-2 text-balance">Welcome to FitFlow</h1>
                     <p className="text-text-secondary text-pretty">Let&apos;s personalize your fitness journey, {clientName || "there"}.</p>
                 </div>
 
@@ -126,7 +126,7 @@ function OnboardingContent() {
                         transition={{ duration: 0.2 }}
                     >
                         <div className="card-elevated backdrop-blur-xl shadow-card overflow-hidden">
-                            <div className="p-8 space-y-6">
+                            <div className="p-5 sm:p-8 space-y-5 sm:space-y-6">
                                 {step === 1 && (
                                     <div className="space-y-6">
                                         <div className="flex items-center gap-3 mb-2">
@@ -139,7 +139,7 @@ function OnboardingContent() {
                                                 <textarea
                                                     id="goals"
                                                     name="goals"
-                                                    placeholder="Example: Lose 5kg, build muscle, improve flexibility\u2026"
+                                                    placeholder="Example: Lose 5kg, build muscle, improve flexibility…"
                                                     className="textarea w-full"
                                                     value={formData.goals}
                                                     onChange={e => setFormData({ ...formData, goals: e.target.value })}
@@ -172,7 +172,7 @@ function OnboardingContent() {
                                                 <textarea
                                                     id="equipment"
                                                     name="equipment"
-                                                    placeholder="Full gym, dumbbells only, bodyweight\u2026"
+                                                    placeholder="Full gym, dumbbells only, bodyweight…"
                                                     className="textarea w-full"
                                                     value={formData.equipment}
                                                     onChange={e => setFormData({ ...formData, equipment: e.target.value })}
@@ -194,7 +194,7 @@ function OnboardingContent() {
                                                 <textarea
                                                     id="medical"
                                                     name="medicalNotes"
-                                                    placeholder="Previous knee surgery, lower back pain, none\u2026"
+                                                    placeholder="Previous knee surgery, lower back pain, none…"
                                                     className="textarea w-full"
                                                     value={formData.medicalNotes}
                                                     onChange={e => setFormData({ ...formData, medicalNotes: e.target.value })}
