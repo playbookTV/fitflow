@@ -91,6 +91,10 @@ export const EventType = {
     MESSAGE_FAILED: "message.failed",
     MESSAGE_WINDOW_CLOSED: "message.window_closed",
 
+    // Text commands
+    COMMAND_HANDLED: "message.command_handled",
+    WEIGHT_LOGGED: "checkin.weight_logged",
+
     // AI features
     AI_PLAN_GENERATED: "ai.plan_generated",
     AI_MEAL_PLAN_GENERATED: "ai.meal_plan_generated",

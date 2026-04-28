@@ -8,6 +8,7 @@ import { TemplateId } from "@fitflow/shared";
 import { differenceInDays, differenceInWeeks } from "date-fns";
 import { getFreshVideoUrl } from "../services/exerciseCache";
 import { assertSendSuccess } from "./assert-send";
+import { handleCommand } from "./commands";
 
 // Ensure all templates are registered
 import "../lib/templates";
@@ -321,11 +322,30 @@ export const messageWorker = new Worker(
     async (job: Job) => {
         if (job.name !== "process-message") return;
 
-        const { clientId, body } = job.data;
+        const { clientId, body, channel: jobChannel } = job.data;
         const normalizedBody = body.trim().toUpperCase();
 
         console.log(`[Message Worker] Processing message from ${clientId}: ${body}`);
 
+        // Try command router first (HELP, PROGRESS, WEIGHT, RPE)
+        const commandResponse = await handleCommand(normalizedBody, clientId, job.data.coachId, jobChannel);
+        if (commandResponse !== null) {
+            const cmdClient = await prisma.client.findUnique({
+                where: { id: clientId },
+                include: { coach: true },
+            });
+            if (cmdClient) {
+                const cmdChannel = await getChannel(cmdClient.preferredChannel, cmdClient.coachId);
+                const cmdRecipientId = getRecipientId(cmdClient);
+                const result = await cmdChannel.sendMessage(cmdRecipientId, commandResponse, cmdClient.id);
+                if (!result.success) {
+                    console.warn(`[Message Worker] Command response failed for ${clientId}: ${result.error}`);
+                }
+            }
+            return;
+        }
+
+        // Existing DONE/SKIP handling
         const isDone = normalizedBody === "DONE";
         const isSkipped = normalizedBody === "SKIP" || normalizedBody === "SKIPPED";
 
