@@ -21,6 +21,8 @@ export interface MetaTemplateDefinition {
     headerText?: string;
     bodyText: string;
     paramKeys: string[];
+    /** Sample values for each paramKey — required by Meta during template review. */
+    exampleValues: string[];
     /** WhatsApp Quick Reply button labels (max 3, each max 25 chars). */
     quickReplyButtons?: string[];
 }
@@ -41,6 +43,7 @@ export const META_TEMPLATES: Record<TemplateId, MetaTemplateDefinition> = {
             "Once I've reviewed your details, I'll be in touch to confirm your spot.\n\n" +
             "Best, {{4}} — your coach",
         paramKeys: ["client_first_name", "offer_name", "intake_link", "coach_first_name"],
+        exampleValues: ["Sarah", "12-Week Strength Programme", "https://app.fitflow.co/intake/abc123", "Coach Mike"],
     },
     [TemplateId.LEAD_PAYMENT_REQUEST]: {
         metaName: "fitflow_lead_payment_request",
@@ -54,6 +57,7 @@ export const META_TEMPLATES: Record<TemplateId, MetaTemplateDefinition> = {
             "Any questions before you go ahead, just ask.\n\n" +
             "Best, {{4}} — your coach",
         paramKeys: ["client_first_name", "offer_name", "payment_link", "coach_first_name"],
+        exampleValues: ["Sarah", "12-Week Strength Programme", "https://app.fitflow.co/pay/abc123", "Coach Mike"],
     },
     [TemplateId.LEAD_PAYMENT_CONFIRMED]: {
         metaName: "fitflow_lead_payment_confirmed",
@@ -66,6 +70,7 @@ export const META_TEMPLATES: Record<TemplateId, MetaTemplateDefinition> = {
             "Let's get to work.\n\n" +
             "Best, {{4}} — your coach",
         paramKeys: ["client_first_name", "offer_name", "programme_start_date", "coach_first_name"],
+        exampleValues: ["Sarah", "12-Week Strength Programme", "Monday 5 May", "Coach Mike"],
     },
 
     // ── Onboarding ───────────────────────────────────────────────
@@ -78,6 +83,7 @@ export const META_TEMPLATES: Record<TemplateId, MetaTemplateDefinition> = {
             "Before your first session, I need a few details to build your plan. This takes about 5 minutes and happens right here in WhatsApp.\n\n" +
             "Hit the button below to get started 👇",
         paramKeys: ["offer_name", "client_first_name"],
+        exampleValues: ["12-Week Strength Programme", "Sarah"],
     },
     [TemplateId.ONBOARDING_COMPLETE]: {
         metaName: "fitflow_onboarding_complete",
@@ -93,6 +99,7 @@ export const META_TEMPLATES: Record<TemplateId, MetaTemplateDefinition> = {
             "See you on {{2}} 💪\n\n" +
             "Best, {{4}} — your coach",
         paramKeys: ["client_first_name", "programme_start_date", "next_checkin_day", "coach_first_name"],
+        exampleValues: ["Sarah", "Monday 5 May", "Sunday", "Coach Mike"],
     },
 
     // ── Workout Delivery ─────────────────────────────────────────
@@ -105,6 +112,7 @@ export const META_TEMPLATES: Record<TemplateId, MetaTemplateDefinition> = {
             "{{3}}\n\n" +
             "Hit Done ✅ when you've finished, Skipped ⏭ if you can't make it today, or Modified 🔄 if you changed something.",
         paramKeys: ["workout_day_number", "workout_name", "exercise_list"],
+        exampleValues: ["3", "Upper Body Push", "1. Bench Press — 4 sets x 8 reps\n2. Overhead Press — 3 sets x 10 reps\n3. Lateral Raises — 3 sets x 12 reps"],
     },
     [TemplateId.WORKOUT_REST_DAY]: {
         metaName: "fitflow_workout_rest_day",
@@ -115,6 +123,7 @@ export const META_TEMPLATES: Record<TemplateId, MetaTemplateDefinition> = {
             "Recovery is part of the programme — take it seriously. Stay hydrated, move gently if you can, and I'll see you tomorrow.\n\n" +
             "Best, {{2}} — your coach",
         paramKeys: ["client_first_name", "coach_first_name"],
+        exampleValues: ["Sarah", "Coach Mike"],
     },
     [TemplateId.WORKOUT_WEEK_SUMMARY]: {
         metaName: "fitflow_workout_week_summary",
@@ -128,6 +137,7 @@ export const META_TEMPLATES: Record<TemplateId, MetaTemplateDefinition> = {
             "Your check-in is due tomorrow. I'll send it first thing. Keep the momentum going.\n\n" +
             "Best, {{4}} — your coach",
         paramKeys: ["programme_week", "total_weeks", "weekly_summary", "coach_first_name"],
+        exampleValues: ["3", "12", "Sessions completed: 4/5\nSessions skipped: 1\nConsistency rate: 80%", "Coach Mike"],
     },
     [TemplateId.WORKOUT_LOGGED_CONFIRMATION]: {
         metaName: "fitflow_workout_logged_confirm_v2",
@@ -137,6 +147,7 @@ export const META_TEMPLATES: Record<TemplateId, MetaTemplateDefinition> = {
             "🔥 Boom! Workout logged for Day {{1}}.\n\n" +
             "Great work, {{2}}! Your compliance is now {{3}}%. Keep it up! 🏋️",
         paramKeys: ["workout_day_number", "client_first_name", "compliance"],
+        exampleValues: ["3", "Sarah", "85"],
     },
 
     // ── Check-ins ────────────────────────────────────────────────
@@ -149,7 +160,8 @@ export const META_TEMPLATES: Record<TemplateId, MetaTemplateDefinition> = {
             "Check-in time, {{1}} 📋\n\n" +
             "Week {{2}} of {{3}}. Takes 2 minutes.",
         paramKeys: ["client_first_name", "programme_week", "total_weeks"],
-        quickReplyButtons: ["✅ Start Check-in"],
+        exampleValues: ["Sarah", "3", "12"],
+        quickReplyButtons: ["Start Check-in"],
     },
     [TemplateId.CHECKIN_COACH_ACK]: {
         metaName: "fitflow_checkin_coach_ack",
@@ -160,6 +172,7 @@ export const META_TEMPLATES: Record<TemplateId, MetaTemplateDefinition> = {
             "I'll review it today and adjust anything that needs tweaking. Keep doing what you're doing.\n\n" +
             "Best, {{2}} — your coach",
         paramKeys: ["client_first_name", "coach_first_name"],
+        exampleValues: ["Sarah", "Coach Mike"],
     },
     [TemplateId.CHECKIN_MISSED_NUDGE]: {
         metaName: "fitflow_checkin_missed_nudge_v3",
@@ -169,7 +182,8 @@ export const META_TEMPLATES: Record<TemplateId, MetaTemplateDefinition> = {
             "Hey {{1}}, just a nudge — your week {{2}} check-in is still outstanding.\n\n" +
             "Only takes 2 minutes.",
         paramKeys: ["client_first_name", "programme_week"],
-        quickReplyButtons: ["✅ Start Check-in"],
+        exampleValues: ["Sarah", "3"],
+        quickReplyButtons: ["Start Check-in"],
     },
 
     // ── At-Risk & Re-engagement ──────────────────────────────────
@@ -182,6 +196,7 @@ export const META_TEMPLATES: Record<TemplateId, MetaTemplateDefinition> = {
             "If something's come up or you need to adjust the schedule, just let me know. I'd rather know than have you fall off quietly.\n\n" +
             "Best, {{2}} — your coach",
         paramKeys: ["client_first_name", "coach_first_name"],
+        exampleValues: ["Sarah", "Coach Mike"],
     },
     [TemplateId.ATRISK_THREE_PLUS]: {
         metaName: "fitflow_atrisk_three_plus",
@@ -193,6 +208,7 @@ export const META_TEMPLATES: Record<TemplateId, MetaTemplateDefinition> = {
             "Even a quick reply helps me understand where you're at.\n\n" +
             "Best, {{2}} — your coach",
         paramKeys: ["client_first_name", "coach_first_name"],
+        exampleValues: ["Sarah", "Coach Mike"],
     },
     [TemplateId.ATRISK_LAPSED]: {
         metaName: "fitflow_atrisk_lapsed",
@@ -205,6 +221,7 @@ export const META_TEMPLATES: Record<TemplateId, MetaTemplateDefinition> = {
             "No pressure either way, but the door's open.\n\n" +
             "Best, {{2}} — your coach",
         paramKeys: ["client_first_name", "coach_first_name"],
+        exampleValues: ["Sarah", "Coach Mike"],
     },
 
     // ── Milestones ───────────────────────────────────────────────
@@ -218,6 +235,7 @@ export const META_TEMPLATES: Record<TemplateId, MetaTemplateDefinition> = {
             "Take a moment to recognise what you've put in. The second half is where the real results compound.\n\n" +
             "Best, {{4}} — your coach",
         paramKeys: ["client_first_name", "programme_week", "total_weeks", "coach_first_name"],
+        exampleValues: ["Sarah", "6", "12", "Coach Mike"],
     },
     [TemplateId.MILESTONE_COMPLETION]: {
         metaName: "fitflow_milestone_completion",
@@ -230,6 +248,7 @@ export const META_TEMPLATES: Record<TemplateId, MetaTemplateDefinition> = {
             "Genuinely proud of the work you've put in.\n\n" +
             "Best, {{4}} — your coach",
         paramKeys: ["offer_name", "client_first_name", "total_weeks", "coach_first_name"],
+        exampleValues: ["12-Week Strength Programme", "Sarah", "12", "Coach Mike"],
     },
 
     // ── Payments ─────────────────────────────────────────────────
@@ -244,6 +263,7 @@ export const META_TEMPLATES: Record<TemplateId, MetaTemplateDefinition> = {
             "Let me know if you have any questions.\n\n" +
             "Best, {{4}} — your coach",
         paramKeys: ["client_first_name", "amount", "payment_link", "coach_first_name"],
+        exampleValues: ["Sarah", "£149", "https://app.fitflow.co/pay/abc123", "Coach Mike"],
     },
 
     // ── Renewals ─────────────────────────────────────────────────
@@ -258,6 +278,7 @@ export const META_TEMPLATES: Record<TemplateId, MetaTemplateDefinition> = {
             "Renewing keeps your history, your plan, and your momentum intact. Happy to chat through what the next phase looks like if you're unsure.\n\n" +
             "Best, {{4}} — your coach",
         paramKeys: ["client_first_name", "renewal_date", "payment_link", "coach_first_name"],
+        exampleValues: ["Sarah", "12 May", "https://app.fitflow.co/pay/abc123", "Coach Mike"],
     },
     [TemplateId.RENEWAL_2DAY]: {
         metaName: "fitflow_renewal_2day",
@@ -269,6 +290,7 @@ export const META_TEMPLATES: Record<TemplateId, MetaTemplateDefinition> = {
             "If you're taking a break, no problem — just let me know so I can pause things cleanly.\n\n" +
             "Best, {{4}} — your coach",
         paramKeys: ["client_first_name", "renewal_date", "payment_link", "coach_first_name"],
+        exampleValues: ["Sarah", "12 May", "https://app.fitflow.co/pay/abc123", "Coach Mike"],
     },
     [TemplateId.RENEWAL_POST_EXPIRY]: {
         metaName: "fitflow_renewal_post_expiry",
@@ -281,6 +303,7 @@ export const META_TEMPLATES: Record<TemplateId, MetaTemplateDefinition> = {
             "If the timing isn't right, that's okay too. Just let me know either way.\n\n" +
             "Best, {{4}} — your coach",
         paramKeys: ["client_first_name", "renewal_date", "payment_link", "coach_first_name"],
+        exampleValues: ["Sarah", "28 April", "https://app.fitflow.co/pay/abc123", "Coach Mike"],
     },
 
     // ── Meal Delivery ─────────────────────────────────────────────
@@ -295,6 +318,7 @@ export const META_TEMPLATES: Record<TemplateId, MetaTemplateDefinition> = {
             "📊 {{4}}\n\n" +
             "Hit Done ✅ when you've followed today's plan, or Skipped ⏭ if you couldn't stick to it.",
         paramKeys: ["day_number", "plan_title", "meals_list", "macros_summary"],
+        exampleValues: ["3", "Lean Muscle Plan", "Breakfast: Oats with protein\nLunch: Chicken salad\nDinner: Salmon with rice", "Protein: 140g | Carbs: 200g | Fat: 55g | 1850 cal"],
     },
     [TemplateId.MEAL_REST_DAY]: {
         metaName: "fitflow_meal_rest_day",
@@ -305,6 +329,7 @@ export const META_TEMPLATES: Record<TemplateId, MetaTemplateDefinition> = {
             "Keep your protein up and stay hydrated. If you need ideas, check your plan in the dashboard — yesterday's meals work well as a repeat.\n\n" +
             "Best, {{2}} — your coach",
         paramKeys: ["client_first_name", "coach_first_name"],
+        exampleValues: ["Sarah", "Coach Mike"],
     },
     [TemplateId.MEAL_LOGGED_CONFIRMATION]: {
         metaName: "fitflow_meal_logged_confirm_v2",
@@ -314,6 +339,7 @@ export const META_TEMPLATES: Record<TemplateId, MetaTemplateDefinition> = {
             "🙌 Meal plan logged for Day {{1}}.\n\n" +
             "Nice work, {{2}}! Your meal compliance is now {{3}}%. Keep it up! 🥗",
         paramKeys: ["day_number", "client_first_name", "compliance"],
+        exampleValues: ["3", "Sarah", "90"],
     },
     [TemplateId.MEAL_MISSED_NUDGE]: {
         metaName: "fitflow_meal_missed_nudge_v3",
@@ -323,7 +349,8 @@ export const META_TEMPLATES: Record<TemplateId, MetaTemplateDefinition> = {
             "Hey {{1}}, quick reminder — did you follow yesterday's meal plan? (Day {{2}}, {{3}})\n\n" +
             "Even a rough log helps your coach keep your nutrition on track.",
         paramKeys: ["client_first_name", "day_number", "plan_title"],
-        quickReplyButtons: ["✅ Done", "⏭ Skipped"],
+        exampleValues: ["Sarah", "3", "Lean Muscle Plan"],
+        quickReplyButtons: ["Done", "Skipped"],
     },
 
     // ── Exercise Videos ──────────────────────────────────────────
@@ -336,6 +363,7 @@ export const META_TEMPLATES: Record<TemplateId, MetaTemplateDefinition> = {
             "{{2}}\n\n" +
             "Watch the video above and follow the form cues. Reach out if anything is unclear.",
         paramKeys: ["exercise_name", "_exercise_details"],
+        exampleValues: ["Barbell Squat", "4 sets x 8 reps\nKeep chest up, drive through heels"],
     },
 
     // ── System & Admin ───────────────────────────────────────────
@@ -350,6 +378,7 @@ export const META_TEMPLATES: Record<TemplateId, MetaTemplateDefinition> = {
             "Please use your name as the reference. Once I've received payment I'll confirm and get your programme set up straight away.\n\n" +
             "Best, {{4}} — your coach",
         paramKeys: ["client_first_name", "offer_name", "bank_transfer_details", "coach_first_name"],
+        exampleValues: ["Sarah", "12-Week Strength Programme", "Sort code: 12-34-56\nAccount: 12345678\nRef: Sarah Williams", "Coach Mike"],
     },
     [TemplateId.SYSTEM_BANK_CONFIRMED]: {
         metaName: "fitflow_system_bank_confirmed",
@@ -360,6 +389,7 @@ export const META_TEMPLATES: Record<TemplateId, MetaTemplateDefinition> = {
             "I'm activating your programme now. Your onboarding will arrive shortly.\n\n" +
             "Best, {{2}} — your coach",
         paramKeys: ["client_first_name", "coach_first_name"],
+        exampleValues: ["Sarah", "Coach Mike"],
     },
     [TemplateId.SYSTEM_BROADCAST]: {
         metaName: "fitflow_system_broadcast",
@@ -371,6 +401,7 @@ export const META_TEMPLATES: Record<TemplateId, MetaTemplateDefinition> = {
             "If you have any questions, just reply to this message.\n\n" +
             "Best, {{3}} — your coach",
         paramKeys: ["client_first_name", "broadcast_message", "coach_first_name"],
+        exampleValues: ["Sarah", "Just a heads up — I'll be on holiday from 15-20 May. Your workouts will still be delivered as normal.", "Coach Mike"],
     },
 };
 
@@ -385,7 +416,12 @@ export function buildCreatePayload(templateId: TemplateId) {
     if (def.headerText) {
         components.push({ type: "HEADER", format: "TEXT", text: def.headerText });
     }
-    components.push({ type: "BODY", text: def.bodyText });
+
+    const bodyComponent: any = { type: "BODY", text: def.bodyText };
+    if (def.exampleValues.length > 0) {
+        bodyComponent.example = { body_text: [def.exampleValues] };
+    }
+    components.push(bodyComponent);
 
     if (def.quickReplyButtons) {
         components.push({

@@ -1,6 +1,7 @@
 import { Lead, MessageChannel } from "@prisma/client";
 import { prisma } from "./prisma";
 import { sendTelegramMessage, sendTelegramInlineKeyboard } from "./telegram";
+import { escapeMarkdownV2Url } from "./templates/escape";
 import { createCheckoutSession } from "./stripe";
 import { logEvent, EventType } from "./event-logger";
 
@@ -121,7 +122,7 @@ async function sendStepPrompt(
                 chatId,
                 `Here's what you're signing up for:\n\n` +
                     `\u{1F4CB} *${escMd(programme)}* with ${escMd(coachName)}\n\n` +
-                    `By continuing, you agree to the [coaching terms \\& conditions](${escMd(termsUrl)})\\.\n\n` +
+                    `By continuing, you agree to the [coaching terms & conditions](${escapeMarkdownV2Url(termsUrl)})\\.\n\n` +
                     `Ready to proceed to payment?`,
                 [[{ text: "\u{2705} I Agree & Continue to Payment", callback_data: CB.AGREEMENT }]],
             );
@@ -194,9 +195,9 @@ export async function handleIntakeMessage(
                 await sendTelegramMessage(botToken, lead.telegramChatId!, "Please enter your first name.");
                 return true;
             }
+            await sendStepPrompt(botToken, lead.telegramChatId!, "age", { ...intake, name }, coachName);
             await updateIntake(lead.id, { step: "age", name });
             await prisma.lead.update({ where: { id: lead.id }, data: { name } });
-            await sendStepPrompt(botToken, lead.telegramChatId!, "age", { ...intake, name }, coachName);
             return true;
         }
 
@@ -210,8 +211,8 @@ export async function handleIntakeMessage(
                 );
                 return true;
             }
-            await updateIntake(lead.id, { step: "gender", age });
             await sendStepPrompt(botToken, lead.telegramChatId!, "gender", { ...intake, age }, coachName);
+            await updateIntake(lead.id, { step: "gender", age });
             return true;
         }
 
@@ -232,7 +233,6 @@ export async function handleIntakeMessage(
             });
             const offerName = freshLead?.offer?.name;
 
-            await updateIntake(lead.id, { step: "agreement", weight });
             await sendStepPrompt(
                 botToken,
                 lead.telegramChatId!,
@@ -241,6 +241,7 @@ export async function handleIntakeMessage(
                 coachName,
                 offerName || undefined
             );
+            await updateIntake(lead.id, { step: "agreement", weight });
             return true;
         }
     }
@@ -284,16 +285,16 @@ export async function handleIntakeCallback(
     // Gender selection
     if (callbackData.startsWith(CB.GENDER_PREFIX) && intake.step === "gender") {
         const gender = callbackData.replace(CB.GENDER_PREFIX, "");
-        await updateIntake(lead.id, { step: "goal", gender });
         await sendStepPrompt(botToken, chatId, "goal", { ...intake, gender }, coachName);
+        await updateIntake(lead.id, { step: "goal", gender });
         return true;
     }
 
     // Goal selection
     if (callbackData.startsWith(CB.GOAL_PREFIX) && intake.step === "goal") {
         const goal = callbackData.replace(CB.GOAL_PREFIX, "");
-        await updateIntake(lead.id, { step: "weight", goal });
         await sendStepPrompt(botToken, chatId, "weight", { ...intake, goal }, coachName);
+        await updateIntake(lead.id, { step: "weight", goal });
         return true;
     }
 

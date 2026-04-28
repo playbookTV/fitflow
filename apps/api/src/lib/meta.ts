@@ -20,6 +20,8 @@ export const MetaErrorCode = {
     RATE_LIMIT: 130429,
     /** Recipient phone number not on WhatsApp. */
     RECIPIENT_NOT_ON_WHATSAPP: 131026,
+    /** Template name does not exist or has no approved translation for the requested language. */
+    TEMPLATE_NOT_FOUND: 132001,
 } as const;
 
 /**

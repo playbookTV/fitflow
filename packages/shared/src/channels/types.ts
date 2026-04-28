@@ -14,6 +14,8 @@ export interface SendResult {
     success: boolean;
     messageId?: string;
     error?: string;
+    /** When false, the error is permanent (e.g. template not found) and should not be retried. */
+    retryable?: boolean;
 }
 
 export interface CheckInPrompt {

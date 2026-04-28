@@ -7,9 +7,16 @@ import {
     VideoPayload,
     TemplateId,
 } from "@fitflow/shared";
-import { sendWhatsAppMessage, sendWhatsAppVideo, MetaApiError } from "../meta";
+import { sendWhatsAppMessage, sendWhatsAppVideo, MetaApiError, MetaErrorCode } from "../meta";
 import { buildSendPayload, getTemplateCategory } from "../templates/meta-templates";
 import { isWindowOpen } from "./window-check";
+
+/** Meta error codes that will never succeed on retry. */
+const NON_RETRYABLE_CODES = new Set<number>([
+    MetaErrorCode.TEMPLATE_NOT_FOUND,
+    MetaErrorCode.RECIPIENT_NOT_ON_WHATSAPP,
+    MetaErrorCode.REENGAGEMENT_MESSAGE,
+]);
 
 /**
  * WhatsApp adapter implementing the DeliveryChannel interface.
@@ -65,6 +72,7 @@ export class WhatsAppAdapter implements DeliveryChannel {
                 return {
                     success: false,
                     error: `24-hour window closed. Cannot send UTILITY template ${templateId} outside the customer service window.`,
+                    retryable: false,
                 };
             }
         }
@@ -79,18 +87,22 @@ export class WhatsAppAdapter implements DeliveryChannel {
         } catch (error: any) {
             const metaError = error instanceof MetaApiError ? error : null;
 
+            const isNonRetryable = metaError ? NON_RETRYABLE_CODES.has(metaError.code) : false;
+
             // Surface a specific message for 24-hour window errors that slipped past the pre-check
             // (e.g. window closed between check and send, or clientId wasn't provided for pre-check)
             if (metaError?.isWindowClosed) {
                 return {
                     success: false,
                     error: `24-hour window closed for recipient. Template ${templateId} (${category}) was rejected by Meta.`,
+                    retryable: false,
                 };
             }
 
             return {
                 success: false,
                 error: error.message || `Failed to send WhatsApp template ${templateId}`,
+                retryable: !isNonRetryable,
             };
         }
     }

@@ -65,7 +65,8 @@ router.post("/", async (req, res) => {
             if (!client) {
                 // Check if this is a lead going through intake
                 const lead = await prisma.lead.findFirst({
-                    where: { telegramChatId: chatId },
+                    where: { telegramChatId: chatId, status: { not: "CONVERTED" } },
+                    orderBy: { createdAt: "desc" },
                 });
                 if (lead) {
                     const coach = await prisma.coach.findUnique({ where: { id: lead.coachId } });
@@ -182,7 +183,8 @@ router.post("/", async (req, res) => {
             if (!client) {
                 // Fall back to Lead lookup — store message against the lead
                 const lead = await prisma.lead.findFirst({
-                    where: { telegramChatId: chatId },
+                    where: { telegramChatId: chatId, status: { not: "CONVERTED" } },
+                    orderBy: { createdAt: "desc" },
                 });
 
                 if (lead) {

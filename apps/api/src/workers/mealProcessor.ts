@@ -5,6 +5,7 @@ import { getChannel, getRecipientId } from "../lib/channels/channel-router";
 import { connection } from "../lib/queue";
 import { JobType } from "../lib/types";
 import { logEvent, EventType } from "../lib/event-logger";
+import { assertSendSuccess } from "./assert-send";
 
 const CATEGORY_ORDER = ["breakfast", "snack", "lunch", "dinner"] as const;
 
@@ -145,18 +146,18 @@ export const mealWorker = new Worker(
                 compliance: assignment.compliance,
             }, client.id);
 
-            if (result?.success) {
-                await logEvent(EventType.MEAL_DELIVERED, {
-                    coachId: client.coachId,
-                    clientId: client.id,
-                    channel: client.preferredChannel,
-                    metadata: {
-                        planTitle: assignment.plan.title,
-                        dayNumber: mealDay,
-                        assignmentId,
-                    },
-                });
-            }
+            assertSendSuccess(result, `Meal delivery for client ${clientId}`);
+
+            await logEvent(EventType.MEAL_DELIVERED, {
+                coachId: client.coachId,
+                clientId: client.id,
+                channel: client.preferredChannel,
+                metadata: {
+                    planTitle: assignment.plan.title,
+                    dayNumber: mealDay,
+                    assignmentId,
+                },
+            });
 
             console.log(`[MealWorker] Job ${job.id} completed`);
         } catch (error) {

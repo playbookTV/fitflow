@@ -7,6 +7,7 @@ import { logEvent, EventType } from "../lib/event-logger";
 import { TemplateId } from "@fitflow/shared";
 import { differenceInDays, differenceInWeeks } from "date-fns";
 import { getFreshVideoUrl } from "../services/exerciseCache";
+import { assertSendSuccess } from "./assert-send";
 
 // Ensure all templates are registered
 import "../lib/templates";
@@ -72,14 +73,16 @@ export const workoutWorker = new Worker(
                         .join("\n");
                 }
 
-                await channel.sendTemplate(recipientId, TemplateId.WORKOUT_DAILY, {
+                const result = await channel.sendTemplate(recipientId, TemplateId.WORKOUT_DAILY, {
                     workout_day_number: workoutDay,
                     workout_name: workoutName,
                     exercise_list: exerciseList,
                     clientId: client.id,
                 });
+                assertSendSuccess(result, `Workout delivery for client ${client.id}`);
 
                 // Send demo videos for exercises that have YMove IDs
+                let videosFailed = 0;
                 if (matchingDay?.exercises && channel.sendVideo) {
                     const ymoveExercises = matchingDay.exercises.filter(
                         (we) => we.exercise.ymoveId
@@ -96,12 +99,18 @@ export const workoutWorker = new Worker(
                                 .filter(Boolean)
                                 .join("\n");
 
-                            await channel.sendVideo(recipientId, {
+                            const result = await channel.sendVideo(recipientId, {
                                 videoUrl,
                                 caption,
                                 clientId: client.id,
                             });
+                            if (!result.success) {
+                                throw new Error(
+                                    `Failed to send exercise video via ${client.preferredChannel}: ${result.error || "unknown error"}`
+                                );
+                            }
                         } catch (err) {
+                            videosFailed++;
                             console.error(
                                 `[Workout Worker] Failed to send video for exercise ${we.exercise.name}:`,
                                 err
@@ -114,7 +123,7 @@ export const workoutWorker = new Worker(
                     coachId: client.coachId,
                     clientId: client.id,
                     channel: client.preferredChannel,
-                    metadata: { planTitle: assignment.plan.title, dayNumber: workoutDay },
+                    metadata: { planTitle: assignment.plan.title, dayNumber: workoutDay, videosFailed },
                 });
             }
         } catch (error) {
@@ -164,9 +173,7 @@ export const checkinWorker = new Worker(
                 clientId: client.id,
             });
 
-            if (!result.success) {
-                throw new Error(`Failed to send check-in reminder via ${client.preferredChannel}: ${result.error}`);
-            }
+            assertSendSuccess(result, `Check-in reminder for client ${clientId} via ${client.preferredChannel}`);
 
             await logEvent(EventType.CHECKIN_SENT, {
                 coachId: client.coachId,
@@ -202,11 +209,12 @@ export const onboardingWorker = new Worker(
         if (job.name === JobType.ONBOARDING_INTAKE) {
             const offerName = client.goals || `${client.coach?.name ?? "Your coach"}'s Coaching`;
 
-            await channel.sendTemplate(recipientId, TemplateId.ONBOARDING_WELCOME, {
+            const welcomeResult = await channel.sendTemplate(recipientId, TemplateId.ONBOARDING_WELCOME, {
                 client_first_name: client.name.split(" ")[0],
                 offer_name: offerName,
                 clientId: client.id,
             });
+            assertSendSuccess(welcomeResult, `Onboarding welcome for client ${clientId}`);
 
             await logEvent(EventType.ONBOARDING_SENT, {
                 coachId: client.coachId,
@@ -218,12 +226,13 @@ export const onboardingWorker = new Worker(
             const offerName = job.data.offerName || client.goals || `${client.coach?.name ?? "Your coach"}'s Coaching`;
             const programmeStartDate = job.data.programmeStartDate || "soon";
 
-            await channel.sendTemplate(recipientId, TemplateId.LEAD_PAYMENT_CONFIRMED, {
+            const confirmResult = await channel.sendTemplate(recipientId, TemplateId.LEAD_PAYMENT_CONFIRMED, {
                 client_first_name: client.name.split(" ")[0],
                 coach_first_name: coachFirstName,
                 offer_name: offerName,
                 programme_start_date: programmeStartDate,
             });
+            assertSendSuccess(confirmResult, `Payment confirmed for client ${clientId}`);
 
             await logEvent(EventType.PAYMENT_CONFIRMED, {
                 coachId: client.coachId,
@@ -275,13 +284,14 @@ export const renewalWorker = new Worker(
             templateId = TemplateId.RENEWAL_7DAY;
         }
 
-        await channel.sendTemplate(recipientId, templateId, {
+        const renewalResult = await channel.sendTemplate(recipientId, templateId, {
             client_first_name: client.name.split(" ")[0],
             coach_first_name: coachFirstName,
             renewal_date: renewalDateStr,
             payment_link: paymentLink,
             renewal_amount: job.data.renewalAmount || "",
         });
+        assertSendSuccess(renewalResult, `Renewal reminder (${templateId}) for client ${clientId}`);
 
         await logEvent(EventType.CHECKIN_SENT, {
             coachId: client.coachId,
@@ -360,11 +370,14 @@ export const messageWorker = new Worker(
         const channel = await getChannel(client.preferredChannel, client.coachId);
         const recipientId = getRecipientId(client);
 
-        await channel.sendTemplate(recipientId, TemplateId.WORKOUT_LOGGED_CONFIRMATION, {
+        const confirmResult = await channel.sendTemplate(recipientId, TemplateId.WORKOUT_LOGGED_CONFIRMATION, {
             client_first_name: client.name.split(" ")[0],
             workout_day_number: dayNumber,
             compliance: newCompliance,
         });
+        if (!confirmResult.success) {
+            console.warn(`[Message Worker] Failed to send confirmation to ${clientId}: ${confirmResult.error}`);
+        }
 
         await logEvent(isDone ? EventType.WORKOUT_COMPLETED : EventType.WORKOUT_COMPLETED, {
             coachId: client.coachId,

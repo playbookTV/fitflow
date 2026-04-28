@@ -27,15 +27,21 @@ export async function sendExerciseToClient(params: {
 
     if (!channel.sendVideo) {
         // Fallback: send as text with URL
-        await channel.sendMessage(recipientId, `${caption}\n\n${videoUrl}`, clientId);
+        const fallbackResult = await channel.sendMessage(recipientId, `${caption}\n\n${videoUrl}`, clientId);
+        if (!fallbackResult.success) {
+            throw new Error(`Fallback message send failed: ${fallbackResult.error || "unknown error"}`);
+        }
         return;
     }
 
-    await channel.sendVideo(recipientId, {
+    const result = await channel.sendVideo(recipientId, {
         videoUrl,
         caption,
         clientId,
     });
+    if (!result.success) {
+        throw new Error(`Video send failed: ${result.error || "unknown error"}`);
+    }
 }
 
 /** Wraps sendExerciseToClient with a single retry on expired video URLs. */

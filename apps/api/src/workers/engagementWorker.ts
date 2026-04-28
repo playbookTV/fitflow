@@ -5,6 +5,7 @@ import { connection } from "../lib/queue";
 import { JobType } from "../lib/types";
 import { logEvent, EventType } from "../lib/event-logger";
 import { TemplateId } from "@fitflow/shared";
+import { assertSendSuccess } from "./assert-send";
 
 // Ensure all templates are registered
 import "../lib/templates";
@@ -39,10 +40,11 @@ export const engagementWorker = new Worker(
 
             switch (job.name) {
                 case JobType.MISSED_WORKOUT_FOLLOWUP: {
-                    await channel.sendTemplate(recipientId, TemplateId.ATRISK_MISSED_WORKOUT, {
+                    const missedResult = await channel.sendTemplate(recipientId, TemplateId.ATRISK_MISSED_WORKOUT, {
                         client_first_name: clientFirstName,
                         coach_first_name: coachFirstName,
                     });
+                    assertSendSuccess(missedResult, `Missed workout follow-up for client ${clientId}`);
 
                     await logEvent(EventType.MISSED_WORKOUT_FOLLOWUP_SENT, {
                         coachId: client.coachId,
@@ -53,10 +55,11 @@ export const engagementWorker = new Worker(
                 }
 
                 case JobType.ATRISK_DETECTION: {
-                    await channel.sendTemplate(recipientId, TemplateId.ATRISK_THREE_PLUS, {
+                    const atriskResult = await channel.sendTemplate(recipientId, TemplateId.ATRISK_THREE_PLUS, {
                         client_first_name: clientFirstName,
                         coach_first_name: coachFirstName,
                     });
+                    assertSendSuccess(atriskResult, `At-risk detection for client ${clientId}`);
 
                     await logEvent(EventType.ATRISK_ALERT_SENT, {
                         coachId: client.coachId,
@@ -67,10 +70,11 @@ export const engagementWorker = new Worker(
                 }
 
                 case JobType.REENGAGEMENT: {
-                    await channel.sendTemplate(recipientId, TemplateId.ATRISK_LAPSED, {
+                    const reengageResult = await channel.sendTemplate(recipientId, TemplateId.ATRISK_LAPSED, {
                         client_first_name: clientFirstName,
                         coach_first_name: coachFirstName,
                     });
+                    assertSendSuccess(reengageResult, `Re-engagement for client ${clientId}`);
 
                     await logEvent(EventType.REENGAGEMENT_SENT, {
                         coachId: client.coachId,
@@ -90,9 +94,7 @@ export const engagementWorker = new Worker(
                         clientId: client.id,
                     });
 
-                    if (!nudgeResult.success) {
-                        throw new Error(`Failed to send missed check-in nudge via ${client.preferredChannel}: ${nudgeResult.error}`);
-                    }
+                    assertSendSuccess(nudgeResult, `Missed check-in nudge for client ${clientId} via ${client.preferredChannel}`);
 
                     await logEvent(EventType.MISSED_CHECKIN_NUDGE_SENT, {
                         coachId: client.coachId,
@@ -106,20 +108,24 @@ export const engagementWorker = new Worker(
                 case JobType.MILESTONE_CHECK: {
                     const { milestoneType, programmeWeek, totalWeeks, offerName } = job.data;
 
+                    let milestoneResult;
                     if (milestoneType === "halfway") {
-                        await channel.sendTemplate(recipientId, TemplateId.MILESTONE_HALFWAY, {
+                        milestoneResult = await channel.sendTemplate(recipientId, TemplateId.MILESTONE_HALFWAY, {
                             client_first_name: clientFirstName,
                             coach_first_name: coachFirstName,
                             programme_week: programmeWeek,
                             total_weeks: totalWeeks,
                         });
                     } else if (milestoneType === "completion") {
-                        await channel.sendTemplate(recipientId, TemplateId.MILESTONE_COMPLETION, {
+                        milestoneResult = await channel.sendTemplate(recipientId, TemplateId.MILESTONE_COMPLETION, {
                             client_first_name: clientFirstName,
                             coach_first_name: coachFirstName,
                             offer_name: offerName,
                             total_weeks: totalWeeks,
                         });
+                    }
+                    if (milestoneResult) {
+                        assertSendSuccess(milestoneResult, `Milestone (${milestoneType}) for client ${clientId}`);
                     }
 
                     await logEvent(EventType.MILESTONE_SENT, {
@@ -147,12 +153,13 @@ export const engagementWorker = new Worker(
                         `\u{1F525} Consistency rate: ${consistencyRate}%`,
                     ].join("\n");
 
-                    await channel.sendTemplate(recipientId, TemplateId.WORKOUT_WEEK_SUMMARY, {
+                    const summaryResult = await channel.sendTemplate(recipientId, TemplateId.WORKOUT_WEEK_SUMMARY, {
                         programme_week: programmeWeek,
                         total_weeks: totalWeeks,
                         weekly_summary: weeklySummary,
                         coach_first_name: coachFirstName,
                     });
+                    assertSendSuccess(summaryResult, `Week summary for client ${clientId}`);
 
                     await logEvent(EventType.WEEK_SUMMARY_SENT, {
                         coachId: client.coachId,
