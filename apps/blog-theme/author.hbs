@@ -1,0 +1,38 @@
+{{!< default}}
+
+<div class="container">
+  <header class="archive-header">
+    <p class="archive-label">Author</p>
+    <h1>{{name}}</h1>
+  </header>
+
+  {{#if bio}}
+    <div class="author-card">
+      {{#if profile_image}}
+        <img src="{{img_url profile_image size="m"}}" alt="{{name}}">
+      {{/if}}
+      <div>
+        <h2>{{name}}</h2>
+        <p>{{bio}}</p>
+      </div>
+    </div>
+  {{/if}}
+
+  <div class="post-feed">
+    {{#foreach posts}}
+      {{> post-card}}
+    {{/foreach}}
+  </div>
+
+  {{#if pagination.pages}}
+    <nav class="pagination">
+      {{#if pagination.prev}}
+        <a href="{{pagination.prev}}">&larr; Newer</a>
+      {{/if}}
+      <span>Page {{pagination.page}} of {{pagination.pages}}</span>
+      {{#if pagination.next}}
+        <a href="{{pagination.next}}">Older &rarr;</a>
+      {{/if}}
+    </nav>
+  {{/if}}
+</div>

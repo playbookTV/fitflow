@@ -1,0 +1,36 @@
+<article class="post-card {{post_class}}">
+  <a href="{{url}}">
+    {{#if feature_image}}
+      <div class="post-card-image">
+        <img
+          srcset="{{img_url feature_image size="s"}} 300w,
+                  {{img_url feature_image size="m"}} 600w,
+                  {{img_url feature_image size="l"}} 1000w"
+          sizes="(max-width: 768px) 100vw, 400px"
+          src="{{img_url feature_image size="m"}}"
+          alt="{{#if feature_image_alt}}{{feature_image_alt}}{{else}}{{title}}{{/if}}"
+          loading="lazy"
+        >
+      </div>
+    {{/if}}
+
+    <div class="post-card-content">
+      {{#if primary_tag}}
+        <span class="post-card-tag">{{primary_tag.name}}</span>
+      {{/if}}
+
+      <h2 class="post-card-title">{{title}}</h2>
+
+      {{#if custom_excerpt}}
+        <p class="post-card-excerpt">{{custom_excerpt}}</p>
+      {{else}}
+        <p class="post-card-excerpt">{{excerpt words="30"}}</p>
+      {{/if}}
+
+      <div class="post-card-meta">
+        <span>{{date published_at format="D MMM YYYY"}}</span>
+        <span class="reading-time">{{reading_time}}</span>
+      </div>
+    </div>
+  </a>
+</article>

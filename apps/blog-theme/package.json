@@ -1,0 +1,42 @@
+{
+  "name": "fitflow-ghost-theme",
+  "description": "Custom Ghost theme for the FitFlow blog — dark, branded, membership-ready",
+  "version": "1.0.0",
+  "engines": {
+    "ghost": ">=5.0.0"
+  },
+  "license": "MIT",
+  "keywords": ["ghost-theme"],
+  "author": {
+    "name": "FitFlow",
+    "email": "hello@fitflow.app",
+    "url": "https://fitflow.app"
+  },
+  "config": {
+    "posts_per_page": 12,
+    "card_assets": true,
+    "custom": {
+      "title_font": {
+        "type": "select",
+        "options": ["Syne", "DM Sans"],
+        "default": "Syne"
+      },
+      "body_font": {
+        "type": "select",
+        "options": ["DM Sans", "Syne"],
+        "default": "DM Sans"
+      }
+    },
+    "image_sizes": {
+      "xxs": { "width": 30 },
+      "xs": { "width": 100 },
+      "s": { "width": 300 },
+      "m": { "width": 600 },
+      "l": { "width": 1000 },
+      "xl": { "width": 2000 }
+    }
+  },
+  "scripts": {
+    "validate": "npx gscan ."
+  }
+}

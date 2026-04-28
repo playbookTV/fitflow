@@ -1,0 +1,30 @@
+{{!< default}}
+
+<div class="container">
+  <div class="blog-hero">
+    <h1>{{@site.title}}</h1>
+    {{#if @site.description}}
+      <p>{{@site.description}}</p>
+    {{/if}}
+  </div>
+
+  <div class="post-feed">
+    {{#foreach posts}}
+      {{> post-card}}
+    {{/foreach}}
+  </div>
+
+  {{#if pagination.pages}}
+    <nav class="pagination">
+      {{#if pagination.prev}}
+        <a href="{{pagination.prev}}">&larr; Newer</a>
+      {{/if}}
+      <span>Page {{pagination.page}} of {{pagination.pages}}</span>
+      {{#if pagination.next}}
+        <a href="{{pagination.next}}">Older &rarr;</a>
+      {{/if}}
+    </nav>
+  {{/if}}
+</div>
+
+{{> newsletter-form}}

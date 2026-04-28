@@ -1,0 +1,12 @@
+<footer class="site-footer">
+  <div class="site-footer-inner">
+    <span class="footer-text">&copy; {{date format="YYYY"}} {{@site.title}}</span>
+    <ul class="footer-links">
+      <li><a href="https://fitflow.app">FitFlow</a></li>
+      {{#foreach navigation}}
+        <li><a href="{{url}}">{{label}}</a></li>
+      {{/foreach}}
+      <li><a href="https://fitflow.app/privacy">Privacy</a></li>
+    </ul>
+  </div>
+</footer>
