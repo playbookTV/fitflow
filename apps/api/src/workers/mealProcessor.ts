@@ -60,14 +60,14 @@ function buildGroupedMealsList(entries: MealEntryWithMeal[]) {
             let line = `  ${m.name}`;
             if (m.calories) line += ` \u2014 ${m.calories} cal`;
             if (entry.servingSize) line += ` (${entry.servingSize})`;
-            if (entry.notes) line += `\n  ${entry.notes}`;
+            if (entry.notes) line += ` — ${entry.notes}`;
             return line;
         });
-        sections.push(`*${label}*\n${lines.join("\n")}`);
+        sections.push(`${label}: ${lines.join(", ")}`);
     }
 
     return {
-        mealsList: sections.join("\n\n"),
+        mealsList: sections.join(" | "),
         protein: Math.round(totalProtein),
         carbs: Math.round(totalCarbs),
         fat: Math.round(totalFat),

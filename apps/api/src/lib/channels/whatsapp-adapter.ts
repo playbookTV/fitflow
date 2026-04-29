@@ -16,6 +16,7 @@ const NON_RETRYABLE_CODES = new Set<number>([
     MetaErrorCode.TEMPLATE_NOT_FOUND,
     MetaErrorCode.RECIPIENT_NOT_ON_WHATSAPP,
     MetaErrorCode.REENGAGEMENT_MESSAGE,
+    MetaErrorCode.TEMPLATE_PARAM_FORMAT,
 ]);
 
 /**

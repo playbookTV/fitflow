@@ -71,7 +71,7 @@ export const workoutWorker = new Worker(
                             if (we.notes) parts.push(we.notes);
                             return parts.join(" — ");
                         })
-                        .join("\n");
+                        .join(" | ");
                 }
 
                 const result = await channel.sendTemplate(recipientId, TemplateId.WORKOUT_DAILY, {

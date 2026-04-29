@@ -148,10 +148,10 @@ export const engagementWorker = new Worker(
                     } = job.data;
 
                     const weeklySummary = [
-                        `\u{2705} Sessions completed: ${sessionsCompleted}/${sessionsScheduled}`,
-                        `\u{23ED} Sessions skipped: ${sessionsSkipped}`,
-                        `\u{1F525} Consistency rate: ${consistencyRate}%`,
-                    ].join("\n");
+                        `Sessions completed: ${sessionsCompleted}/${sessionsScheduled}`,
+                        `Sessions skipped: ${sessionsSkipped}`,
+                        `Consistency rate: ${consistencyRate}%`,
+                    ].join(" | ");
 
                     const summaryResult = await channel.sendTemplate(recipientId, TemplateId.WORKOUT_WEEK_SUMMARY, {
                         programme_week: programmeWeek,

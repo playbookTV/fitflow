@@ -14,21 +14,24 @@ export async function handleCommand(
     coachId: string,
     channel: MessageChannel,
 ): Promise<string | null> {
-    if (normalizedBody === "HELP" || normalizedBody === "MENU") {
+    // Strip leading "/" so /help, /progress etc. work alongside bare commands
+    const body = normalizedBody.startsWith("/") ? normalizedBody.slice(1) : normalizedBody;
+
+    if (body === "HELP" || body === "MENU") {
         return helpCommand(channel);
     }
 
-    if (normalizedBody === "PROGRESS" || normalizedBody === "STATUS") {
+    if (body === "PROGRESS" || body === "STATUS") {
         return progressCommand(clientId);
     }
 
-    if (normalizedBody.startsWith("WEIGHT ")) {
-        const rawValue = normalizedBody.slice(7).trim();
+    if (body.startsWith("WEIGHT ")) {
+        const rawValue = body.slice(7).trim();
         return weightCommand(clientId, coachId, rawValue);
     }
 
-    if (normalizedBody.startsWith("RPE ")) {
-        const rawValue = normalizedBody.slice(4).trim();
+    if (body.startsWith("RPE ")) {
+        const rawValue = body.slice(4).trim();
         return rpeCommand(clientId, rawValue);
     }
 

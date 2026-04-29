@@ -22,6 +22,8 @@ export const MetaErrorCode = {
     RECIPIENT_NOT_ON_WHATSAPP: 131026,
     /** Template name does not exist or has no approved translation for the requested language. */
     TEMPLATE_NOT_FOUND: 132001,
+    /** Template parameter format error (newlines, tabs, or 4+ consecutive spaces). */
+    TEMPLATE_PARAM_FORMAT: 132018,
 } as const;
 
 /**
