@@ -81,3 +81,21 @@ export function formatTime(date: Date | string): string {
     minute: "2-digit",
   }).format(new Date(date));
 }
+
+export function formatDateSeparator(date: Date | string): string {
+  const d = new Date(date);
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const msgDate = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const diffDays = Math.floor(
+    (today.getTime() - msgDate.getTime()) / (1000 * 60 * 60 * 24),
+  );
+
+  if (diffDays === 0) return "Today";
+  if (diffDays === 1) return "Yesterday";
+  return new Intl.DateTimeFormat(undefined, {
+    day: "numeric",
+    month: "short",
+    year: diffDays > 365 ? "numeric" : undefined,
+  }).format(d);
+}

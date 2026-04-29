@@ -350,7 +350,7 @@ function SettingsContent() {
                                             <User className="w-5 h-5 text-brand-blue" />
                                             Personal Information
                                         </h3>
-                                        <div className="space-y-5">
+                                        <div className="space-y-5 form-horizontal">
                                             <div className="form-field">
                                                 <label htmlFor="settings-name" className="label-mono">Full Name</label>
                                                 <input
@@ -368,18 +368,20 @@ function SettingsContent() {
                                             </div>
                                             <div className="form-field">
                                                 <label htmlFor="settings-email" className="label-mono">Email Address</label>
-                                                <input
-                                                    id="settings-email"
-                                                    type="email"
-                                                    name="email"
-                                                    autoComplete="email"
-                                                    value={profile.email}
-                                                    disabled
-                                                    className="input opacity-60 cursor-not-allowed"
-                                                />
-                                                <p className="text-xs text-text-faint mt-1 text-pretty">
-                                                    Contact support to change your email
-                                                </p>
+                                                <div>
+                                                    <input
+                                                        id="settings-email"
+                                                        type="email"
+                                                        name="email"
+                                                        autoComplete="email"
+                                                        value={profile.email}
+                                                        disabled
+                                                        className="input w-full opacity-60 cursor-not-allowed"
+                                                    />
+                                                    <p className="text-xs text-text-faint mt-1 text-pretty">
+                                                        Contact support to change your email
+                                                    </p>
+                                                </div>
                                             </div>
                                             <div className="form-field">
                                                 <label htmlFor="settings-phone" className="label-mono">Phone Number</label>
@@ -398,21 +400,23 @@ function SettingsContent() {
                                             </div>
                                             <div className="form-field">
                                                 <label htmlFor="settings-slug" className="label-mono">Slug</label>
-                                                <input
-                                                    id="settings-slug"
-                                                    type="text"
-                                                    name="slug"
-                                                    autoComplete="off"
-                                                    value={profile.slug}
-                                                    onChange={(e) =>
-                                                        updateProfile({ slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-") })
-                                                    }
-                                                    className="input"
-                                                    placeholder="e.g. leslie-fitness"
-                                                />
-                                                <p className="text-[10px] text-text-faint mt-1">
-                                                    Used for your public profile and Telegram invite link
-                                                </p>
+                                                <div>
+                                                    <input
+                                                        id="settings-slug"
+                                                        type="text"
+                                                        name="slug"
+                                                        autoComplete="off"
+                                                        value={profile.slug}
+                                                        onChange={(e) =>
+                                                            updateProfile({ slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-") })
+                                                        }
+                                                        className="input w-full"
+                                                        placeholder="e.g. leslie-fitness"
+                                                    />
+                                                    <p className="text-[10px] text-text-faint mt-1">
+                                                        Used for your public profile and Telegram invite link
+                                                    </p>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -422,7 +426,7 @@ function SettingsContent() {
                                             <Building2 className="w-5 h-5 text-brand-violet" />
                                             Business Details
                                         </h3>
-                                        <div className="space-y-5">
+                                        <div className="space-y-5 form-horizontal">
                                             <div className="form-field">
                                                 <label htmlFor="settings-business-name" className="label-mono">Business Name</label>
                                                 <input
@@ -439,28 +443,30 @@ function SettingsContent() {
                                                 />
                                             </div>
                                             <div className="form-field">
-                                                <label htmlFor="settings-timezone" className="label-mono flex items-center gap-2">
-                                                    <Globe className="w-3.5 h-3.5" />
+                                                <label htmlFor="settings-timezone" className="label-mono sm:flex sm:items-center sm:justify-end gap-2">
+                                                    <Globe className="w-3.5 h-3.5 hidden sm:block" />
                                                     Timezone
                                                 </label>
-                                                <select
-                                                    id="settings-timezone"
-                                                    name="timezone"
-                                                    value={profile.timezone}
-                                                    onChange={(e) =>
-                                                        updateProfile({ timezone: e.target.value })
-                                                    }
-                                                    className="select"
-                                                >
-                                                    {timezones.map((tz) => (
-                                                        <option key={tz.value} value={tz.value}>
-                                                            {tz.label}
-                                                        </option>
-                                                    ))}
-                                                </select>
-                                                <p className="text-xs text-text-faint mt-1 text-pretty">
-                                                    Used for scheduling workout deliveries
-                                                </p>
+                                                <div>
+                                                    <select
+                                                        id="settings-timezone"
+                                                        name="timezone"
+                                                        value={profile.timezone}
+                                                        onChange={(e) =>
+                                                            updateProfile({ timezone: e.target.value })
+                                                        }
+                                                        className="select w-full"
+                                                    >
+                                                        {timezones.map((tz) => (
+                                                            <option key={tz.value} value={tz.value}>
+                                                                {tz.label}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                    <p className="text-xs text-text-faint mt-1 text-pretty">
+                                                        Used for scheduling workout deliveries
+                                                    </p>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -511,22 +517,24 @@ function SettingsContent() {
                                             <div className="flex-1 min-w-0 w-full">
                                                 <div className="form-field">
                                                     <label htmlFor="settings-bio" className="label-mono">Bio</label>
-                                                    <textarea
-                                                        id="settings-bio"
-                                                        name="bio"
-                                                        value={profile.bio || ""}
-                                                        onChange={(e) => {
-                                                            if (e.target.value.length <= 200) {
-                                                                updateProfile({ bio: e.target.value });
-                                                            }
-                                                        }}
-                                                        className="textarea"
-                                                        placeholder="Tell potential clients about yourself…"
-                                                        rows={3}
-                                                    />
-                                                    <p className="text-xs text-text-faint mt-1 text-right tabular-nums">
-                                                        {(profile.bio || "").length} / 200
-                                                    </p>
+                                                    <div>
+                                                        <textarea
+                                                            id="settings-bio"
+                                                            name="bio"
+                                                            value={profile.bio || ""}
+                                                            onChange={(e) => {
+                                                                if (e.target.value.length <= 200) {
+                                                                    updateProfile({ bio: e.target.value });
+                                                                }
+                                                            }}
+                                                            className="textarea w-full"
+                                                            placeholder="Tell potential clients about yourself…"
+                                                            rows={3}
+                                                        />
+                                                        <p className="text-xs text-text-faint mt-1 text-right tabular-nums">
+                                                            {(profile.bio || "").length} / 200
+                                                        </p>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>

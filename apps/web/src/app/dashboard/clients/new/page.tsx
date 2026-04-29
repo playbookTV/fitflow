@@ -106,7 +106,7 @@ export default function NewClientPage() {
                             Basic Information
                         </h2>
 
-                        <div className="space-y-5">
+                        <div className="space-y-5 form-horizontal">
                             <div className="form-field">
                                 <label htmlFor="name" className="label-mono">Full Name *</label>
                                 <input
@@ -122,12 +122,12 @@ export default function NewClientPage() {
                                 />
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                <div className="form-field">
-                                    <label htmlFor="phone" className="label-mono flex items-center gap-2">
-                                        <Phone className="w-3 h-3" aria-hidden="true" />
-                                        WhatsApp Number *
-                                    </label>
+                            <div className="form-field">
+                                <label htmlFor="phone" className="label-mono sm:flex sm:items-center sm:justify-end gap-2">
+                                    <Phone className="w-3 h-3 hidden sm:block" aria-hidden="true" />
+                                    WhatsApp Number *
+                                </label>
+                                <div>
                                     <input
                                         type="tel"
                                         id="phone"
@@ -143,23 +143,23 @@ export default function NewClientPage() {
                                         Include country code for WhatsApp delivery
                                     </p>
                                 </div>
+                            </div>
 
-                                <div className="form-field">
-                                    <label htmlFor="email" className="label-mono flex items-center gap-2">
-                                        <Mail className="w-3 h-3" aria-hidden="true" />
-                                        Email (Optional)
-                                    </label>
-                                    <input
-                                        type="email"
-                                        id="email"
-                                        name="email"
-                                        autoComplete="email"
-                                        value={formData.email}
-                                        onChange={handleChange}
-                                        className="input w-full"
-                                        placeholder="john@example.com"
-                                    />
-                                </div>
+                            <div className="form-field">
+                                <label htmlFor="email" className="label-mono sm:flex sm:items-center sm:justify-end gap-2">
+                                    <Mail className="w-3 h-3 hidden sm:block" aria-hidden="true" />
+                                    Email (Optional)
+                                </label>
+                                <input
+                                    type="email"
+                                    id="email"
+                                    name="email"
+                                    autoComplete="email"
+                                    value={formData.email}
+                                    onChange={handleChange}
+                                    className="input w-full"
+                                    placeholder="john@example.com"
+                                />
                             </div>
                         </div>
                     </div>
@@ -171,7 +171,7 @@ export default function NewClientPage() {
                             Goals & Notes
                         </h2>
 
-                        <div className="space-y-5">
+                        <div className="space-y-5 form-horizontal">
                             <div className="form-field">
                                 <label htmlFor="goals" className="label-mono">Client Goals</label>
                                 <textarea
@@ -186,9 +186,9 @@ export default function NewClientPage() {
                             </div>
 
                             <div className="form-field">
-                                <label htmlFor="notes" className="label-mono flex items-center gap-2">
-                                    <FileText className="w-3 h-3" aria-hidden="true" />
-                                    Coach Notes (Private)
+                                <label htmlFor="notes" className="label-mono sm:flex sm:items-center sm:justify-end gap-2">
+                                    <FileText className="w-3 h-3 hidden sm:block" aria-hidden="true" />
+                                    Coach Notes
                                 </label>
                                 <textarea
                                     id="notes"
@@ -210,28 +210,30 @@ export default function NewClientPage() {
                             Onboarding
                         </h2>
 
-                        <div className="space-y-5">
+                        <div className="space-y-5 form-horizontal">
                             <div className="form-field">
                                 <label htmlFor="status" className="label-mono">Initial Status</label>
-                                <select
-                                    id="status"
-                                    name="status"
-                                    value={formData.status}
-                                    onChange={handleChange}
-                                    className="select w-full"
-                                >
-                                    <option value="PENDING_PAYMENT">Pending Payment</option>
-                                    <option value="INTAKE_SENT">Send Intake Form</option>
-                                    <option value="ACTIVE">Active (Skip Onboarding)</option>
-                                </select>
-                                <p className="text-[10px] text-text-faint mt-1">
-                                    {formData.status === "PENDING_PAYMENT" &&
-                                        "Client will receive a payment link via WhatsApp"}
-                                    {formData.status === "INTAKE_SENT" &&
-                                        "Client will receive an intake questionnaire via WhatsApp"}
-                                    {formData.status === "ACTIVE" &&
-                                        "Client is ready for plan assignment immediately"}
-                                </p>
+                                <div>
+                                    <select
+                                        id="status"
+                                        name="status"
+                                        value={formData.status}
+                                        onChange={handleChange}
+                                        className="select w-full"
+                                    >
+                                        <option value="PENDING_PAYMENT">Pending Payment</option>
+                                        <option value="INTAKE_SENT">Send Intake Form</option>
+                                        <option value="ACTIVE">Active (Skip Onboarding)</option>
+                                    </select>
+                                    <p className="text-[10px] text-text-faint mt-1">
+                                        {formData.status === "PENDING_PAYMENT" &&
+                                            "Client will receive a payment link via WhatsApp"}
+                                        {formData.status === "INTAKE_SENT" &&
+                                            "Client will receive an intake questionnaire via WhatsApp"}
+                                        {formData.status === "ACTIVE" &&
+                                            "Client is ready for plan assignment immediately"}
+                                    </p>
+                                </div>
                             </div>
 
                             {formData.status === "INTAKE_SENT" && (

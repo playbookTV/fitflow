@@ -83,7 +83,7 @@
 @layer components {
   /* Mono label utility — refined from 10px to 11px, slightly less aggressive tracking */
   .label-mono {
-    @apply font-mono text-[11px] font-semibold tracking-[0.08em] uppercase text-text-faint;
+    @apply font-mono text-[11px] font-semibold tracking-[0.08em] uppercase text-text-secondary;
   }
 
   /* Card base with glass effect */
@@ -447,9 +447,18 @@
     border-color: rgba(37,211,102,0.30);
   }
 
-  /* Form field group */
+  /* Form field group — stacked by default */
   .form-field {
-    @apply space-y-3;
+    @apply flex flex-col gap-2;
+  }
+
+  /* Horizontal form layout — label left, input right */
+  .form-horizontal .form-field {
+    @apply sm:grid sm:grid-cols-[9rem_1fr] sm:gap-x-4 sm:items-start;
+  }
+
+  .form-horizontal .form-field > label {
+    @apply sm:text-right sm:pt-3;
   }
 
   /* Disabled states */
@@ -712,5 +721,27 @@
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid rgba(255, 255, 255, 0.08);
     color: var(--text-secondary, #a0a0a5);
+  }
+
+  /* Chat background — subtle dot grid for texture */
+  .chat-bg {
+    @apply bg-bg-primary/50;
+    background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,0.015) 1px, transparent 0);
+    background-size: 24px 24px;
+  }
+
+  /* Chat date separator — centered label with horizontal rules */
+  .chat-date-separator {
+    @apply flex items-center gap-4 py-3 my-2;
+  }
+
+  .chat-date-separator span {
+    @apply font-mono text-[10px] font-semibold tracking-[0.08em] uppercase text-text-faint whitespace-nowrap;
+  }
+
+  .chat-date-separator::before,
+  .chat-date-separator::after {
+    content: "";
+    @apply flex-1 h-px bg-border;
   }
 }

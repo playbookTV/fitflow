@@ -592,7 +592,7 @@ export default function BillingPage() {
                                 </div>
                             </div>
                         ) : (
-                            <div className="space-y-4">
+                            <div className="space-y-4 form-horizontal">
                                 <div className="form-field">
                                     <label htmlFor="billing-invoice-client" className="label-mono">Client</label>
                                     <select

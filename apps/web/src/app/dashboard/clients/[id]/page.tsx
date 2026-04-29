@@ -181,7 +181,7 @@ function AssignPlanModal({
                         </Link>
                     </div>
                 ) : (
-                    <div className="space-y-5">
+                    <div className="space-y-5 form-horizontal">
                         {/* Plan select */}
                         <div className="form-field">
                             <label className="label-mono" htmlFor="workoutPlan">Workout Plan</label>
@@ -365,7 +365,7 @@ function AssignMealPlanModal({
                         </Link>
                     </div>
                 ) : (
-                    <div className="space-y-5">
+                    <div className="space-y-5 form-horizontal">
                         <div className="form-field">
                             <label className="label-mono" htmlFor="mealPlan">Meal Plan</label>
                             <select
