@@ -2,7 +2,8 @@ import { vi } from "vitest";
 
 const mockMessageResponse = { messages: [{ id: "wamid.test123" }] };
 
-vi.mock("../../lib/meta", () => ({
+vi.mock("../../lib/meta", async (importOriginal) => ({
+    ...(await importOriginal<typeof import("../../lib/meta")>()),
     createFlow: vi.fn().mockResolvedValue({ id: "flow-123", name: "test-flow", status: "DRAFT", categories: ["OTHER"] }),
     uploadFlowJson: vi.fn().mockResolvedValue({ success: true }),
     publishFlow: vi.fn().mockResolvedValue({ success: true }),
