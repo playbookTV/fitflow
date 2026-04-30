@@ -490,7 +490,7 @@ function MessagesPageContent() {
 
                 {/* Chat View */}
                 <div className={cn(
-                    "flex-1 flex flex-col",
+                    "flex-1 min-w-0 flex flex-col",
                     !selectedConversation && "hidden md:flex"
                 )}>
                     {selectedConversation ? (
@@ -624,7 +624,7 @@ function MessagesPageContent() {
                                                         backgroundImage: "linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0) 100%)"
                                                     } : undefined}
                                                 >
-                                                    <p className="text-sm">{msg.content}</p>
+                                                    <p className="text-sm whitespace-pre-wrap break-words">{msg.content}</p>
                                                     {lastInGroup && (
                                                         <div className={cn(
                                                             "flex items-center justify-end gap-1 mt-1",
