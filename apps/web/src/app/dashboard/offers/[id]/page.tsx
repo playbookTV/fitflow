@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { cn, formatDate, formatRelative } from "@/lib/utils";
 import { getAuthHeaders } from "@/lib/auth";
+import posthog from "posthog-js";
 
 interface Lead {
     id: string;
@@ -83,6 +84,10 @@ export default function OfferDetailPage() {
 
     const handleCopy = () => {
         navigator.clipboard.writeText(offerUrl);
+        posthog.capture("offer_link_copied", {
+            offer_id: offer?.id,
+            offer_slug: offer?.slug,
+        });
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
     };

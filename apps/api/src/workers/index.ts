@@ -1,3 +1,4 @@
+import "../instrument";
 import { workersEnabled } from "../lib/background-jobs";
 
 if (workersEnabled()) {

@@ -104,15 +104,16 @@ export const META_TEMPLATES: Record<TemplateId, MetaTemplateDefinition> = {
 
     // ── Workout Delivery ─────────────────────────────────────────
     [TemplateId.WORKOUT_DAILY]: {
-        metaName: "fitflow_workout_daily_v2",
+        metaName: "fitflow_workout_daily_v3",
         category: "UTILITY",
         language: "en",
         bodyText:
             "Day {{1}} — {{2}} 💪\n\n" +
             "{{3}}\n\n" +
-            "Hit Done ✅ when you've finished, Skipped ⏭ if you can't make it today, or Modified 🔄 if you changed something.",
+            "Tap Done when you've finished, Skipped if you can't make it today, or Modified if you changed something.",
         paramKeys: ["workout_day_number", "workout_name", "exercise_list"],
         exampleValues: ["3", "Upper Body Push", "1. Bench Press — 4 sets x 8 reps\n2. Overhead Press — 3 sets x 10 reps\n3. Lateral Raises — 3 sets x 12 reps"],
+        quickReplyButtons: ["Done", "Skipped", "Modified"],
     },
     [TemplateId.WORKOUT_REST_DAY]: {
         metaName: "fitflow_workout_rest_day",
@@ -308,7 +309,7 @@ export const META_TEMPLATES: Record<TemplateId, MetaTemplateDefinition> = {
 
     // ── Meal Delivery ─────────────────────────────────────────────
     [TemplateId.MEAL_DAILY]: {
-        metaName: "fitflow_meal_daily",
+        metaName: "fitflow_meal_daily_v2",
         category: "UTILITY",
         language: "en",
         bodyText:
@@ -316,9 +317,10 @@ export const META_TEMPLATES: Record<TemplateId, MetaTemplateDefinition> = {
             "Plan: {{2}}\n\n" +
             "{{3}}\n\n" +
             "📊 {{4}}\n\n" +
-            "Hit Done ✅ when you've followed today's plan, or Skipped ⏭ if you couldn't stick to it.",
+            "Tap Done when you've followed today's plan, or Skipped if you couldn't stick to it.",
         paramKeys: ["day_number", "plan_title", "meals_list", "macros_summary"],
         exampleValues: ["3", "Lean Muscle Plan", "Breakfast: Oats with protein\nLunch: Chicken salad\nDinner: Salmon with rice", "Protein: 140g | Carbs: 200g | Fat: 55g | 1850 cal"],
+        quickReplyButtons: ["Done", "Skipped"],
     },
     [TemplateId.MEAL_REST_DAY]: {
         metaName: "fitflow_meal_rest_day",

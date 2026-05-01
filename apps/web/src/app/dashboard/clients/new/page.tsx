@@ -6,6 +6,7 @@ import Link from "next/link";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { ArrowLeft, User, Phone, Mail, Target, FileText, Send } from "lucide-react";
 import { getAuthHeaders } from "@/lib/auth";
+import posthog from "posthog-js";
 
 type ClientStatus = "PENDING_PAYMENT" | "INTAKE_SENT" | "ACTIVE";
 
@@ -71,6 +72,11 @@ export default function NewClientPage() {
             }
 
             const client = await response.json();
+            posthog.capture("client_created", {
+                client_id: client.id,
+                initial_status: formData.status,
+                send_intake: formData.sendIntake,
+            });
 
             if (formData.sendIntake && formData.status === "INTAKE_SENT") {
                 await fetch(`${process.env.NEXT_PUBLIC_API_URL}/clients/${client.id}/send-intake`, {

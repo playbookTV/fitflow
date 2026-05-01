@@ -1,6 +1,9 @@
+// Initialize Sentry before any other imports so auto-instrumentation can wrap them.
+import "./instrument";
 // Validate required env vars at startup (throws if any are missing)
 import { env } from "./lib/env";
 import express, { Express, Request, Response, NextFunction } from "express";
+import { Sentry } from "./lib/sentry";
 import cors from "cors";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
@@ -33,6 +36,7 @@ import subscriptionsRouter from "./routes/subscriptions";
 import subscriptionWebhookRouter from "./routes/subscription-webhook";
 import adminRouter from "./routes/admin";
 import { prisma } from "./lib/prisma";
+import posthog from "./lib/posthog";
 import { startDailyScheduler } from "./jobs/daily-scheduler";
 import { startWeeklyCheckinScheduler } from "./jobs/weekly-checkin";
 import { startRenewalScheduler } from "./jobs/renewal-scheduler";
@@ -173,9 +177,13 @@ app.use((_req: Request, res: Response) => {
     res.status(404).json({ error: "Not found" });
 });
 
+// Sentry error handler (must come before any other error middleware)
+Sentry.setupExpressErrorHandler(app);
+
 // Error handler
 app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
     console.error(err.stack);
+    posthog.captureException(err);
     res.status(500).json({ error: "Internal server error" });
 });
 
@@ -183,6 +191,10 @@ if (process.env.NODE_ENV !== "test") {
     app.listen(PORT, async () => {
         console.log(`✅ FitFlow API running on http://localhost:${PORT}`);
         await ensureSharedBot();
+    });
+
+    process.on("SIGTERM", async () => {
+        await posthog.shutdown();
     });
 }
 

@@ -1,0 +1,87 @@
+[
+  {
+    "event": "client created",
+    "description": "Coach adds a new client to their roster",
+    "file": "src/lib/event-logger.ts"
+  },
+  {
+    "event": "client activated",
+    "description": "Client transitions to ACTIVE status (plan assigned and coaching begins)",
+    "file": "src/lib/event-logger.ts"
+  },
+  {
+    "event": "client paused",
+    "description": "Coach pauses a client's coaching",
+    "file": "src/lib/event-logger.ts"
+  },
+  {
+    "event": "payment confirmed",
+    "description": "Client payment confirmed via Stripe checkout.session.completed webhook",
+    "file": "src/lib/event-logger.ts"
+  },
+  {
+    "event": "bank transfer confirmed",
+    "description": "Coach manually confirms a bank transfer payment",
+    "file": "src/lib/event-logger.ts"
+  },
+  {
+    "event": "plan assigned",
+    "description": "A workout plan is assigned to a client",
+    "file": "src/lib/event-logger.ts"
+  },
+  {
+    "event": "ai plan generated",
+    "description": "Coach uses AI to generate a workout plan for a client",
+    "file": "src/lib/event-logger.ts"
+  },
+  {
+    "event": "ai meal plan generated",
+    "description": "Coach uses AI to generate a meal plan for a client",
+    "file": "src/lib/event-logger.ts"
+  },
+  {
+    "event": "checkin completed",
+    "description": "Client completes a weekly check-in",
+    "file": "src/lib/event-logger.ts"
+  },
+  {
+    "event": "workout completed",
+    "description": "Client marks a workout as completed",
+    "file": "src/lib/event-logger.ts"
+  },
+  {
+    "event": "subscription created",
+    "description": "Coach subscribes to a FitFlow plan",
+    "file": "src/lib/event-logger.ts"
+  },
+  {
+    "event": "subscription upgraded",
+    "description": "Coach upgrades their FitFlow subscription tier",
+    "file": "src/lib/event-logger.ts"
+  },
+  {
+    "event": "subscription downgraded",
+    "description": "Coach downgrades their FitFlow subscription tier",
+    "file": "src/lib/event-logger.ts"
+  },
+  {
+    "event": "subscription canceled",
+    "description": "Coach cancels their FitFlow subscription",
+    "file": "src/lib/event-logger.ts"
+  },
+  {
+    "event": "coach onboarding completed",
+    "description": "Coach completes the onboarding flow",
+    "file": "src/lib/event-logger.ts"
+  },
+  {
+    "event": "trainer activated",
+    "description": "Coach adds their first client (activation milestone)",
+    "file": "src/lib/event-logger.ts"
+  },
+  {
+    "event": "coach signed up",
+    "description": "New coach account created on first authenticated request",
+    "file": "src/middleware/auth.ts"
+  }
+]

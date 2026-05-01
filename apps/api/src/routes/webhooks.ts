@@ -178,6 +178,9 @@ function resolveButtonAction(payload: string): { templateId: string; buttonLabel
 
 async function handleWorkoutButtonReply(client: any, buttonLabel: string) {
     const statusMap: Record<string, WorkoutStatus> = {
+        "Done": WorkoutStatus.COMPLETED,
+        "Skipped": WorkoutStatus.SKIPPED,
+        "Modified": WorkoutStatus.MODIFIED,
         "✅ Done": WorkoutStatus.COMPLETED,
         "⏭ Skipped": WorkoutStatus.SKIPPED,
         "🔄 Modified": WorkoutStatus.MODIFIED,
@@ -232,8 +235,8 @@ async function handleWorkoutButtonReply(client: any, buttonLabel: string) {
 }
 
 async function handleMealButtonReply(client: any, buttonLabel: string) {
-    const isCompleted = buttonLabel === "✅ Done";
-    const isSkipped = buttonLabel === "⏭ Skipped";
+    const isCompleted = buttonLabel === "Done" || buttonLabel === "✅ Done";
+    const isSkipped = buttonLabel === "Skipped" || buttonLabel === "⏭ Skipped";
     if (!isCompleted && !isSkipped) return;
 
     const mealAssignment = await prisma.mealAssignment.findFirst({

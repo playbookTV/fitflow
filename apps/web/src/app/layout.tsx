@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { DM_Sans, IBM_Plex_Mono, Newsreader } from "next/font/google";
 import { SkipNav } from "@/components/ui/SkipNav";
 import { ToastProvider } from "@/components/ui/Toast";
+import { PostHogProvider } from "@/app/providers";
 import "@/app/globals.css";
 
 const dmSans = DM_Sans({
@@ -49,7 +50,9 @@ export default function RootLayout({
         >
             <body className="min-h-dvh bg-bg-primary antialiased">
                 <SkipNav />
-                <ToastProvider>{children}</ToastProvider>
+                <PostHogProvider>
+                    <ToastProvider>{children}</ToastProvider>
+                </PostHogProvider>
             </body>
         </html>
     );

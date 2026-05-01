@@ -7,6 +7,7 @@ import { PricingTiers } from "@/components/PricingTiers";
 import { useSubscription } from "@/hooks/useSubscription";
 import { getAuthHeaders } from "@/lib/auth";
 import { cn, formatDate } from "@/lib/utils";
+import posthog from "posthog-js";
 import {
     Crown,
     CreditCard,
@@ -147,6 +148,7 @@ function SubscriptionPageInner() {
 
     const openPortal = async () => {
         setPortalLoading(true);
+        posthog.capture("billing_portal_opened", { current_tier: sub.tier });
         try {
             const res = await fetch(
                 `${process.env.NEXT_PUBLIC_API_URL}/subscriptions/portal`,

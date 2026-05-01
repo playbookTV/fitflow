@@ -1,5 +1,6 @@
 import { MessageChannel } from "@prisma/client";
 import { prisma } from "./prisma";
+import posthog from "./posthog";
 
 /**
  * Event type constants for the EventLog model.
@@ -29,6 +30,7 @@ export const EventType = {
     TEMPLATE_USED: "template.used",
     WORKOUT_DELIVERED: "workout.delivered",
     WORKOUT_COMPLETED: "workout.completed",
+    WORKOUT_DAY_EMPTY: "workout.day_empty",
 
     // Meal Plan
     MEAL_PLAN_ASSIGNED: "meal_plan.assigned",
@@ -110,6 +112,54 @@ interface LogEventParams {
     metadata?: Record<string, any>;
 }
 
+// Events forwarded to PostHog for product analytics (coachId is required as distinctId)
+const POSTHOG_TRACKED_EVENTS = new Set<EventTypeValue>([
+    EventType.CLIENT_CREATED,
+    EventType.CLIENT_ACTIVATED,
+    EventType.CLIENT_PAUSED,
+    EventType.CLIENT_INACTIVE,
+    EventType.PAYMENT_CONFIRMED,
+    EventType.BANK_TRANSFER_CONFIRMED,
+    EventType.PLAN_ASSIGNED,
+    EventType.WORKOUT_COMPLETED,
+    EventType.CHECKIN_COMPLETED,
+    EventType.AI_PLAN_GENERATED,
+    EventType.AI_MEAL_PLAN_GENERATED,
+    EventType.MEAL_PLAN_ASSIGNED,
+    EventType.SUBSCRIPTION_CREATED,
+    EventType.SUBSCRIPTION_UPGRADED,
+    EventType.SUBSCRIPTION_DOWNGRADED,
+    EventType.SUBSCRIPTION_CANCELED,
+    EventType.SUBSCRIPTION_RENEWED,
+    EventType.COACH_ONBOARDING_COMPLETED,
+    EventType.TRAINER_ACTIVATED,
+    EventType.INTAKE_COMPLETED,
+]);
+
+// Maps internal dot-notation event types to PostHog "[object] [verb]" names
+const POSTHOG_EVENT_NAMES: Partial<Record<EventTypeValue, string>> = {
+    [EventType.CLIENT_CREATED]: "client created",
+    [EventType.CLIENT_ACTIVATED]: "client activated",
+    [EventType.CLIENT_PAUSED]: "client paused",
+    [EventType.CLIENT_INACTIVE]: "client deactivated",
+    [EventType.PAYMENT_CONFIRMED]: "payment confirmed",
+    [EventType.BANK_TRANSFER_CONFIRMED]: "bank transfer confirmed",
+    [EventType.PLAN_ASSIGNED]: "plan assigned",
+    [EventType.WORKOUT_COMPLETED]: "workout completed",
+    [EventType.CHECKIN_COMPLETED]: "checkin completed",
+    [EventType.AI_PLAN_GENERATED]: "ai plan generated",
+    [EventType.AI_MEAL_PLAN_GENERATED]: "ai meal plan generated",
+    [EventType.MEAL_PLAN_ASSIGNED]: "meal plan assigned",
+    [EventType.SUBSCRIPTION_CREATED]: "subscription created",
+    [EventType.SUBSCRIPTION_UPGRADED]: "subscription upgraded",
+    [EventType.SUBSCRIPTION_DOWNGRADED]: "subscription downgraded",
+    [EventType.SUBSCRIPTION_CANCELED]: "subscription canceled",
+    [EventType.SUBSCRIPTION_RENEWED]: "subscription renewed",
+    [EventType.COACH_ONBOARDING_COMPLETED]: "coach onboarding completed",
+    [EventType.TRAINER_ACTIVATED]: "trainer activated",
+    [EventType.INTAKE_COMPLETED]: "intake completed",
+};
+
 /**
  * Log a structured event to the EventLog table.
  * Fire-and-forget: errors are logged but don't throw.
@@ -130,5 +180,18 @@ export async function logEvent(
         });
     } catch (error) {
         console.error(`[EventLogger] Failed to log event ${eventType}:`, error);
+    }
+
+    if (params.coachId && POSTHOG_TRACKED_EVENTS.has(eventType)) {
+        const phEventName = POSTHOG_EVENT_NAMES[eventType] ?? eventType;
+        posthog.capture({
+            distinctId: params.coachId,
+            event: phEventName,
+            properties: {
+                ...(params.clientId && { client_id: params.clientId }),
+                ...(params.channel && { channel: params.channel }),
+                ...(params.metadata && params.metadata),
+            },
+        });
     }
 }

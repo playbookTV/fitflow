@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { Request, Response, NextFunction } from "express";
 import { prisma } from "../lib/prisma";
+import posthog from "../lib/posthog";
 
 const supabase = createClient(
     process.env.SUPABASE_URL!,
@@ -88,6 +89,21 @@ export const authenticate = async (
                         },
                     });
                     knownCoachIds.set(user.id, Date.now());
+
+                    posthog.identify({
+                        distinctId: user.id,
+                        properties: {
+                            email: user.email,
+                            name: fullName || null,
+                        },
+                    });
+                    posthog.capture({
+                        distinctId: user.id,
+                        event: "coach signed up",
+                        properties: {
+                            email: user.email,
+                        },
+                    });
                 }
             } catch (upsertErr: any) {
                 // P2002 = unique constraint race — another concurrent request already created the coach

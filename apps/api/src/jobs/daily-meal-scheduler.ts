@@ -1,6 +1,6 @@
 import cron from "node-cron";
 import { mealQueue } from "../lib/queue";
-import { getDelayUntil7AM } from "../lib/time";
+import { getDelayUntilHour } from "../lib/time";
 import { JobType } from "../lib/types";
 import { prisma } from "../lib/prisma";
 import { formatSchedulerError } from "../lib/background-jobs";
@@ -28,7 +28,9 @@ export const startDailyMealScheduler = () => {
             for (const assignment of activeAssignments) {
                 if (assignment.scheduleDays.includes(dayOfWeek)) {
                     const timezone = assignment.client.timezone || "Europe/London";
-                    const delay = getDelayUntil7AM(timezone);
+                    // Meals are delivered 30 min before the workout (07:00) so the
+                    // client sees two distinct prompts and "Done"/"Skip" replies are unambiguous.
+                    const delay = getDelayUntilHour(6, 30, timezone);
 
                     const diffInMs = today.getTime() - assignment.startDate.getTime();
                     const currentWeek = Math.floor(diffInMs / (1000 * 60 * 60 * 24 * 7));

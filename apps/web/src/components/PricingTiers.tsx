@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { getAuthHeaders } from "@/lib/auth";
 import { formatCurrency } from "@/lib/tokens";
 import { Check, Loader2 } from "lucide-react";
+import posthog from "posthog-js";
 
 const tierGridVariants = {
     hidden: {},
@@ -81,6 +82,7 @@ export function PricingTiers({ tiers, currentTier, onSubscribed }: PricingTiersP
 
     const handleSubscribe = async (tier: string) => {
         setLoadingTier(tier);
+        posthog.capture("subscription_checkout_started", { tier, billing_interval: interval });
         try {
             const res = await fetch(
                 `${process.env.NEXT_PUBLIC_API_URL}/subscriptions/checkout`,
@@ -102,6 +104,7 @@ export function PricingTiers({ tiers, currentTier, onSubscribed }: PricingTiersP
             }
         } catch (err) {
             console.error("Checkout error:", err);
+            posthog.captureException(err);
         } finally {
             setLoadingTier(null);
         }
@@ -109,6 +112,11 @@ export function PricingTiers({ tiers, currentTier, onSubscribed }: PricingTiersP
 
     const handleChange = async (tier: string) => {
         setLoadingTier(tier);
+        posthog.capture("subscription_plan_changed", {
+            new_tier: tier,
+            previous_tier: currentTier,
+            billing_interval: interval,
+        });
         try {
             const res = await fetch(
                 `${process.env.NEXT_PUBLIC_API_URL}/subscriptions/change`,
@@ -129,6 +137,7 @@ export function PricingTiers({ tiers, currentTier, onSubscribed }: PricingTiersP
             }
         } catch (err) {
             console.error("Plan change error:", err);
+            posthog.captureException(err);
         } finally {
             setLoadingTier(null);
         }

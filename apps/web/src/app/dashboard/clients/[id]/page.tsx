@@ -16,6 +16,7 @@ import { StatusBadge } from "@/components/ui";
 import { Modal, ModalContent, ModalHeader, ModalTitle, ModalClose } from "@/components/ui/Modal";
 import { getAuthHeaders } from "@/lib/auth";
 import { DashboardLayout } from "@/components/DashboardLayout";
+import posthog from "posthog-js";
 
 interface CheckIn {
     id: string;
@@ -148,6 +149,12 @@ function AssignPlanModal({
 
             const assignment = await res.json();
             const plan = plans.find((p) => p.id === selectedPlanId);
+            posthog.capture("client_plan_assigned", {
+                client_id: clientId,
+                plan_id: selectedPlanId,
+                plan_title: plan?.title,
+                schedule_days: scheduleDays,
+            });
             onAssigned({
                 ...assignment,
                 plan: { id: selectedPlanId, title: plan?.title || "" },

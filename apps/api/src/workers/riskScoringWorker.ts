@@ -5,6 +5,7 @@ import { JobType } from "../lib/types";
 import { logEvent, EventType } from "../lib/event-logger";
 import { computeRiskScore, ClientRiskData } from "../services/riskScorer";
 import { generateRiskSummary } from "../services/aiRiskSummary";
+import { captureWorkerFailure } from "../lib/sentry";
 
 export const riskScoringWorker = new Worker(
     "risk-scoring",
@@ -118,4 +119,8 @@ export const riskScoringWorker = new Worker(
 
 riskScoringWorker.on("completed", (job) =>
     console.log(`[Risk Scoring Worker] Job ${job.id} completed`)
+);
+
+riskScoringWorker.on("failed", (job, err) =>
+    captureWorkerFailure("riskScoringWorker", err, { jobId: job?.id, jobName: job?.name })
 );

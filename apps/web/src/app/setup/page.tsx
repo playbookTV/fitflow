@@ -14,6 +14,7 @@ import { formatCurrency } from "@/lib/tokens";
 import { getAuthHeaders } from "@/lib/auth";
 import { ChipSelect } from "@/components/setup/ChipSelect";
 import { Logo } from "@/components/ui";
+import posthog from "posthog-js";
 
 // --- Constants ---
 
@@ -346,6 +347,12 @@ function SetupContent() {
             await fetch(`${API_URL}/coaches/onboarding/complete`, {
                 method: "POST",
                 headers,
+            });
+            posthog.capture("coach_setup_completed", {
+                specialities: form.specialities,
+                client_range: form.activeClientRange,
+                payment_model: form.paymentModel,
+                channel: form.messagingChoice,
             });
             router.replace("/dashboard");
         } catch {

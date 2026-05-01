@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { CheckCircle2, Loader2, Dumbbell, Activity, Heart } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
+import posthog from "posthog-js";
 
 function OnboardingContent() {
     const searchParams = useSearchParams();
@@ -46,10 +47,12 @@ function OnboardingContent() {
                 body: JSON.stringify({ clientId, token, ...formData })
             });
             if (res.ok) {
+                posthog.capture("client_intake_submitted", { client_id: clientId });
                 setSubmitted(true);
             }
         } catch (error) {
             console.error("Submission failed", error);
+            posthog.captureException(error);
         } finally {
             setLoading(false);
         }

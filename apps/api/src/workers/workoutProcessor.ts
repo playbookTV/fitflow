@@ -9,6 +9,7 @@ import { differenceInDays, differenceInWeeks } from "date-fns";
 import { getFreshVideoUrl } from "../services/exerciseCache";
 import { assertSendSuccess } from "./assert-send";
 import { handleCommand } from "./commands";
+import { captureWorkerFailure } from "../lib/sentry";
 
 // Ensure all templates are registered
 import "../lib/templates";
@@ -59,20 +60,50 @@ export const workoutWorker = new Worker(
                 // Find the matching WorkoutDay for this day number
                 const matchingDay = assignment.plan.days.find(d => d.dayNumber === workoutDay);
                 const workoutName = matchingDay?.title || assignment.plan.title;
+                const hasExercises = !!matchingDay?.exercises && matchingDay.exercises.length > 0;
 
-                // Build exercise list string
-                let exerciseList = "Check your dashboard for today's exercises.";
-                if (matchingDay?.exercises && matchingDay.exercises.length > 0) {
-                    exerciseList = matchingDay.exercises
-                        .map((we, i) => {
-                            const parts = [`${i + 1}. ${we.exercise.name}`];
-                            if (we.sets && we.reps) parts.push(`${we.sets} sets x ${we.reps} reps`);
-                            else if (we.sets) parts.push(`${we.sets} sets`);
-                            if (we.notes) parts.push(we.notes);
-                            return parts.join(" — ");
-                        })
-                        .join(" | ");
+                // No exercises for today — never tell the client to "check the dashboard"
+                // (no client dashboard exists). Send the rest-day template instead and
+                // emit WORKOUT_DAY_EMPTY so the coach is alerted to investigate.
+                if (!hasExercises) {
+                    const coachFirstName = client.coach?.name?.split(" ")[0] || "Your coach";
+                    const restResult = await channel.sendTemplate(recipientId, TemplateId.WORKOUT_REST_DAY, {
+                        client_first_name: client.name.split(" ")[0],
+                        coach_first_name: coachFirstName,
+                        clientId: client.id,
+                    });
+                    assertSendSuccess(restResult, `Workout rest-day delivery for client ${client.id}`);
+
+                    await logEvent(EventType.WORKOUT_DAY_EMPTY, {
+                        coachId: client.coachId,
+                        clientId: client.id,
+                        channel: client.preferredChannel,
+                        metadata: {
+                            assignmentId,
+                            planTitle: assignment.plan.title,
+                            dayNumber: workoutDay,
+                            reason: matchingDay ? "no_exercises" : "no_matching_day",
+                        },
+                    });
+
+                    await logEvent(EventType.WORKOUT_DELIVERED, {
+                        coachId: client.coachId,
+                        clientId: client.id,
+                        channel: client.preferredChannel,
+                        metadata: { planTitle: assignment.plan.title, dayNumber: workoutDay, restDay: true },
+                    });
+                    return;
                 }
+
+                const exerciseList = matchingDay!.exercises
+                    .map((we, i) => {
+                        const parts = [`${i + 1}. ${we.exercise.name}`];
+                        if (we.sets && we.reps) parts.push(`${we.sets} sets x ${we.reps} reps`);
+                        else if (we.sets) parts.push(`${we.sets} sets`);
+                        if (we.notes) parts.push(we.notes);
+                        return parts.join(" — ");
+                    })
+                    .join("\n");
 
                 const result = await channel.sendTemplate(recipientId, TemplateId.WORKOUT_DAILY, {
                     workout_day_number: workoutDay,
@@ -309,6 +340,11 @@ checkinWorker.on("completed", (job) => console.log(`[Checkin Worker] Job ${job.i
 onboardingWorker.on("completed", (job) => console.log(`[Onboarding Worker] Job ${job.id} completed`));
 renewalWorker.on("completed", (job) => console.log(`[Renewal Worker] Job ${job.id} completed`));
 
+workoutWorker.on("failed", (job, err) => captureWorkerFailure("workoutWorker", err, { jobId: job?.id, jobName: job?.name }));
+checkinWorker.on("failed", (job, err) => captureWorkerFailure("checkinWorker", err, { jobId: job?.id, jobName: job?.name }));
+onboardingWorker.on("failed", (job, err) => captureWorkerFailure("onboardingWorker", err, { jobId: job?.id, jobName: job?.name }));
+renewalWorker.on("failed", (job, err) => captureWorkerFailure("renewalWorker", err, { jobId: job?.id, jobName: job?.name }));
+
 /**
  * Worker to process incoming messages (Conversational Logging).
  * Handles "DONE" keyword from WhatsApp text messages.
@@ -345,11 +381,37 @@ export const messageWorker = new Worker(
             return;
         }
 
-        // Existing DONE/SKIP handling
+        // Plain-text DONE/SKIP/MODIFIED handling. Route to meal vs workout based
+        // on which template was most recently delivered to this client (within
+        // the last 18 hours), so a "Done" reply lands on the right log instead
+        // of always defaulting to workout.
         const isDone = normalizedBody === "DONE";
         const isSkipped = normalizedBody === "SKIP" || normalizedBody === "SKIPPED";
+        const isModified = normalizedBody === "MODIFIED" || normalizedBody === "MODIFY";
 
-        if (!isDone && !isSkipped) return;
+        if (!isDone && !isSkipped && !isModified) return;
+
+        const since = new Date(Date.now() - 18 * 60 * 60 * 1000);
+        const lastDelivery = await prisma.eventLog.findFirst({
+            where: {
+                clientId,
+                eventType: { in: [EventType.WORKOUT_DELIVERED, EventType.MEAL_DELIVERED] },
+                createdAt: { gte: since },
+            },
+            orderBy: { createdAt: "desc" },
+        });
+
+        const target: "workout" | "meal" =
+            lastDelivery?.eventType === EventType.MEAL_DELIVERED ? "meal" : "workout";
+
+        if (target === "meal") {
+            if (isModified) {
+                console.log(`[Message Worker] 'Modified' not supported for meals; ignoring for client ${clientId}`);
+                return;
+            }
+            await logMealFromText(clientId, isDone, normalizedBody);
+            return;
+        }
 
         const assignment = await prisma.planAssignment.findFirst({
             where: { clientId, isActive: true },
@@ -361,7 +423,9 @@ export const messageWorker = new Worker(
             return;
         }
 
-        const status = isDone ? "COMPLETED" : "SKIPPED";
+        let status: "COMPLETED" | "SKIPPED" | "MODIFIED" = "MODIFIED";
+        if (isDone) status = "COMPLETED";
+        else if (isSkipped) status = "SKIPPED";
         const dayNumber = differenceInDays(new Date(), assignment.startDate) + 1;
 
         const { newCompliance } = await prisma.$transaction(async (tx) => {
@@ -399,7 +463,7 @@ export const messageWorker = new Worker(
             console.warn(`[Message Worker] Failed to send confirmation to ${clientId}: ${confirmResult.error}`);
         }
 
-        await logEvent(isDone ? EventType.WORKOUT_COMPLETED : EventType.WORKOUT_COMPLETED, {
+        await logEvent(EventType.WORKOUT_COMPLETED, {
             coachId: client.coachId,
             clientId: client.id,
             channel: client.preferredChannel,
@@ -410,3 +474,61 @@ export const messageWorker = new Worker(
     },
     { connection }
 );
+
+async function logMealFromText(clientId: string, isDone: boolean, rawBody: string) {
+    const mealAssignment = await prisma.mealAssignment.findFirst({
+        where: { clientId, isActive: true },
+        include: { client: { include: { coach: true } } },
+    });
+
+    if (!mealAssignment) {
+        console.log(`[Message Worker] No active meal assignment for client ${clientId}`);
+        return;
+    }
+
+    const dayNumber = differenceInDays(new Date(), mealAssignment.startDate) + 1;
+    const status = isDone ? "COMPLETED" : "SKIPPED";
+
+    await prisma.mealLog.create({
+        data: {
+            clientId,
+            assignmentId: mealAssignment.id,
+            dayNumber,
+            status,
+            notes: `Logged via message '${rawBody}'`,
+        },
+    });
+
+    const totalLogs = await prisma.mealLog.count({ where: { assignmentId: mealAssignment.id } });
+    const completedLogs = await prisma.mealLog.count({
+        where: { assignmentId: mealAssignment.id, status: "COMPLETED" },
+    });
+    const compliance = totalLogs > 0 ? Math.round((completedLogs / totalLogs) * 100) : 100;
+
+    await prisma.mealAssignment.update({
+        where: { id: mealAssignment.id },
+        data: { compliance },
+    });
+
+    const { client } = mealAssignment;
+    const channel = await getChannel(client.preferredChannel, client.coachId);
+    const recipientId = getRecipientId(client);
+
+    const confirmResult = await channel.sendTemplate(recipientId, TemplateId.MEAL_LOGGED_CONFIRMATION, {
+        day_number: dayNumber,
+        client_first_name: client.name.split(" ")[0],
+        compliance,
+    });
+    if (!confirmResult.success) {
+        console.warn(`[Message Worker] Failed to send meal confirmation to ${clientId}: ${confirmResult.error}`);
+    }
+
+    await logEvent(EventType.MEAL_COMPLETED, {
+        coachId: client.coachId,
+        clientId,
+        channel: client.preferredChannel,
+        metadata: { dayNumber, compliance, status },
+    });
+
+    console.log(`[Message Worker] Meal ${status} for client ${clientId}, day ${dayNumber}, compliance ${compliance}%`);
+}

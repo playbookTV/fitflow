@@ -168,6 +168,8 @@ export const mealWorker = new Worker(
     { connection, concurrency: 5 }
 );
 
+import { captureWorkerFailure } from "../lib/sentry";
 mealWorker.on("failed", (job, err) => {
     console.error(`[MealWorker] Job ${job?.id} failed:`, err.message);
+    captureWorkerFailure("mealWorker", err, { jobId: job?.id, jobName: job?.name });
 });

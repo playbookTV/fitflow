@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { getAuthHeaders } from "@/lib/auth";
 import { Logo } from "@/components/ui";
 import { CheckCircle2 } from "lucide-react";
+import posthog from "posthog-js";
 
 function LoginContent() {
     const searchParams = useSearchParams();
@@ -29,8 +30,11 @@ function LoginContent() {
 
         if (error) {
             setError(error.message);
+            posthog.captureException(error);
             setLoading(false);
         } else {
+            posthog.identify(email, { email });
+            posthog.capture("coach_logged_in", { email });
             try {
                 const headers = await getAuthHeaders();
                 const res = await fetch(

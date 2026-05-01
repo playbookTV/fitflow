@@ -6,6 +6,7 @@ import { JobType } from "../lib/types";
 import { logEvent, EventType } from "../lib/event-logger";
 import { TemplateId } from "@fitflow/shared";
 import { assertSendSuccess } from "./assert-send";
+import { captureWorkerFailure } from "../lib/sentry";
 
 // Ensure all templates are registered
 import "../lib/templates";
@@ -183,4 +184,8 @@ export const engagementWorker = new Worker(
 
 engagementWorker.on("completed", (job) =>
     console.log(`[Engagement Worker] Job ${job.id} (${job.name}) completed`)
+);
+
+engagementWorker.on("failed", (job, err) =>
+    captureWorkerFailure("engagementWorker", err, { jobId: job?.id, jobName: job?.name })
 );

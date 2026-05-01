@@ -5,6 +5,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { Logo } from "@/components/ui";
 import { Mail } from "lucide-react";
+import posthog from "posthog-js";
 
 export default function RegisterPage() {
     const [email, setEmail] = useState("");
@@ -33,8 +34,11 @@ export default function RegisterPage() {
 
         if (error) {
             setError(error.message);
+            posthog.captureException(error);
             setLoading(false);
         } else {
+            posthog.identify(email, { email, name });
+            posthog.capture("coach_signed_up", { email, name });
             setEmailSent(true);
             setLoading(false);
         }

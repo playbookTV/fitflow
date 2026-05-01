@@ -6,6 +6,7 @@ import PlanBuilder from "@/components/PlanBuilder";
 import TemplatePicker from "@/components/TemplatePicker";
 import { DashboardLayout } from "@/components/DashboardLayout";
 import { Loader2 } from "lucide-react";
+import posthog from "posthog-js";
 
 function NewPlanContent() {
     const searchParams = useSearchParams();
@@ -21,6 +22,7 @@ function NewPlanContent() {
             subtitle="Start from a template or build your own"
         >
             <TemplatePicker onStartFromScratch={() => {
+                posthog.capture("plan_creation_started", { mode: "scratch" });
                 window.location.href = "/dashboard/plans/new?mode=scratch";
             }} />
         </DashboardLayout>
