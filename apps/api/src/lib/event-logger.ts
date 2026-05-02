@@ -37,6 +37,7 @@ export const EventType = {
     MEAL_TEMPLATE_USED: "meal_plan.template_used",
     MEAL_DELIVERED: "meal.delivered",
     MEAL_COMPLETED: "meal.completed",
+    MEAL_DAY_EMPTY: "meal.day_empty",
 
     // Check-in
     CHECKIN_SENT: "checkin.sent",

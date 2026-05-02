@@ -121,14 +121,44 @@ export const mealWorker = new Worker(
             const mealDay = (dayNumber % 7) || 7;
 
             const matchingDay = assignment.plan.days.find((d) => d.dayNumber === mealDay);
-
-            const hasEntries = matchingDay?.entries && matchingDay.entries.length > 0;
-            const mealData = hasEntries
-                ? buildGroupedMealsList(matchingDay.entries)
-                : { mealsList: "Check your dashboard for today's meals.", protein: 0, carbs: 0, fat: 0, calories: 0, totalPrepTime: "" };
-
+            const hasEntries = !!matchingDay?.entries && matchingDay.entries.length > 0;
             const clientFirstName = client.name.split(" ")[0];
 
+            // No entries for today — never tell the client to "check the dashboard"
+            // (no client dashboard exists). Send the rest-day template instead and
+            // emit MEAL_DAY_EMPTY so the coach is alerted to investigate.
+            if (!hasEntries) {
+                const coachFirstName = client.coach?.name?.split(" ")[0] || "Your coach";
+                const restResult = await channel.sendTemplate(recipientId, TemplateId.MEAL_REST_DAY, {
+                    client_first_name: clientFirstName,
+                    coach_first_name: coachFirstName,
+                }, client.id);
+                assertSendSuccess(restResult, `Meal rest-day delivery for client ${clientId}`);
+
+                await logEvent(EventType.MEAL_DAY_EMPTY, {
+                    coachId: client.coachId,
+                    clientId: client.id,
+                    channel: client.preferredChannel,
+                    metadata: {
+                        assignmentId,
+                        planTitle: assignment.plan.title,
+                        dayNumber: mealDay,
+                        reason: matchingDay ? "no_entries" : "no_matching_day",
+                    },
+                });
+
+                await logEvent(EventType.MEAL_DELIVERED, {
+                    coachId: client.coachId,
+                    clientId: client.id,
+                    channel: client.preferredChannel,
+                    metadata: { planTitle: assignment.plan.title, dayNumber: mealDay, assignmentId, restDay: true },
+                });
+
+                console.log(`[MealWorker] Job ${job.id} completed (rest day)`);
+                return;
+            }
+
+            const mealData = buildGroupedMealsList(matchingDay!.entries);
             const macrosSummary = `Protein: ${mealData.protein}g | Carbs: ${mealData.carbs}g | Fat: ${mealData.fat}g | ${mealData.calories} cal`;
 
             const result = await channel.sendTemplate(recipientId, TemplateId.MEAL_DAILY, {

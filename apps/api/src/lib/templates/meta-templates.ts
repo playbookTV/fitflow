@@ -323,12 +323,12 @@ export const META_TEMPLATES: Record<TemplateId, MetaTemplateDefinition> = {
         quickReplyButtons: ["Done", "Skipped"],
     },
     [TemplateId.MEAL_REST_DAY]: {
-        metaName: "fitflow_meal_rest_day",
+        metaName: "fitflow_meal_rest_day_v2",
         category: "UTILITY",
         language: "en",
         bodyText:
             "No structured meals today, {{1}} 🍃\n\n" +
-            "Keep your protein up and stay hydrated. If you need ideas, check your plan in the dashboard — yesterday's meals work well as a repeat.\n\n" +
+            "Keep your protein up and stay hydrated. Repeating yesterday's meals works well if you need a quick plan.\n\n" +
             "Best, {{2}} — your coach",
         paramKeys: ["client_first_name", "coach_first_name"],
         exampleValues: ["Sarah", "Coach Mike"],
