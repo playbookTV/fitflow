@@ -13,7 +13,8 @@ export interface WindowStatus {
  * Checks whether the WhatsApp 24-hour customer service window is open for a client.
  *
  * The window is open if the client sent an inbound message within the last 24 hours.
- * When the window is closed, only MARKETING-category templates can be sent.
+ * Only free-form session messages require the window to be open; approved templates
+ * (UTILITY, MARKETING, AUTHENTICATION) can be sent regardless of window status.
  */
 export async function isWindowOpen(clientId: string): Promise<boolean> {
     const status = await getWindowStatus(clientId);

@@ -60,24 +60,6 @@ export class WhatsAppAdapter implements DeliveryChannel {
     }
 
     async sendTemplate(recipientId: string, templateId: TemplateId, context: Record<string, any>, clientId?: string): Promise<SendResult> {
-        const category = getTemplateCategory(templateId);
-
-        // UTILITY templates require an open 24-hour window.
-        // MARKETING templates can be sent at any time (they're pre-approved for out-of-window delivery).
-        if (category === "UTILITY" && clientId) {
-            const windowOpen = await isWindowOpen(clientId);
-            if (!windowOpen) {
-                console.warn(
-                    `[WhatsApp] 24h window closed for client ${clientId} — UTILITY template ${templateId} blocked`
-                );
-                return {
-                    success: false,
-                    error: `24-hour window closed. Cannot send UTILITY template ${templateId} outside the customer service window.`,
-                    retryable: false,
-                };
-            }
-        }
-
         try {
             const templatePayload = buildSendPayload(templateId, context);
             const result = await sendWhatsAppMessage(recipientId, templatePayload, clientId);
@@ -90,12 +72,11 @@ export class WhatsAppAdapter implements DeliveryChannel {
 
             const isNonRetryable = metaError ? NON_RETRYABLE_CODES.has(metaError.code) : false;
 
-            // Surface a specific message for 24-hour window errors that slipped past the pre-check
-            // (e.g. window closed between check and send, or clientId wasn't provided for pre-check)
             if (metaError?.isWindowClosed) {
+                const category = getTemplateCategory(templateId);
                 return {
                     success: false,
-                    error: `24-hour window closed for recipient. Template ${templateId} (${category}) was rejected by Meta.`,
+                    error: `Meta rejected template ${templateId} (${category}) with a window-closed error.`,
                     retryable: false,
                 };
             }
