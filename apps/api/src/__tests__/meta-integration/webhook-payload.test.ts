@@ -9,6 +9,9 @@ import textMessage from "../fixtures/meta-webhooks/text-message.json";
 import statusUpdate from "../fixtures/meta-webhooks/status-update.json";
 import flowCheckin from "../fixtures/meta-webhooks/flow-response-checkin.json";
 import flowWorkout from "../fixtures/meta-webhooks/flow-response-workout.json";
+import templateButtonCheckin from "../fixtures/meta-webhooks/template-button-checkin.json";
+import { resolveButtonAction } from "../../routes/webhooks";
+import { TemplateId } from "@fitflow/shared";
 
 function verifyMetaSignature(rawBody: Buffer, signature: string, appSecret: string): boolean {
     const hmac = crypto.createHmac("sha256", appSecret);
@@ -107,6 +110,30 @@ describe("Meta Webhook Payload Validation", () => {
             expect(responseJson.flow_token).toContain("workoutlog_");
             expect(responseJson.status).toMatch(/^(COMPLETED|MODIFIED|SKIPPED)$/);
             expect(responseJson.rpe).toBeTruthy();
+        });
+
+        // Regression: Meta delivers template quick-reply taps as msg.type === "button"
+        // (not "interactive"). Previously the webhook handler only matched "interactive",
+        // so taps fell through to the empty-body text path and were silently dropped.
+        it("template quick-reply button tap has correct structure", () => {
+            const value = templateButtonCheckin.entry[0].changes[0].value;
+            const msg = value.messages[0];
+            expect(msg.type).toBe("button");
+            expect(msg.button.payload).toBe(`${TemplateId.CHECKIN_WEEKLY_PROMPT}:0`);
+            expect(msg.button.text).toBe("Start Check-in");
+        });
+
+        it("resolveButtonAction parses the check-in template payload", () => {
+            const action = resolveButtonAction(`${TemplateId.CHECKIN_WEEKLY_PROMPT}:0`);
+            expect(action).toEqual({
+                templateId: TemplateId.CHECKIN_WEEKLY_PROMPT,
+                buttonLabel: "Start Check-in",
+            });
+        });
+
+        it("resolveButtonAction returns null for unknown payloads", () => {
+            expect(resolveButtonAction("unknown.template:0")).toBeNull();
+            expect(resolveButtonAction("no-colon")).toBeNull();
         });
     });
 

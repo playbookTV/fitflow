@@ -8,6 +8,7 @@ import { routeCoachCommand } from "../handlers/coachCommandRouter";
 import { sendWhatsAppMessage, sendCheckinFlow, MetaErrorCode } from "../lib/meta";
 import { logEvent, EventType } from "../lib/event-logger";
 import { getChannel, getRecipientId } from "../lib/channels/channel-router";
+import { META_TEMPLATES } from "../lib/templates/meta-templates";
 import { differenceInDays } from "date-fns";
 
 const router: Router = Router();
@@ -162,15 +163,14 @@ async function handleWorkoutLogFlowResponse(clientId: string, data: FlowResponse
  * Resolves a Quick Reply button payload (e.g., "workout.daily:0") to an action string.
  * The payload format is `${templateId}:${buttonIndex}`.
  */
-function resolveButtonAction(payload: string): { templateId: string; buttonLabel: string } | null {
+export function resolveButtonAction(payload: string): { templateId: string; buttonLabel: string } | null {
     const colonIdx = payload.lastIndexOf(":");
     if (colonIdx === -1) return null;
 
     const templateId = payload.slice(0, colonIdx);
     const buttonIndex = Number.parseInt(payload.slice(colonIdx + 1), 10);
 
-    const { META_TEMPLATES } = require("../lib/templates/meta-templates");
-    const def = META_TEMPLATES[templateId];
+    const def = (META_TEMPLATES as Record<string, { quickReplyButtons?: string[] }>)[templateId];
     if (!def?.quickReplyButtons?.[buttonIndex]) return null;
 
     return { templateId, buttonLabel: def.quickReplyButtons[buttonIndex] };
@@ -284,6 +284,35 @@ async function handleCheckinButtonReply(client: any) {
         return;
     }
     await sendCheckinFlow(client.phone, flowId, client.id);
+}
+
+async function routeButtonTap(client: any, payload: string, displayText: string, metaMessageId: string) {
+    await prisma.message.create({
+        data: {
+            clientId: client.id,
+            channel: MessageChannel.WHATSAPP,
+            direction: MessageDirection.INBOUND,
+            content: `[Button] ${displayText || payload}`,
+            metaMessageId,
+            status: "received",
+        },
+    });
+
+    const action = resolveButtonAction(payload);
+    if (!action) {
+        console.warn(`[Webhook] Unknown button payload: ${payload}`);
+        return;
+    }
+
+    console.log(`[Webhook] Button reply: ${action.templateId} → ${action.buttonLabel}`);
+
+    if (action.templateId === TemplateId.WORKOUT_DAILY) {
+        await handleWorkoutButtonReply(client, action.buttonLabel);
+    } else if (action.templateId === TemplateId.MEAL_DAILY || action.templateId === TemplateId.MEAL_MISSED_NUDGE) {
+        await handleMealButtonReply(client, action.buttonLabel);
+    } else if (action.templateId === TemplateId.CHECKIN_WEEKLY_PROMPT || action.templateId === TemplateId.CHECKIN_MISSED_NUDGE) {
+        await handleCheckinButtonReply(client);
+    }
 }
 
 // GET /webhooks - Meta Webhook Verification
@@ -413,36 +442,20 @@ router.post("/", async (req, res) => {
                         continue;
                     }
 
-                    // Handle Quick Reply button responses
+                    // Handle interactive button responses (ad-hoc interactive messages)
                     if (msg.type === "interactive" && msg.interactive?.type === "button_reply") {
                         const buttonReply = msg.interactive.button_reply;
-                        const payload: string = buttonReply.id || "";
+                        await routeButtonTap(client, buttonReply.id || "", buttonReply.title || "", msg.id);
+                        continue;
+                    }
 
-                        await prisma.message.create({
-                            data: {
-                                clientId: client.id,
-                                channel: MessageChannel.WHATSAPP,
-                                direction: MessageDirection.INBOUND,
-                                content: `[Button] ${buttonReply.title || payload}`,
-                                metaMessageId: msg.id,
-                                status: "received",
-                            },
-                        });
-
-                        const action = resolveButtonAction(payload);
-                        if (action) {
-                            console.log(`[Webhook] Button reply: ${action.templateId} → ${action.buttonLabel}`);
-
-                            if (action.templateId === TemplateId.WORKOUT_DAILY) {
-                                await handleWorkoutButtonReply(client, action.buttonLabel);
-                            } else if (action.templateId === TemplateId.MEAL_DAILY || action.templateId === TemplateId.MEAL_MISSED_NUDGE) {
-                                await handleMealButtonReply(client, action.buttonLabel);
-                            } else if (action.templateId === TemplateId.CHECKIN_WEEKLY_PROMPT || action.templateId === TemplateId.CHECKIN_MISSED_NUDGE) {
-                                await handleCheckinButtonReply(client);
-                            }
-                        } else {
-                            console.warn(`[Webhook] Unknown button payload: ${payload}`);
-                        }
+                    // Handle template Quick Reply button taps. Meta delivers these as
+                    // msg.type === "button" with payload at msg.button.payload — distinct
+                    // from the "interactive" / "button_reply" shape above.
+                    if (msg.type === "button" && msg.button) {
+                        const payload: string = msg.button.payload || "";
+                        const text: string = msg.button.text || "";
+                        await routeButtonTap(client, payload, text, msg.id);
                         continue;
                     }
 
