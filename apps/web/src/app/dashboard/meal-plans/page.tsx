@@ -251,7 +251,7 @@ export default function MealPlansPage() {
             )}
             {/* Template Picker Modal */}
             <Modal open={showTemplatePicker} onOpenChange={setShowTemplatePicker}>
-                <ModalContent size="xl">
+                <ModalContent size="xl" description="Pick a template or start a meal plan from scratch.">
                     <ModalHeader>
                         <ModalTitle>New Meal Plan</ModalTitle>
                         <ModalClose />

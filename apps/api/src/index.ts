@@ -82,10 +82,14 @@ app.set("trust proxy", 1);
 
 // Middleware
 app.use(helmet());
-const allowedOrigins = [
+const allowedOrigins = Array.from(new Set([
     env.WEB_URL,
     ...(env.PREVIEW_URL ? [env.PREVIEW_URL] : []),
-];
+    ...(env.ALLOWED_ORIGINS
+        ? env.ALLOWED_ORIGINS.split(",").map((o) => o.trim()).filter(Boolean)
+        : []),
+]));
+console.log(`[cors] allowed origins: ${allowedOrigins.join(", ")}`);
 // Public routes (/p/*) allow any origin — they power external landing pages
 app.use("/p", cors());
 app.use(cors({

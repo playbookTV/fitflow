@@ -35,6 +35,7 @@ const envSchema = z.object({
     REDIS_URL: z.string().default("redis://localhost:6379"),
     WEB_URL: z.string().default("http://localhost:3000"),
     PREVIEW_URL: optionalUrl,
+    ALLOWED_ORIGINS: optionalString,
     PORT: z.coerce.number().int().default(3001),
     NODE_ENV: z.string().default("development"),
     SENTRY_DSN: optionalUrl,

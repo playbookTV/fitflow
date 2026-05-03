@@ -156,7 +156,7 @@ ${clientContext ? clientContext : "No specific client selected. Generate a gener
 ${instructions ? `COACH INSTRUCTIONS: ${instructions}` : "Generate a balanced 3-day full-body workout plan."}`;
 
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 30000);
+    const timeout = setTimeout(() => controller.abort(), 60000);
 
     let res: Response;
     try {
@@ -169,7 +169,7 @@ ${instructions ? `COACH INSTRUCTIONS: ${instructions}` : "Generate a balanced 3-
             },
             body: JSON.stringify({
                 model: "claude-haiku-4-5-20251001",
-                max_tokens: 4000,
+                max_tokens: 16000,
                 system: systemPrompt,
                 messages: [{ role: "user", content: userMessage }],
             }),
@@ -177,7 +177,7 @@ ${instructions ? `COACH INSTRUCTIONS: ${instructions}` : "Generate a balanced 3-
         });
     } catch (err: any) {
         if (err.name === "AbortError") {
-            throw new PlanGenerationError("AI generation timed out. Please try again.", 504);
+            throw new PlanGenerationError("AI generation timed out. Please try again with shorter instructions.", 504);
         }
         throw new PlanGenerationError("Failed to reach AI service. Please try again.", 502);
     } finally {
@@ -185,10 +185,17 @@ ${instructions ? `COACH INSTRUCTIONS: ${instructions}` : "Generate a balanced 3-
     }
 
     if (!res.ok) {
+        const body = await res.text().catch(() => "");
+        console.error("[aiPlanGenerator] Anthropic API error", res.status, body);
         throw new PlanGenerationError("AI service returned an error. Please try again.", 502);
     }
 
     const data = await res.json();
+
+    if (data.stop_reason === "max_tokens") {
+        throw new PlanGenerationError("Plan was too large to generate in one pass. Try fewer weeks or simpler instructions.", 422);
+    }
+
     let plan: GeneratedPlan;
     try {
         let raw = data.content[0].text.trim();

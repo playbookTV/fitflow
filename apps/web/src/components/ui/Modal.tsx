@@ -33,12 +33,14 @@ const ModalTrigger = Dialog.Trigger;
 
 interface ModalContentProps
     extends React.ComponentPropsWithoutRef<typeof Dialog.Content>,
-        VariantProps<typeof modalContentVariants> {}
+        VariantProps<typeof modalContentVariants> {
+    description?: string;
+}
 
 const ModalContent = React.forwardRef<
     React.ElementRef<typeof Dialog.Content>,
     ModalContentProps
->(({ className, size, children, ...props }, ref) => (
+>(({ className, size, children, description, ...props }, ref) => (
     <Dialog.Portal>
         <Dialog.Overlay className="modal-backdrop" style={{ overscrollBehavior: "contain" }} />
         <Dialog.Content
@@ -47,6 +49,9 @@ const ModalContent = React.forwardRef<
             style={{ overscrollBehavior: "contain" }}
             {...props}
         >
+            {description === undefined ? null : (
+                <Dialog.Description className="sr-only">{description}</Dialog.Description>
+            )}
             {children}
         </Dialog.Content>
     </Dialog.Portal>
@@ -80,6 +85,14 @@ const ModalTitle = React.forwardRef<
     <Dialog.Title ref={ref} className={cn("modal-title", className)} {...props} />
 ));
 ModalTitle.displayName = "ModalTitle";
+
+const ModalDescription = React.forwardRef<
+    React.ElementRef<typeof Dialog.Description>,
+    React.ComponentPropsWithoutRef<typeof Dialog.Description>
+>(({ className, ...props }, ref) => (
+    <Dialog.Description ref={ref} className={cn("modal-description", className)} {...props} />
+));
+ModalDescription.displayName = "ModalDescription";
 
 /* ------------------------------------------------------------------ */
 /*  Footer                                                             */
@@ -122,6 +135,7 @@ export {
     ModalContent,
     ModalHeader,
     ModalTitle,
+    ModalDescription,
     ModalFooter,
     ModalClose,
 };
