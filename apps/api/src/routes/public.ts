@@ -1,17 +1,36 @@
 import { Router } from "express";
 import { createHash, randomUUID } from "node:crypto";
+import { z } from "zod";
 import { prisma } from "../lib/prisma";
-import { MessageChannel } from "@prisma/client";
+import { env } from "../lib/env";
+import { MessageChannel, Prisma } from "@prisma/client";
 import { logEvent, EventType } from "../lib/event-logger";
 import { getChannel } from "../lib/channels/channel-router";
 import { getSharedBotUsername } from "../lib/bot-provisioner";
 
 const router: Router = Router();
 
-const IP_HASH_SALT = process.env.IP_HASH_SALT || "ftfw-profile-salt";
+const profileEventSchema = z.object({
+    event: z.enum(["channel_click", "redirect", "link_copied"]),
+    channel: z.string().max(20).optional().nullable(),
+    source: z.string().max(100).optional().nullable(),
+});
+
+const leadApplySchema = z.object({
+    name: z.string().min(1).max(100),
+    phone: z.string().regex(/^\+?[1-9]\d{6,14}$/).optional().nullable(),
+    email: z.string().email().max(255).optional().nullable(),
+    telegramChatId: z.string().max(64).optional().nullable(),
+    channel: z.enum(["WHATSAPP", "TELEGRAM", "wa", "tg"]).optional().nullable(),
+    source: z.string().max(100).optional().nullable(),
+    intakeData: z.record(z.unknown())
+        .refine((d) => JSON.stringify(d).length <= 8192, { message: "intakeData too large (max 8KB)" })
+        .optional()
+        .nullable(),
+});
 
 function hashIp(ip: string): string {
-    return createHash("sha256").update(ip + IP_HASH_SALT).digest("hex").slice(0, 16);
+    return createHash("sha256").update(ip + env.IP_HASH_SALT).digest("hex").slice(0, 16);
 }
 
 /**
@@ -73,7 +92,7 @@ router.get("/profile/:slug", async (req, res) => {
         }
 
         // 3. Build channel info
-        const displayNumber = process.env.META_WHATSAPP_DISPLAY_NUMBER || null;
+        const displayNumber = env.META_WHATSAPP_DISPLAY_NUMBER ?? null;
         const botUsername = getSharedBotUsername();
 
         const whatsappAvailable = coach.showWhatsapp && !!displayNumber;
@@ -153,12 +172,11 @@ router.get("/profile/:slug", async (req, res) => {
  */
 router.post("/profile/:slug/event", async (req, res) => {
     const { slug } = req.params;
-    const { event, channel, source } = req.body;
-
-    const validEvents = ["channel_click", "redirect", "link_copied"];
-    if (!event || !validEvents.includes(event)) {
-        return res.status(400).json({ error: "Invalid event type" });
+    const parsed = profileEventSchema.safeParse(req.body);
+    if (!parsed.success) {
+        return res.status(400).json({ error: "Invalid input", details: parsed.error.flatten() });
     }
+    const { event, channel, source } = parsed.data;
 
     try {
         const coach = await prisma.coach.findUnique({
@@ -249,9 +267,11 @@ router.get("/:coachSlug/:offerSlug", async (req, res) => {
  */
 router.post("/:coachSlug/:offerSlug/apply", async (req, res) => {
     const { coachSlug, offerSlug } = req.params;
-    const { name, phone, email, telegramChatId, channel, source, intakeData } = req.body;
-
-    if (!name) return res.status(400).json({ error: "Name is required" });
+    const parsed = leadApplySchema.safeParse(req.body);
+    if (!parsed.success) {
+        return res.status(400).json({ error: "Invalid input", details: parsed.error.flatten() });
+    }
+    const { name, phone, email, telegramChatId, channel, source, intakeData } = parsed.data;
 
     try {
         const coach = await prisma.coach.findUnique({
@@ -281,7 +301,7 @@ router.post("/:coachSlug/:offerSlug/apply", async (req, res) => {
                 telegramChatId: telegramChatId || null,
                 channelTag,
                 source: source || null,
-                intakeData: intakeData || null,
+                ...(intakeData ? { intakeData: intakeData as Prisma.InputJsonValue } : {}),
                 intakeToken,
             },
         });
@@ -300,7 +320,7 @@ router.post("/:coachSlug/:offerSlug/apply", async (req, res) => {
         if (channelTag === MessageChannel.WHATSAPP && phone) {
             try {
                 const adapter = await getChannel(MessageChannel.WHATSAPP, coach.id);
-                const intakeUrl = `${process.env.WEB_URL}/onboarding?id=${lead.id}&token=${intakeToken}`;
+                const intakeUrl = `${env.WEB_URL}/onboarding?id=${lead.id}&token=${intakeToken}`;
                 await adapter.sendOnboarding(phone, {
                     clientId: lead.id,
                     clientName: name,

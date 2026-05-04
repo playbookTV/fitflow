@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import { Router } from "express";
 import { MessageChannel, MessageDirection } from "@prisma/client";
 import { TemplateId } from "@fitflow/shared";
@@ -32,9 +33,17 @@ router.post("/", async (req, res) => {
         return;
     }
 
-    // Validate webhook secret — fail closed if missing or mismatched
-    const incomingSecret = req.headers["x-telegram-bot-api-secret-token"];
-    if (incomingSecret !== env.TG_WEBHOOK_SECRET) {
+    // Validate webhook secret — fail closed if missing or mismatched (timing-safe)
+    const incomingHeader = req.headers["x-telegram-bot-api-secret-token"];
+    const incomingSecret = typeof incomingHeader === "string" ? incomingHeader : "";
+    const expectedSecret = env.TG_WEBHOOK_SECRET ?? "";
+    const incomingBuf = Buffer.from(incomingSecret);
+    const expectedBuf = Buffer.from(expectedSecret);
+    const secretValid =
+        expectedBuf.length > 0 &&
+        incomingBuf.length === expectedBuf.length &&
+        crypto.timingSafeEqual(incomingBuf, expectedBuf);
+    if (!secretValid) {
         console.warn("[TG Webhook] Invalid or missing secret token — rejecting.");
         res.sendStatus(401);
         return;
@@ -155,7 +164,7 @@ router.post("/", async (req, res) => {
                 await sendTelegramMessage(
                     botToken,
                     chatId,
-                    `\u{1F4CA} Great! Please complete your check-in here:\n${process.env.WEB_URL}/dashboard/checkin`
+                    `\u{1F4CA} Great! Please complete your check-in here:\n${env.WEB_URL}/dashboard/checkin`
                 );
             }
 
@@ -308,12 +317,12 @@ async function handleStartCommand(botToken: string, chatId: string, text: string
         return;
     }
 
-    // Create a new lead for this coach
-    const telegramUser = `tg_${chatId}`;
+    // Create a new lead for this coach. The intake flow will overwrite this
+    // placeholder with the real name once the user provides it.
     const newLead = await prisma.lead.create({
         data: {
             coachId: coach.id,
-            name: telegramUser,
+            name: "New Telegram Lead",
             source: "telegram",
             telegramChatId: chatId,
             channelTag: MessageChannel.TELEGRAM,

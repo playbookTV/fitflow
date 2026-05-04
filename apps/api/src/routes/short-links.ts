@@ -1,11 +1,12 @@
 import { Router, Response } from "express";
 import { authenticate, AuthRequest } from "../middleware/auth";
 import { prisma } from "../lib/prisma";
+import { env } from "../lib/env";
 import QRCode from "qrcode";
 
 const router: Router = Router();
 
-const BASE_URL = () => process.env.WEB_URL || "http://localhost:3000";
+const BASE_URL = () => env.WEB_URL;
 
 // GET /short-links — list coach's short links
 router.get("/", authenticate, async (req: AuthRequest, res: Response) => {

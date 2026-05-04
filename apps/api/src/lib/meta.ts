@@ -1,10 +1,11 @@
 import axios from "axios";
 import { prisma } from "./prisma";
+import { env } from "./env";
 import { MessageChannel, MessageDirection } from "@prisma/client";
 
-const WA_ACCESS_TOKEN = process.env.META_WHATSAPP_ACCESS_TOKEN;
-const WA_PHONE_NUMBER_ID = process.env.META_WHATSAPP_PHONE_NUMBER_ID;
-const WA_BUSINESS_ACCOUNT_ID = process.env.META_WHATSAPP_BUSINESS_ACCOUNT_ID;
+const WA_ACCESS_TOKEN = env.META_WHATSAPP_ACCESS_TOKEN;
+const WA_PHONE_NUMBER_ID = env.META_WHATSAPP_PHONE_NUMBER_ID;
+const WA_BUSINESS_ACCOUNT_ID = env.META_WHATSAPP_BUSINESS_ACCOUNT_ID;
 
 const VERSION = "v22.0";
 

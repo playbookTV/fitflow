@@ -1,5 +1,6 @@
 import { Lead, MessageChannel } from "@prisma/client";
 import { prisma } from "./prisma";
+import { env } from "./env";
 import { sendTelegramMessage, sendTelegramInlineKeyboard } from "./telegram";
 import { escapeMarkdownV2Url } from "./templates/escape";
 import { createCheckoutSession } from "./stripe";
@@ -116,7 +117,7 @@ async function sendStepPrompt(
 
         case "agreement": {
             const programme = offerName || "coaching programme";
-            const termsUrl = `${process.env.WEB_URL || ""}/terms`;
+            const termsUrl = `${env.WEB_URL}/terms`;
             await sendTelegramInlineKeyboard(
                 botToken,
                 chatId,
@@ -326,7 +327,7 @@ export async function handleIntakeCallback(
                 // Still log the conversion below, just skip the payment link
             }
 
-            const webUrl = process.env.WEB_URL || "http://localhost:3000";
+            const webUrl = env.WEB_URL;
             const session = coach?.stripeAccountId && amountCents
                 ? await createCheckoutSession(
                     client.id,

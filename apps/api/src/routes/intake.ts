@@ -26,7 +26,7 @@ router.post("/", async (req, res) => {
                 data: {
                     goals: goals,
                     notes: `Medical: ${medicalNotes} \nEquipment: ${equipment} \nExperience: ${experience} `,
-                    status: "ACTIVE",
+                    status: "INTAKE_COMPLETE",
                     intakeToken: null,
                 }
             });

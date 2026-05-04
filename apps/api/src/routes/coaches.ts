@@ -1,6 +1,8 @@
 import { Router, Response } from "express";
 import { authenticate, AuthRequest } from "../middleware/auth";
 import { prisma } from "../lib/prisma";
+import { env } from "../lib/env";
+import { updateCoachSchema } from "../lib/schemas";
 import { getSharedBotUsername } from "../lib/bot-provisioner";
 import { createConnectAccount, createAccountLink, createLoginLink, getConnectAccountStatus } from "../lib/stripe";
 import { logEvent, EventType } from "../lib/event-logger";
@@ -82,6 +84,11 @@ router.patch("/me", authenticate, async (req: AuthRequest, res: Response) => {
     const coachId = req.user?.id as string;
     if (!coachId) return res.status(401).json({ error: "Unauthorized" });
 
+    const parsed = updateCoachSchema.safeParse(req.body);
+    if (!parsed.success) {
+        return res.status(400).json({ error: "Invalid input", details: parsed.error.flatten() });
+    }
+
     const {
         name, slug, phone, businessName, timezone, defaultChannel,
         specialities, defaultPaymentModel, activeClientRange,
@@ -90,9 +97,9 @@ router.patch("/me", authenticate, async (req: AuthRequest, res: Response) => {
         showWhatsapp, showTelegram,
         defaultPricePerSession, defaultSessionsPerBlock, defaultMonthlyRate,
         bankDetails,
-    } = req.body;
+    } = parsed.data;
 
-    // Validate reserved slugs
+    // Validate reserved slugs (Zod handles length/format above)
     if (slug !== undefined) {
         const normalized = slug.toLowerCase().replaceAll(/[^a-z0-9-]/g, "");
         if (RESERVED_SLUGS.has(normalized)) {
@@ -101,11 +108,6 @@ router.patch("/me", authenticate, async (req: AuthRequest, res: Response) => {
         if (normalized.length < 3 || normalized.length > 30) {
             return res.status(400).json({ error: "Slug must be 3–30 characters" });
         }
-    }
-
-    // Validate bio length
-    if (bio !== undefined && bio !== null && bio.length > 200) {
-        return res.status(400).json({ error: "Bio must be 200 characters or fewer" });
     }
 
     try {
@@ -210,7 +212,7 @@ router.get("/channels", authenticate, async (req: AuthRequest, res: Response) =>
             ? `https://t.me/${botUsername}?start=${coach.slug}`
             : null;
 
-        const displayNumber = process.env.META_WHATSAPP_DISPLAY_NUMBER || null;
+        const displayNumber = env.META_WHATSAPP_DISPLAY_NUMBER ?? null;
         const waLink = displayNumber
             ? `https://wa.me/${displayNumber.replaceAll(/\D/g, "")}`
             : null;
@@ -258,7 +260,7 @@ router.post("/stripe/connect", authenticate, async (req: AuthRequest, res: Respo
         const allowedPaths = ["/setup", "/dashboard/settings"];
         const basePath = allowedPaths.includes(returnPath) ? returnPath : "/dashboard/settings";
 
-        const webUrl = process.env.WEB_URL || "http://localhost:3000";
+        const webUrl = env.WEB_URL;
         const accountLink = await createAccountLink(
             accountId,
             `${webUrl}${basePath}?stripe=refresh`,

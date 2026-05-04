@@ -81,7 +81,23 @@ const PORT = env.PORT;
 app.set("trust proxy", 1);
 
 // Middleware
-app.use(helmet());
+// Explicit CSP — the API mostly returns JSON, but the bank-transfer receipt
+// endpoint serves HTML with an inline <style> block, so we allow inline styles
+// and forbid scripts/objects/frames outright.
+app.use(helmet({
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            scriptSrc: ["'self'"],
+            styleSrc: ["'self'", "'unsafe-inline'"],
+            imgSrc: ["'self'", "data:"],
+            objectSrc: ["'none'"],
+            frameAncestors: ["'none'"],
+            baseUri: ["'self'"],
+            formAction: ["'self'"],
+        },
+    },
+}));
 const allowedOrigins = Array.from(new Set([
     env.WEB_URL,
     ...(env.PREVIEW_URL ? [env.PREVIEW_URL] : []),

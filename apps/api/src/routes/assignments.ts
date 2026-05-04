@@ -45,9 +45,12 @@ router.post("/:id/assignments", authenticate, async (req: AuthRequest, res: Resp
                 },
             });
 
+            // Promote the client through PLAN_ASSIGNED → ACTIVE in one shot:
+            // schedulers (risk scoring, workout delivery) gate on status === "ACTIVE",
+            // so we transition all the way through here.
             await tx.client.update({
                 where: { id: id as string },
-                data: { status: "PLAN_ASSIGNED" },
+                data: { status: "ACTIVE" },
             });
 
             return created;

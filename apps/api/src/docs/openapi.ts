@@ -1723,7 +1723,7 @@ registry.registerPath({
     path: "/intake",
     tags: ["Intake"],
     summary: "Submit intake form",
-    description: "Public endpoint for clients/leads to submit their onboarding intake form. Requires a valid intake token. Transitions client from INTAKE_SENT to ACTIVE, or lead from NEW to INTAKE_COMPLETE. Rate limited to 10 req/min.",
+    description: "Public endpoint for clients/leads to submit their onboarding intake form. Requires a valid intake token. Transitions client from INTAKE_SENT to INTAKE_COMPLETE, or lead from NEW to INTAKE_COMPLETE. Rate limited to 10 req/min.",
     request: {
         body: {
             content: {

@@ -5,8 +5,9 @@ const stripe = new Stripe(env.STRIPE_SECRET_KEY, {
     apiVersion: "2025-02-24.acacia",
 });
 
-// Platform fee percentage taken from each client payment (goes to FitFlow)
-export const PLATFORM_FEE_PERCENT = 10;
+// Platform fee percentage taken from each client payment (goes to FitFlow).
+// Configured via PLATFORM_FEE_PERCENT env var; defaults to 10.
+export const PLATFORM_FEE_PERCENT = env.PLATFORM_FEE_PERCENT;
 
 export const createCheckoutSession = async (
     clientId: string,

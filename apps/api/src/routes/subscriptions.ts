@@ -6,6 +6,7 @@ import stripe, {
     createCustomerPortalSession,
 } from "../lib/stripe";
 import { prisma } from "../lib/prisma";
+import { env } from "../lib/env";
 import { getStripePriceId } from "../lib/subscription-tiers";
 import {
     TIER_LIMITS,
@@ -129,8 +130,8 @@ router.post("/checkout", authenticate, async (req: AuthRequest, res: Response) =
 
         const currency = coach.billingCurrency as BillingCurrency;
         const priceId = getStripePriceId(tier, billingInterval, currency);
-        const successUrl = `${process.env.WEB_URL}/dashboard/subscription?checkout=success`;
-        const cancelUrl = `${process.env.WEB_URL}/dashboard/subscription?checkout=cancel`;
+        const successUrl = `${env.WEB_URL}/dashboard/subscription?checkout=success`;
+        const cancelUrl = `${env.WEB_URL}/dashboard/subscription?checkout=cancel`;
 
         const session = await createSubscriptionCheckout(
             customerId,
@@ -161,7 +162,7 @@ router.post("/portal", authenticate, async (req: AuthRequest, res: Response) => 
             return res.status(400).json({ error: "No billing account found" });
         }
 
-        const returnUrl = `${process.env.WEB_URL}/dashboard/subscription`;
+        const returnUrl = `${env.WEB_URL}/dashboard/subscription`;
         const session = await createCustomerPortalSession(coach.stripeCustomerId, returnUrl);
 
         res.json({ url: session.url });

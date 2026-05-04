@@ -4,6 +4,7 @@ import { MessageChannel, MessageDirection, WorkoutStatus, MealStatus } from "@pr
 import { TemplateId } from "@fitflow/shared";
 import { messageQueue } from "../lib/queue";
 import { prisma } from "../lib/prisma";
+import { env } from "../lib/env";
 import { routeCoachCommand } from "../handlers/coachCommandRouter";
 import { sendWhatsAppMessage, sendCheckinFlow, MetaErrorCode } from "../lib/meta";
 import { logEvent, EventType } from "../lib/event-logger";
@@ -17,6 +18,12 @@ const router: Router = Router();
  * Verify Meta webhook signature using X-Hub-Signature-256 header.
  * Returns true if the signature is valid.
  */
+// Mask a phone number for logging — keep last 4 digits only.
+function redactPhone(phone: string | undefined | null): string {
+    if (!phone) return "***";
+    return phone.length <= 4 ? "***" : `***${phone.slice(-4)}`;
+}
+
 function verifyMetaSignature(rawBody: Buffer, signature: string, appSecret: string): boolean {
     const hmac = crypto.createHmac("sha256", appSecret);
     hmac.update(rawBody);
@@ -278,7 +285,7 @@ async function handleMealButtonReply(client: any, buttonLabel: string) {
 }
 
 async function handleCheckinButtonReply(client: any) {
-    const flowId = process.env.WA_CHECKIN_FLOW_ID;
+    const flowId = env.WA_CHECKIN_FLOW_ID;
     if (!flowId) {
         console.warn("[Webhook] WA_CHECKIN_FLOW_ID not set — cannot send check-in flow");
         return;
@@ -322,7 +329,7 @@ router.get("/", (req, res) => {
     const challenge = req.query["hub.challenge"];
 
     if (mode && token) {
-        if (mode === "subscribe" && token === process.env.META_WHATSAPP_VERIFY_TOKEN) {
+        if (mode === "subscribe" && token === env.META_WHATSAPP_VERIFY_TOKEN) {
             console.log("[Webhook] Verified Meta Webhook");
             res.status(200).send(challenge);
         } else {
@@ -342,7 +349,7 @@ router.post("/", async (req, res) => {
         res.sendStatus(500);
         return;
     }
-    const appSecret = process.env.META_APP_SECRET;
+    const appSecret = env.META_APP_SECRET;
     const signature = req.headers["x-hub-signature-256"];
     if (!appSecret || typeof signature !== "string" || !verifyMetaSignature(rawBody, signature, appSecret)) {
         console.warn("[Webhook] Invalid or missing Meta signature — rejecting.");
@@ -429,7 +436,7 @@ router.post("/", async (req, res) => {
                                 where: { clients: { some: { phone: msg.from } } },
                             });
                             if (!coach) {
-                                console.log(`[Webhook] Unknown sender (not client or coach): ${msg.from}`);
+                                console.log(`[Webhook] Unknown sender (not client or coach): ${redactPhone(msg.from)}`);
                                 continue;
                             }
                             const response = await routeCoachCommand(coach.id, msg.text.body);
@@ -437,7 +444,7 @@ router.post("/", async (req, res) => {
                                 await sendWhatsAppMessage(msg.from, response);
                             }
                         } else {
-                            console.log(`[Webhook] Unknown sender: ${msg.from}`);
+                            console.log(`[Webhook] Unknown sender: ${redactPhone(msg.from)}`);
                         }
                         continue;
                     }
@@ -526,7 +533,7 @@ router.post("/", async (req, res) => {
                     });
                 } catch (msgError) {
                     // Log and continue — don't let one bad message kill the entire batch.
-                    console.error(`[Webhook] Error processing message ${msg.id} from ${msg.from}:`, msgError);
+                    console.error(`[Webhook] Error processing message ${msg.id} from ${redactPhone(msg.from)}:`, msgError);
                 }
             }
         }

@@ -12,6 +12,7 @@ import posthog from "posthog-js";
 function LoginContent() {
     const searchParams = useSearchParams();
     const confirmed = searchParams.get("confirmed") === "true";
+    const reset = searchParams.get("reset") === "true";
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [loading, setLoading] = useState(false);
@@ -82,6 +83,13 @@ function LoginContent() {
                     </div>
                 )}
 
+                {reset && (
+                    <div className="mb-6 flex items-center gap-2 rounded-lg border border-brand-green/20 bg-brand-green/10 px-4 py-3 text-sm text-brand-green">
+                        <CheckCircle2 className="h-4 w-4 shrink-0" />
+                        Password updated. Log in with your new password.
+                    </div>
+                )}
+
                 <form onSubmit={handleLogin} className="space-y-6">
                     <div className="form-field">
                         <label htmlFor="email" className="label-mono">Email address</label>
@@ -99,7 +107,12 @@ function LoginContent() {
                     </div>
 
                     <div className="form-field">
-                        <label htmlFor="password" className="label-mono">Password</label>
+                        <div className="flex items-center justify-between">
+                            <label htmlFor="password" className="label-mono">Password</label>
+                            <Link href="/forgot-password" className="text-[11px] text-text-faint hover:text-brand-green transition-colors">
+                                Forgot password?
+                            </Link>
+                        </div>
                         <input
                             id="password"
                             name="password"

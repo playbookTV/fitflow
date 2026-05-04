@@ -71,7 +71,6 @@ export const enforceLimit = (resource: LimitableResource) => {
             }
 
             const limits = TIER_LIMITS[tier];
-            const limitKey = resource === "clients" ? "maxClients" : "maxClients"; // mapped below
             const limit = getLimit(limits, resource);
 
             if (limit === -1) return next(); // unlimited

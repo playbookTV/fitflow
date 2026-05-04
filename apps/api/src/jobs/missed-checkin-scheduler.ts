@@ -2,6 +2,7 @@ import cron from "node-cron";
 import { engagementQueue } from "../lib/queue";
 import { JobType } from "../lib/types";
 import { prisma } from "../lib/prisma";
+import { env } from "../lib/env";
 import { formatSchedulerError } from "../lib/background-jobs";
 import { subDays, differenceInWeeks } from "date-fns";
 
@@ -58,7 +59,7 @@ export const startMissedCheckinScheduler = () => {
                         ? differenceInWeeks(now, assignment.startDate) + 1
                         : 1;
 
-                    const checkinLink = `${process.env.WEB_URL}/dashboard/checkin`;
+                    const checkinLink = `${env.WEB_URL}/dashboard/checkin`;
 
                     await engagementQueue.add(JobType.MISSED_CHECKIN_NUDGE, {
                         clientId,

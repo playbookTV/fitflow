@@ -101,7 +101,9 @@ router.get("/coaches", async (req: AuthRequest, res: Response) => {
         const search = (req.query.search as string) || "";
         const tier = req.query.tier as SubscriptionTier | undefined;
         const status = req.query.status as string | undefined;
-        const sort = (req.query.sort as string) || "createdAt";
+        const ALLOWED_SORT = new Set(["createdAt", "name", "email", "businessName"]);
+        const requestedSort = req.query.sort as string | undefined;
+        const sort = requestedSort && ALLOWED_SORT.has(requestedSort) ? requestedSort : "createdAt";
         const order = (req.query.order as string) === "asc" ? "asc" : "desc";
 
         const where: any = {};

@@ -34,6 +34,39 @@ export const updateClientSchema = z.object({
     conversationArchived: z.boolean().optional(),
 });
 
+// --- Coach schemas ---
+
+// Allow http(s) URLs only (rejects javascript:, data:, etc.) for fields rendered as <img src>.
+const httpUrl = z
+    .string()
+    .url()
+    .max(2048)
+    .refine((u) => /^https?:\/\//i.test(u), { message: "URL must use http(s)" });
+
+export const updateCoachSchema = z.object({
+    name: z.string().min(1).max(100).optional(),
+    slug: z.string().max(30).optional(),
+    phone: z.string().regex(/^\+?[1-9]\d{6,14}$/).optional().nullable(),
+    businessName: z.string().max(120).optional().nullable(),
+    timezone: z.string().max(50).optional(),
+    defaultChannel: z.enum(["WHATSAPP", "TELEGRAM"]).optional().nullable(),
+    specialities: z.array(z.string().max(60)).max(20).optional(),
+    defaultPaymentModel: z.enum(["SESSION_BLOCKS", "PER_SESSION", "MONTHLY_RETAINER"]).optional().nullable(),
+    activeClientRange: z.string().max(50).optional().nullable(),
+    onboardingStep: z.number().int().min(0).max(20).optional(),
+    onboardingCompleted: z.boolean().optional(),
+    bio: z.string().max(200).optional().nullable(),
+    avatarUrl: httpUrl.optional().nullable(),
+    profileVisible: z.boolean().optional(),
+    showRatesPublicly: z.boolean().optional(),
+    showWhatsapp: z.boolean().optional(),
+    showTelegram: z.boolean().optional(),
+    defaultPricePerSession: z.number().int().min(0).max(10_000_000).optional().nullable(),
+    defaultSessionsPerBlock: z.number().int().min(1).max(500).optional().nullable(),
+    defaultMonthlyRate: z.number().int().min(0).max(10_000_000).optional().nullable(),
+    bankDetails: z.string().max(2000).optional().nullable(),
+}).strict();
+
 // --- Plan schemas ---
 
 const exerciseInDaySchema = z.object({

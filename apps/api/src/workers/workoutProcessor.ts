@@ -1,5 +1,6 @@
 import { Worker, Job } from "bullmq";
 import { prisma } from "../lib/prisma";
+import { env } from "../lib/env";
 import { getChannel, getRecipientId } from "../lib/channels/channel-router";
 import { connection } from "../lib/queue";
 import { JobType } from "../lib/types";
@@ -304,7 +305,7 @@ export const renewalWorker = new Worker(
             month: "long",
         });
 
-        const paymentLink = `${process.env.WEB_URL}/pay/${client.coachId}/${clientId}`;
+        const paymentLink = `${env.WEB_URL}/pay/${client.coachId}/${clientId}`;
 
         // Choose template based on job name or days until renewal
         let templateId: TemplateId;
