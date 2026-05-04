@@ -447,6 +447,16 @@ export function buildCreatePayload(templateId: TemplateId) {
  * Build the Meta API payload for SENDING a message template.
  * Passed as the template object to sendWhatsAppMessage().
  */
+// Meta rejects template body params containing newlines, tabs, or 5+ consecutive
+// spaces with error 132018. Replace newlines with a separator the user can read,
+// tabs with a space, and clamp runs of spaces to 4.
+function sanitizeParamText(value: string): string {
+    return value
+        .replace(/\r\n|\r|\n/g, " — ")
+        .replace(/\t/g, " ")
+        .replace(/ {5,}/g, "    ");
+}
+
 export function buildSendPayload(templateId: TemplateId, context: Record<string, any>) {
     const def = META_TEMPLATES[templateId];
 
@@ -455,12 +465,12 @@ export function buildSendPayload(templateId: TemplateId, context: Record<string,
         if (key === "_exercise_details") {
             return {
                 type: "text" as const,
-                text: buildExerciseDetails(context),
+                text: sanitizeParamText(buildExerciseDetails(context)),
             };
         }
         return {
             type: "text" as const,
-            text: String(context[key] ?? ""),
+            text: sanitizeParamText(String(context[key] ?? "")),
         };
     });
 
