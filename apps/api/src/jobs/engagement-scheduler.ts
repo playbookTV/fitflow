@@ -106,6 +106,7 @@ export const startEngagementScheduler = () => {
                 const lastMessage = await prisma.message.findFirst({
                     where: {
                         clientId,
+                        client: { coachId },
                         direction: "INBOUND",
                     },
                     orderBy: { createdAt: "desc" },

@@ -79,7 +79,7 @@ router.get("/:clientId", authenticate, async (req: AuthRequest, res) => {
         const skip = Number(req.query.offset) || 0;
 
         const messages = await prisma.message.findMany({
-            where: { clientId: clientId as string },
+            where: { clientId: clientId as string, client: { coachId } },
             orderBy: { createdAt: "desc" },
             take,
             skip,

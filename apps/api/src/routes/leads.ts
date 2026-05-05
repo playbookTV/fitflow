@@ -177,7 +177,7 @@ router.get("/:id/messages", authenticate, async (req: AuthRequest, res: Response
         if (!lead) return res.status(404).json({ error: "Lead not found" });
 
         const messages = await prisma.message.findMany({
-            where: { leadId },
+            where: { leadId, lead: { coachId } },
             orderBy: { createdAt: "asc" },
             take,
             skip,

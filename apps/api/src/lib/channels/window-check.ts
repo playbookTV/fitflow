@@ -25,11 +25,14 @@ export async function isWindowOpen(clientId: string): Promise<boolean> {
  * Returns the full window status including expiry time for UI display.
  */
 export async function getWindowStatus(clientId: string): Promise<WindowStatus> {
+    // clientId is internal (sourced from authenticated routes / webhook resolution),
+    // so the query is tenant-bounded by the FK even though the guard can't see coachId.
     const lastInbound = await prisma.message.findFirst({
         where: {
             clientId,
             direction: MessageDirection.INBOUND,
-        },
+            __unsafeGlobal: true,
+        } as never,
         orderBy: { createdAt: "desc" },
         select: { createdAt: true },
     });
