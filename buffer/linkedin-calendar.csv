@@ -1,0 +1,84 @@
+id,date,time,channel,brand,pillar,status,copy,artifact,media,alt_text,buffer_id,notes
+2026-05-05-li-001,2026-05-05,08:30,linkedin,FitFlow,problem-framing,draft,"After speaking to more than 30 fitness coaches, the pattern became hard to ignore.
+
+They do not really have a software problem. They have a follow-up problem.
+
+Most fitness SaaS sells the same bundle with different wallpaper: bookings, dashboards, calendars, client profiles, payment links, and sometimes a few reports. Some of these are helpful, but they do not address the main problem.
+
+The real problem begins when a client disappears after a good first session, when a rebooking gets lost in a WhatsApp thread, or when a coach, after a busy day, forgets to check in on a client who has been slipping. It also happens when reminders go unread because they come from a system the client does not connect with.
+
+FitFlow starts from that narrower, more honest point: keeping the conversation alive in the places clients already respond.
+
+This is why WhatsApp and Telegram are not just notification channels for us. They are where the product lives. If coaches already work through messages, the software should not force them back to a dashboard just to show it is software.
+
+Most fitness tools offer coaches more dashboards, but the real action is happening in the DMs.",Before/after visual. Left: coach juggling WhatsApp + spreadsheets + calendar + sticky notes. Right: FitFlow running structured follow-up inside WhatsApp and Telegram.,,,,PDF W1 Post 1 — Counterintuitive. 'More than 30 coaches' is a soft number; confirm or rephrase before flipping to ready (editorial rule: replace invented numbers).
+2026-05-07-li-001,2026-05-07,08:30,linkedin,FitFlow,pricing,draft,"Mindbody is a large company, but I do not think its model works well for smaller fitness businesses.
+
+The problem is not that software costs money — good software should. The real issue is whether the pricing aligns with the coach's needs.
+
+A solo coach billing around $4k/month can end up paying roughly $120/month before the real feature conversation even starts. Once transaction-linked pricing is introduced, the platform begins to earn more as the coach grows.
+
+That sounds normal until you ask what behaviour the pricing model rewards.
+
+If the software earns more every time the coach makes money, the coach is not just paying for tools — they are paying a growth tax.
+
+We nearly went down that road with FitFlow.
+
+The first version seemed reasonable: a free tier, then a small percentage after a certain point. It felt friendly and modern, but looking back, it made me cautious.
+
+But as we looked at the numbers at scale, we saw that the more successful the coach was, the more we charged, even if we were not providing more value. That is not alignment. That is just rent with a better landing page.
+
+So we killed it.
+
+FitFlow is moving with flat-fee pricing across tiers, grounded in real messaging costs and product usage rather than a percentage of the coach's success. Plans are calculated based on the number of active clients and actual messaging needs, so coaches only pay for the real value they receive.
+
+Pricing is not something you add after building the product. It shapes what kind of company you can become.",Pricing alignment chart. Percentage model rising with coach revenue vs FitFlow flat tiers.,,,,"PDF W1 Post 3 — POV. PRICING INCONSISTENCY: PDF original quoted Starter $19 / Growing $49 — but public Twitter pricing (already live 5/5) is Starter $25 / Pro $59 / Studio $119. Removed numbers from this draft to avoid contradiction. Either add the $25/$59/$119 numbers explicitly here, or keep the soft framing."
+2026-05-13-li-001,2026-05-13,08:30,linkedin,FitFlow,pricing,draft,"I spent three weeks designing a free-plus-percentage pricing tier for FitFlow, then decided to remove it.
+
+The idea looked good at first. Let smaller coaches start free. Charge only when they grow. Keep the upfront barrier low. Make the model feel fair.
+
+Except the spreadsheet started telling a different story.
+
+At low usage, the model seemed generous. But at higher usage, it became a tax on the customers we wanted to help. A coach with many clients and strong retention would end up paying us more simply for being successful, not because FitFlow was doing more work.
+
+That bothered me.
+
+Coaches already face payment fees, platform fees, advertising costs, tools, subscriptions, and the challenges of running a small business without extra resources. I did not want FitFlow to become another burden just because a coach was successful.
+
+So we moved to flat tiers.
+
+It may not be as exciting, but it is simpler. More importantly, it keeps the incentives clear and fair.
+
+Pricing is part of the product strategy, not just a billing page. If the pricing encourages the wrong behaviour, the product roadmap will eventually reflect that.",Screenshot or simplified version of the pricing spreadsheet showing free+%% vs flat-fee at scale.,,,,PDF W2 Post 5 — Lesson. 'Three weeks designing' — confirm timeline accuracy. This is the scar-then-principle post; pairs with W1 Mindbody POV.
+2026-05-19-li-001,2026-05-19,08:30,linkedin,FitFlow,build-in-public,draft,"FitFlow will launch with WhatsApp and Telegram from the start. This sounds simple, but building it is more complex.
+
+Most messaging products end up tied to a single channel by accident. Templates, delivery rules, onboarding, support flows, user expectations, and product logic all start to revolve around the first platform you integrate.
+
+Then, a few months later, someone asks if the same thing can work on another channel, and the team realises it is a big challenge.
+
+I wanted to avoid that.
+
+WhatsApp is the main reason FitFlow matters to most coaches, since they already manage their clients there. It is where check-ins happen, voice notes are sent, rebookings are managed, and much of the business is held together with screenshots and memory.
+
+Telegram lets us test more quickly. Setting up bots is easier, message experiments cost less, debugging is simpler, and we can validate product logic without making every small change a big technical event.
+
+So we separated the product from the channel.
+
+Coach workflows, templates, reminders, check-ins, nudges, and client states are all above the messaging layer. WhatsApp and Telegram act as adapters below. The FitFlow logic stays the same, just on different platforms.
+
+The goal is not to be just a Telegram or WhatsApp product. The goal is to build a coaching operations layer that meets clients where the conversation already happens.",Architecture diagram: FitFlow core → channel abstraction → WhatsApp + Telegram adapters.,,,,PDF W3 Post 7 — Decision. Canonical statement of the corrected narrative. Aligned with Twitter threads on 5/8 and 5/11.
+2026-05-21-li-001,2026-05-21,08:30,linkedin,FitFlow,coach-pain,draft,"A coach I spoke with recently runs a packed weekly schedule. Her problem was not getting bookings. She had bookings. Her problem was knowing who was drifting before they disappeared.
+
+The question she kept coming back to was simple:
+
+Who haven't I heard from in the last 10 days?
+
+That is the sort of feature you do not usually invent from a clean roadmap.
+
+A roadmap might suggest a 'retention dashboard.' A real coach asks for a way to see which five clients are about to leave before they cancel. That difference matters.
+
+FitFlow is now focused on these signals. It is not just about bookings, reminders, or better messaging. Client drift, missed engagement, and overdue follow-ups may not be glamorous, but they are the details that determine if a coach keeps or loses revenue.
+
+This is why I am glad we are building directly into WhatsApp and Telegram instead of treating them as notification endpoints.
+
+A useful product is not always another dashboard. Sometimes, it is simply sending the right message at the right time before a client loses their routine.","Mockup of FitFlow sending a coach: ""5 clients haven't replied in 10 days. Send check-in?""",,,,PDF W3 Post 9 — Story. Anonymise the coach or get explicit permission before flipping to ready.

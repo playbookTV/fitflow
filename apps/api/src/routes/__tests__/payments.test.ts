@@ -177,7 +177,7 @@ describe("Payment Routes", () => {
     describe("POST /payments/:paymentId/remind", () => {
         it("returns 404 when payment does not exist", async () => {
             prismaMock.coach.findUnique.mockResolvedValueOnce(buildCoach());
-            prismaMock.payment.findUnique.mockResolvedValueOnce(null);
+            prismaMock.payment.findFirst.mockResolvedValueOnce(null);
 
             const res = await request.post("/payments/pay-999/remind")
                 .set(authHeader());
@@ -187,7 +187,7 @@ describe("Payment Routes", () => {
 
         it("returns 400 when payment is not pending", async () => {
             prismaMock.coach.findUnique.mockResolvedValueOnce(buildCoach());
-            prismaMock.payment.findUnique.mockResolvedValueOnce({
+            prismaMock.payment.findFirst.mockResolvedValueOnce({
                 ...buildPayment({ id: "pay-1", status: "SUCCEEDED" }),
                 client: {
                     ...buildClient({ coachId: "test-coach-id" }),
@@ -208,7 +208,7 @@ describe("Payment Routes", () => {
     describe("GET /payments/:paymentId/receipt", () => {
         it("returns 404 when payment does not exist", async () => {
             prismaMock.coach.findUnique.mockResolvedValueOnce(buildCoach());
-            prismaMock.payment.findUnique.mockResolvedValueOnce(null);
+            prismaMock.payment.findFirst.mockResolvedValueOnce(null);
 
             const res = await request.get("/payments/pay-999/receipt")
                 .set(authHeader());
@@ -218,7 +218,7 @@ describe("Payment Routes", () => {
 
         it("returns HTML receipt for bank transfer payments", async () => {
             prismaMock.coach.findUnique.mockResolvedValueOnce(buildCoach());
-            prismaMock.payment.findUnique.mockResolvedValueOnce({
+            prismaMock.payment.findFirst.mockResolvedValueOnce({
                 ...buildPayment({ id: "pay-bt", paymentMethod: "BANK_TRANSFER", stripeSessionId: null }),
                 client: {
                     ...buildClient({ coachId: "test-coach-id" }),

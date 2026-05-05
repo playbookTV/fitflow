@@ -67,14 +67,16 @@ router.post("/", async (req, res) => {
             await answerCallbackQuery(botToken, callbackQuery.id);
 
             // Find client by telegram chat ID
-            const client = await prisma.client.findUnique({
-                where: { telegramChatId: chatId },
+            // Webhook entry: chat ID -> client uniquely identifies tenant.
+            // Telegram authenticates the chat ID via the webhook secret.
+            const client = await prisma.client.findFirst({
+                where: { telegramChatId: chatId, __unsafeGlobal: true } as never,
             });
 
             if (!client) {
                 // Check if this is a lead going through intake
                 const lead = await prisma.lead.findFirst({
-                    where: { telegramChatId: chatId, status: { not: "CONVERTED" } },
+                    where: { telegramChatId: chatId, status: { not: "CONVERTED" }, __unsafeGlobal: true } as never,
                     orderBy: { createdAt: "desc" },
                 });
                 if (lead) {
@@ -92,18 +94,21 @@ router.post("/", async (req, res) => {
                 return;
             }
 
+            // Bind coach context once to avoid drift across downstream queries.
+            const coachId = client.coachId;
+
             // Route callback data
             if (data.startsWith("workout_done_")) {
                 await messageQueue.add("process-message", {
                     clientId: client.id,
-                    coachId: client.coachId,
+                    coachId,
                     body: "DONE",
                     messageSid: `tg_cb_${callbackQuery.id}`,
                     channel: MessageChannel.TELEGRAM,
                 });
             } else if (data.startsWith("workout_skip_")) {
                 const assignment = await prisma.planAssignment.findFirst({
-                    where: { clientId: client.id, isActive: true },
+                    where: { clientId: client.id, isActive: true, client: { coachId } },
                 });
 
                 if (assignment) {
@@ -123,7 +128,7 @@ router.post("/", async (req, res) => {
             } else if (data.startsWith("meal_done_") || data.startsWith("meal_skip_")) {
                 const isCompleted = data.startsWith("meal_done_");
                 const mealAssignment = await prisma.mealAssignment.findFirst({
-                    where: { clientId: client.id, isActive: true },
+                    where: { clientId: client.id, isActive: true, client: { coachId } },
                 });
                 if (mealAssignment) {
                     const { differenceInDays } = await import("date-fns");
@@ -152,7 +157,7 @@ router.post("/", async (req, res) => {
                         data: { compliance },
                     });
 
-                    const channel = await getChannel(client.preferredChannel, client.coachId);
+                    const channel = await getChannel(client.preferredChannel, coachId);
                     const recipientId = getRecipientId(client);
                     await channel.sendTemplate(recipientId, TemplateId.MEAL_LOGGED_CONFIRMATION, {
                         day_number: dayNumber,
@@ -183,16 +188,16 @@ router.post("/", async (req, res) => {
                 return;
             }
 
-            // Find client by telegram chat ID
-            const client = await prisma.client.findUnique({
-                where: { telegramChatId: chatId },
+            // Find client by telegram chat ID — webhook entry, tenant resolved here.
+            const client = await prisma.client.findFirst({
+                where: { telegramChatId: chatId, __unsafeGlobal: true } as never,
                 include: { coach: true },
             });
 
             if (!client) {
                 // Fall back to Lead lookup — store message against the lead
                 const lead = await prisma.lead.findFirst({
-                    where: { telegramChatId: chatId, status: { not: "CONVERTED" } },
+                    where: { telegramChatId: chatId, status: { not: "CONVERTED" }, __unsafeGlobal: true } as never,
                     orderBy: { createdAt: "desc" },
                 });
 
@@ -289,8 +294,8 @@ async function handleStartCommand(botToken: string, chatId: string, text: string
     }
 
     // Check if this Telegram user is already a client
-    const existingClient = await prisma.client.findUnique({
-        where: { telegramChatId: chatId },
+    const existingClient = await prisma.client.findFirst({
+        where: { telegramChatId: chatId, __unsafeGlobal: true } as never,
     });
 
     if (existingClient) {

@@ -21,14 +21,20 @@ import "../lib/templates";
 export const workoutWorker = new Worker(
     "workout-delivery",
     async (job: Job) => {
-        const { clientId, dayNumber, assignmentId } = job.data;
+        const { clientId, coachId, dayNumber, assignmentId } = job.data;
 
         console.log(`[Worker] Processing job ${job.name} for client ${clientId}`);
 
         try {
             if (job.name === JobType.WORKOUT_DELIVERY) {
-                const assignment = await prisma.planAssignment.findUnique({
-                    where: { id: assignmentId },
+                // Scope by clientId AND (when present) the enqueuer's coachId. If the
+                // job was enqueued without a coachId, fall back to client-only scope.
+                const ownershipWhere = coachId
+                    ? { id: assignmentId, clientId, client: { coachId } }
+                    : { id: assignmentId, clientId };
+
+                const assignment = await prisma.planAssignment.findFirst({
+                    where: ownershipWhere,
                     include: {
                         plan: {
                             include: {
@@ -49,7 +55,7 @@ export const workoutWorker = new Worker(
                 });
 
                 if (!assignment?.isActive) {
-                    console.log(`[Worker] Assignment ${assignmentId} is inactive or missing. Skipping.`);
+                    console.log(`[Worker] Assignment ${assignmentId} inactive/missing/ownership-mismatch. Skipping.`);
                     return;
                 }
 

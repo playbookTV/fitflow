@@ -37,10 +37,13 @@ describe("Payment Webhook (POST /payments/webhook)", () => {
             },
         } as any);
 
+        // Cross-tenant ownership check: clientId belongs to metadata.coachId
+        prismaMock.client.findFirst.mockResolvedValueOnce({ id: "client-1" });
         // First call: check for existing payment (null = new)
         prismaMock.payment.findUnique.mockResolvedValueOnce(null);
         prismaMock.payment.upsert.mockResolvedValueOnce(buildPayment({ stripeSessionId: sessionId }));
-        prismaMock.client.update.mockResolvedValueOnce(
+        prismaMock.client.updateMany.mockResolvedValueOnce({ count: 1 });
+        prismaMock.client.findFirstOrThrow.mockResolvedValueOnce(
             buildClient({ id: "client-1", status: "INTAKE_SENT", coachId: "coach-1" })
         );
         prismaMock.eventLog.create.mockResolvedValueOnce({ id: "evt-1" });
@@ -53,9 +56,9 @@ describe("Payment Webhook (POST /payments/webhook)", () => {
         expect(res.status).toBe(200);
         expect(res.body).toEqual({ received: true });
 
-        expect(prismaMock.client.update).toHaveBeenCalledWith(
+        expect(prismaMock.client.updateMany).toHaveBeenCalledWith(
             expect.objectContaining({
-                where: { id: "client-1", status: "PENDING_PAYMENT" },
+                where: { id: "client-1", coachId: "coach-1", status: "PENDING_PAYMENT" },
                 data: expect.objectContaining({ status: "INTAKE_SENT" }),
             })
         );
@@ -71,13 +74,15 @@ describe("Payment Webhook (POST /payments/webhook)", () => {
             data: {
                 object: {
                     id: sessionId,
-                    metadata: { clientId: "client-1" },
+                    metadata: { clientId: "client-1", coachId: "coach-1" },
                     amount_total: 5000,
                     currency: "gbp",
                 },
             },
         } as any);
 
+        // Ownership cross-check passes
+        prismaMock.client.findFirst.mockResolvedValueOnce({ id: "client-1" });
         // Existing payment found = duplicate
         prismaMock.payment.findUnique.mockResolvedValueOnce(buildPayment({ stripeSessionId: sessionId }));
         prismaMock.payment.upsert.mockResolvedValueOnce(buildPayment({ stripeSessionId: sessionId }));

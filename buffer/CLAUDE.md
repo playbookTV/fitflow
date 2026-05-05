@@ -3,17 +3,23 @@
 You (Claude Code) are operating inside a Buffer-fed social calendar for **FitFlow**.
 
 ## Single source of truth
-- `calendar.csv` is the only place posts live.
-- Never bypass the CSV. Don't post directly to Buffer without writing to the CSV first.
+- `calendar.csv` is the source of truth for **Twitter** posts.
+- `linkedin-calendar.csv` is the source of truth for **LinkedIn** posts (long-form, separate cadence, separate schema).
+- Never bypass the CSVs. Don't post directly to Buffer without writing to the relevant CSV first.
 
 ## Timezone
-- All `time` values in `calendar.csv` are **Europe/London** (BST or GMT depending on date).
+- All `time` values in both CSVs are **Europe/London** (BST or GMT depending on date).
 - Convert to UTC before passing to the Buffer MCP if it requires it.
 
 ## Buffer channels
-- `twitter` → my Twitter/X profile in Buffer.
-- `instagram` → my Instagram profile in Buffer.
-- If multiple Buffer profiles exist for either, list them and ask before scheduling.
+- `twitter` → my Twitter/X profile in Buffer (`fitflow_fit`). Used in `calendar.csv`.
+- `instagram` → my Instagram profile in Buffer. Used in `calendar.csv` (currently no active rows).
+- `linkedin` → Leslie's personal LinkedIn profile in Buffer (`leslieisaninja`). Used in `linkedin-calendar.csv`. Long-form, no thread convention, no 280 char limit (LinkedIn caps at ~3000).
+- If multiple Buffer profiles exist for any channel, list them and ask before scheduling.
+
+## Brands
+- `FitFlow` — only brand actively scheduled via these calendars.
+- Brixa is a separate brand and is intentionally **out of scope** for this calendar — do not import Brixa posts here.
 
 ## Status workflow
 ```
@@ -47,6 +53,17 @@ failed    → Claude tried to schedule but Buffer rejected it (see notes)
 - Stay in Leslie's voice. Reference past posts in the CSV for tone matching.
 - Twitter: 280 char hard limit. Count chars including links (Buffer expands t.co automatically; assume 23 chars per URL when counting).
 - Instagram: keep first paragraph hooky — IG truncates after ~125 chars in feed.
+
+## LinkedIn specifics (`linkedin-calendar.csv`)
+- Schema: `id, date, time, channel, brand, pillar, status, copy, artifact, media, alt_text, buffer_id, notes`. No `link` or `first_comment` columns; `artifact` describes the suggested visual the post should ship with.
+- Post id convention: `YYYY-MM-DD-li-NNN`.
+- No threads — LinkedIn posts are long-form (up to ~3000 chars).
+- Editorial rules (per FitFlow Multi-Channel Strategy doc):
+  - Replace invented or estimated numbers before flipping to `ready`. If a soft number must stay, hedge it.
+  - Use real screenshots / artefacts where possible.
+  - Keep WhatsApp as the centre of FitFlow's promise. Telegram is part of architecture and learning, **not** the hero channel. Reject any draft that frames Telegram as launching first or as the primary product.
+  - Scar-then-principle. No founder staccato unless the line genuinely needs the emphasis.
+- Same status workflow as Twitter calendar.
 
 ## Threads (Twitter)
 - Threads are multiple rows with `id` ending in `a`, `b`, `c` etc. (e.g. `2026-05-06-tw-001a`, `2026-05-06-tw-001b`, `2026-05-06-tw-001c`).

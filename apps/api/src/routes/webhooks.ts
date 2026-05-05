@@ -119,9 +119,11 @@ async function handleWorkoutLogFlowResponse(clientId: string, data: FlowResponse
     const rpe = Number.parseInt(data.rpe, 10);
     const notes = data.notes || null;
 
-    // Find active assignment
+    // Find active assignment — scope through client relation so the tenant guard
+    // is satisfied; clientId here was tenant-resolved upstream from the webhook
+    // entry point but we don't have coachId in scope at this layer.
     const assignment = await prisma.planAssignment.findFirst({
-        where: { clientId, isActive: true },
+        where: { clientId, isActive: true, client: { __unsafeGlobal: true } as never },
     });
 
     if (!assignment) {
@@ -196,7 +198,7 @@ async function handleWorkoutButtonReply(client: any, buttonLabel: string) {
     if (!status) return;
 
     const assignment = await prisma.planAssignment.findFirst({
-        where: { clientId: client.id, isActive: true },
+        where: { clientId: client.id, isActive: true, client: { coachId: client.coachId } },
     });
     if (!assignment) return;
 
@@ -247,7 +249,7 @@ async function handleMealButtonReply(client: any, buttonLabel: string) {
     if (!isCompleted && !isSkipped) return;
 
     const mealAssignment = await prisma.mealAssignment.findFirst({
-        where: { clientId: client.id, isActive: true },
+        where: { clientId: client.id, isActive: true, client: { coachId: client.coachId } },
     });
     if (!mealAssignment) return;
 
@@ -378,13 +380,17 @@ router.post("/", async (req, res) => {
                     const errorTitles: string[] = (status.errors ?? []).map((e: any) => e.title);
 
                     // Update the Message record if it exists
+                    // Webhook status callback: tenant resolved via metaMessageId
+                    // (unique global ID issued by Meta, not user-supplied).
                     const message = metaMessageId
-                        ? await prisma.message.findUnique({ where: { metaMessageId } })
+                        ? await prisma.message.findFirst({
+                            where: { metaMessageId, __unsafeGlobal: true } as never,
+                        })
                         : null;
 
                     if (message) {
-                        await prisma.message.update({
-                            where: { metaMessageId },
+                        await prisma.message.updateMany({
+                            where: { metaMessageId, __unsafeGlobal: true } as never,
                             data: { status: statusValue },
                         });
                     }
@@ -424,9 +430,9 @@ router.post("/", async (req, res) => {
                 // Each message is processed independently so a failure on one doesn't
                 // silently drop subsequent messages in the same batch (Meta sends 200 early).
                 try {
-                    // Find or identify client by phone (exact match to avoid substring collisions)
+                    // Webhook entry: resolve tenant from phone (Meta-authenticated via signature).
                     const client = await prisma.client.findFirst({
-                        where: { phone: msg.from }
+                        where: { phone: msg.from, __unsafeGlobal: true } as never,
                     });
 
                     if (!client) {

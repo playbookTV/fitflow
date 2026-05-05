@@ -24,13 +24,21 @@ export const engagementWorker = new Worker(
         console.log(`[Engagement Worker] Processing ${job.name} for client ${clientId}`);
 
         try {
-            const client = await prisma.client.findUnique({
-                where: { id: clientId },
-                include: { coach: true },
-            });
+            // Scope by coachId when the enqueuer provided one (defense in depth
+            // against malformed/spoofed jobs). Falls back to id-only lookup
+            // for backward compat with older queued jobs missing coachId.
+            const client = coachId
+                ? await prisma.client.findFirst({
+                    where: { id: clientId, coachId },
+                    include: { coach: true },
+                })
+                : await prisma.client.findUnique({
+                    where: { id: clientId },
+                    include: { coach: true },
+                });
 
             if (!client) {
-                console.log(`[Engagement Worker] Client ${clientId} not found. Skipping.`);
+                console.log(`[Engagement Worker] Client ${clientId} not found / ownership mismatch. Skipping.`);
                 return;
             }
 

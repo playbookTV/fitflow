@@ -15,8 +15,8 @@ export const riskScoringWorker = new Worker(
         console.log(`[Risk Scoring Worker] Computing risk for client ${clientId}`);
 
         try {
-            const client = await prisma.client.findUnique({
-                where: { id: clientId },
+            const client = await prisma.client.findFirst({
+                where: coachId ? { id: clientId, coachId } : { id: clientId },
                 select: {
                     name: true,
                     goals: true,

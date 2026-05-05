@@ -28,6 +28,7 @@ const envSchema = z.object({
     META_APP_SECRET: z.string().min(1),
     META_WHATSAPP_DISPLAY_NUMBER: optionalString,
     WA_CHECKIN_FLOW_ID: optionalString,
+    WA_WORKOUT_LOG_FLOW_ID: optionalString,
     IP_HASH_SALT: z.string().min(16),
     STRIPE_SECRET_KEY: z.string().min(1),
     STRIPE_WEBHOOK_SECRET: z.string().min(1),

@@ -82,15 +82,21 @@ function buildGroupedMealsList(entries: MealEntryWithMeal[]) {
 export const mealWorker = new Worker(
     "meal-delivery",
     async (job: Job) => {
-        const { clientId, assignmentId, dayNumber } = job.data;
+        const { clientId, coachId, assignmentId, dayNumber } = job.data;
 
         console.log(`[MealWorker] Processing ${job.name} for client ${clientId}`);
 
         try {
             if (job.name !== JobType.MEAL_DELIVERY) return;
 
-            const assignment = await prisma.mealAssignment.findUnique({
-                where: { id: assignmentId },
+            // Scope by clientId AND (when present) the enqueuer's coachId. If the
+            // job was enqueued without a coachId, fall back to client-only scope.
+            const ownershipWhere = coachId
+                ? { id: assignmentId, clientId, client: { coachId } }
+                : { id: assignmentId, clientId };
+
+            const assignment = await prisma.mealAssignment.findFirst({
+                where: ownershipWhere,
                 include: {
                     plan: {
                         include: {
@@ -111,7 +117,7 @@ export const mealWorker = new Worker(
             });
 
             if (!assignment?.isActive) {
-                console.log(`[MealWorker] Assignment ${assignmentId} inactive/missing. Skipping.`);
+                console.log(`[MealWorker] Assignment ${assignmentId} inactive/missing/ownership-mismatch. Skipping.`);
                 return;
             }
 

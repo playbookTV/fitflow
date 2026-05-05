@@ -13,6 +13,7 @@ import {
     sendWorkoutLogFlow,
 } from "../lib/meta";
 import { prisma } from "../lib/prisma";
+import { env } from "../lib/env";
 
 // Import flow JSON schemas
 import weeklyCheckinFlow from "../flows/weekly-checkin.json";
@@ -132,14 +133,23 @@ router.delete("/:flowId", authenticate, requirePlatformAdmin, async (req: AuthRe
 
 /**
  * POST /flows/send/checkin - Send a check-in flow to a client
- * Body: { clientId: string, flowId: string, mode?: "draft" | "published" }
+ * Body: { clientId: string, mode?: "draft" | "published" }
+ *
+ * Flow ID is platform-managed via WA_CHECKIN_FLOW_ID env var. Accepting flowId
+ * from the request body would let any authenticated coach send arbitrary
+ * Meta-hosted flows to their clients.
  */
 router.post("/send/checkin", authenticate, async (req: AuthRequest, res) => {
     const coachId = req.user?.id;
-    const { clientId, flowId, mode = "published" } = req.body;
+    const { clientId, mode = "published" } = req.body;
 
-    if (!clientId || !flowId) {
-        return res.status(400).json({ error: "clientId and flowId are required" });
+    if (!clientId) {
+        return res.status(400).json({ error: "clientId is required" });
+    }
+
+    const flowId = env.WA_CHECKIN_FLOW_ID;
+    if (!flowId) {
+        return res.status(503).json({ error: "Check-in flow not configured (WA_CHECKIN_FLOW_ID)" });
     }
 
     try {
@@ -165,14 +175,21 @@ router.post("/send/checkin", authenticate, async (req: AuthRequest, res) => {
 
 /**
  * POST /flows/send/workout - Send a workout log flow to a client
- * Body: { clientId: string, flowId: string, mode?: "draft" | "published" }
+ * Body: { clientId: string, mode?: "draft" | "published" }
+ *
+ * Flow ID is platform-managed via WA_WORKOUT_LOG_FLOW_ID env var.
  */
 router.post("/send/workout", authenticate, async (req: AuthRequest, res) => {
     const coachId = req.user?.id;
-    const { clientId, flowId, mode = "published" } = req.body;
+    const { clientId, mode = "published" } = req.body;
 
-    if (!clientId || !flowId) {
-        return res.status(400).json({ error: "clientId and flowId are required" });
+    if (!clientId) {
+        return res.status(400).json({ error: "clientId is required" });
+    }
+
+    const flowId = env.WA_WORKOUT_LOG_FLOW_ID;
+    if (!flowId) {
+        return res.status(503).json({ error: "Workout log flow not configured (WA_WORKOUT_LOG_FLOW_ID)" });
     }
 
     try {

@@ -288,8 +288,8 @@ router.post("/:paymentId/remind", authenticate, async (req: AuthRequest, res: Re
     if (!coachId) return res.status(401).json({ error: "Unauthorized" });
 
     try {
-        const payment = await prisma.payment.findUnique({
-            where: { id: paymentId },
+        const payment = await prisma.payment.findFirst({
+            where: { id: paymentId, client: { coachId } },
             include: {
                 client: {
                     include: { coach: { select: { name: true, stripeAccountId: true, billingCurrency: true } } },
@@ -302,9 +302,6 @@ router.post("/:paymentId/remind", authenticate, async (req: AuthRequest, res: Re
         }
 
         const client = payment.client;
-        if (client.coachId !== coachId) {
-            return res.status(404).json({ error: "Payment not found" });
-        }
 
         if (payment.status !== "PENDING") {
             return res.status(400).json({ error: "Can only remind for pending payments" });
@@ -360,8 +357,8 @@ router.get("/:paymentId/receipt", authenticate, async (req: AuthRequest, res: Re
     if (!coachId) return res.status(401).json({ error: "Unauthorized" });
 
     try {
-        const payment = await prisma.payment.findUnique({
-            where: { id: paymentId },
+        const payment = await prisma.payment.findFirst({
+            where: { id: paymentId, client: { coachId } },
             include: {
                 client: {
                     include: { coach: { select: { name: true, businessName: true } } },
@@ -369,7 +366,7 @@ router.get("/:paymentId/receipt", authenticate, async (req: AuthRequest, res: Re
             },
         });
 
-        if (!payment || payment.client.coachId !== coachId) {
+        if (!payment) {
             return res.status(404).json({ error: "Payment not found" });
         }
 
