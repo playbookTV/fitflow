@@ -8,12 +8,19 @@ export async function sendExerciseToClient(params: {
     reps: number | null;
     intensity: string | null;
     clientId: string;
+    coachId: string;
 }) {
-    const { exerciseId, sets, reps, intensity, clientId } = params;
+    const { exerciseId, sets, reps, intensity, clientId, coachId } = params;
 
-    const client = await prisma.client.findUniqueOrThrow({
-        where: { id: clientId },
+    // Tenant guard: only the owning coach can deliver to this client. Without
+    // this filter, a coach could DM another coach's client through the other
+    // coach's WhatsApp/Telegram channel (cross-tenant impersonation).
+    const client = await prisma.client.findFirst({
+        where: { id: clientId, coachId },
     });
+    if (!client) {
+        throw new Error(`Client ${clientId} not found for coach ${coachId}`);
+    }
 
     const channel = await getChannel(client.preferredChannel, client.coachId);
     const recipientId = getRecipientId(client);

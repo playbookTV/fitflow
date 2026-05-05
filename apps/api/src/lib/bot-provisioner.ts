@@ -1,4 +1,4 @@
-import crypto from "node:crypto";
+import { env } from "./env";
 import { setTelegramWebhook, getTelegramBotInfo } from "./telegram";
 
 const API_BASE_URL = process.env.API_BASE_URL || "http://localhost:3001";
@@ -7,19 +7,11 @@ const API_BASE_URL = process.env.API_BASE_URL || "http://localhost:3001";
 let sharedBotUsername: string | null = null;
 
 /**
- * Generate a Telegram-compatible webhook secret token.
- * Must only contain characters from [A-Za-z0-9_-] and be <= 256 chars.
- */
-function generateWebhookSecret(): string {
-    return crypto.randomBytes(32).toString("hex"); // 64 hex chars
-}
-
-/**
  * Ensure the shared Telegram bot's webhook is registered on startup.
  *
  * Uses env vars:
- *   DEFAULT_TG_BOT_TOKEN — the shared bot token (required)
- *   TG_WEBHOOK_SECRET    — persisted secret for verifying incoming updates (auto-generated if missing)
+ *   DEFAULT_TG_BOT_TOKEN — the shared bot token (optional; Telegram disabled if absent)
+ *   TG_WEBHOOK_SECRET    — persisted secret for verifying incoming updates (validated at boot)
  *
  * Registers a single webhook URL: POST /telegram/webhook
  */
@@ -35,12 +27,7 @@ export async function ensureSharedBot(): Promise<void> {
         sharedBotUsername = botInfo.username;
 
         const webhookUrl = `${API_BASE_URL}/telegram/webhook`;
-        const webhookSecret = process.env.TG_WEBHOOK_SECRET || generateWebhookSecret();
-
-        await setTelegramWebhook(botToken, webhookUrl, webhookSecret);
-
-        // Store the secret in env for this process (used by webhook handler)
-        process.env.TG_WEBHOOK_SECRET = webhookSecret;
+        await setTelegramWebhook(botToken, webhookUrl, env.TG_WEBHOOK_SECRET);
 
         console.log(`[BotProvisioner] Shared bot @${sharedBotUsername} webhook registered`);
     } catch (error) {

@@ -13,6 +13,29 @@ import { logEvent, EventType } from "../lib/event-logger";
 const router: Router = Router();
 
 /**
+ * Resolve the target client list for a coach-initiated exercise send.
+ * If the caller supplies clientIds, intersect them with the coach's roster —
+ * never trust the body to scope the recipient set across tenants.
+ * If no clientIds are supplied, default to all of the coach's ACTIVE clients.
+ */
+async function resolveTargetClientIds(coachId: string, requested?: unknown): Promise<string[]> {
+    if (Array.isArray(requested) && requested.length > 0) {
+        const ids = requested.filter((v): v is string => typeof v === "string");
+        if (ids.length === 0) return [];
+        const owned = await prisma.client.findMany({
+            where: { coachId, id: { in: ids } },
+            select: { id: true },
+        });
+        return owned.map((c) => c.id);
+    }
+    const active = await prisma.client.findMany({
+        where: { coachId, status: "ACTIVE" },
+        select: { id: true },
+    });
+    return active.map((c) => c.id);
+}
+
+/**
  * POST /coach-exercises/command
  * Parse an exercise command and return search results.
  * Body: { input: string, clientIds?: string[] }
@@ -28,16 +51,7 @@ router.post(
         if (!input) return res.status(400).json({ error: "input is required" });
 
         try {
-            // Default to all active clients if none specified
-            const targetClientIds =
-                clientIds && clientIds.length > 0
-                    ? clientIds
-                    : (
-                          await prisma.client.findMany({
-                              where: { coachId, status: "ACTIVE" },
-                              select: { id: true },
-                          })
-                      ).map((c: { id: string }) => c.id);
+            const targetClientIds = await resolveTargetClientIds(coachId, clientIds);
 
             const result = await handleExerciseCommand(coachId, input);
 
@@ -90,15 +104,7 @@ router.post(
             return res.status(400).json({ error: "exerciseId is required" });
 
         try {
-            const targetClientIds =
-                clientIds && clientIds.length > 0
-                    ? clientIds
-                    : (
-                          await prisma.client.findMany({
-                              where: { coachId, status: "ACTIVE" },
-                              select: { id: true },
-                          })
-                      ).map((c: { id: string }) => c.id);
+            const targetClientIds = await resolveTargetClientIds(coachId, clientIds);
 
             await setPending(coachId, {
                 exerciseId,
@@ -153,6 +159,7 @@ router.post(
                         reps: pending.reps,
                         intensity: pending.intensity,
                         clientId,
+                        coachId,
                     });
                     sent++;
 

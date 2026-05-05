@@ -3,7 +3,7 @@ import { authenticate, AuthRequest } from "../middleware/auth";
 import { enforceLimit } from "../middleware/subscription";
 import { prisma } from "../lib/prisma";
 import { validate } from "../middleware/validate";
-import { createPlanSchema, generatePlanSchema } from "../lib/schemas";
+import { createPlanSchema, updatePlanSchema, generatePlanSchema } from "../lib/schemas";
 import { generatePlan, PlanGenerationError } from "../services/aiPlanGenerator";
 import { logEvent, EventType } from "../lib/event-logger";
 
@@ -227,7 +227,7 @@ router.get("/:id", authenticate, async (req: AuthRequest, res: Response) => {
 });
 
 // PUT /plans/:id - Update an existing plan
-router.put("/:id", authenticate, async (req: AuthRequest, res: Response) => {
+router.put("/:id", authenticate, validate(updatePlanSchema), async (req: AuthRequest, res: Response) => {
     const coachId = req.user?.id as string;
     const { id } = req.params;
     const { title, description, days } = req.body;

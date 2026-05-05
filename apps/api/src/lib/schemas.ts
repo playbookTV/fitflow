@@ -90,6 +90,9 @@ export const createPlanSchema = z.object({
     days: z.array(daySchema).min(1).max(14),
 });
 
+// PUT /plans/:id replaces the full plan, so it requires the same shape as create.
+export const updatePlanSchema = createPlanSchema;
+
 export const generatePlanSchema = z.object({
     clientId: z.string().uuid().optional(),
     instructions: z.string().max(1000).optional(),

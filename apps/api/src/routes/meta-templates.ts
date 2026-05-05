@@ -159,8 +159,9 @@ router.delete("/:metaName", authenticate, async (req: AuthRequest, res: Response
         return res.status(500).json({ error: "WhatsApp API configuration missing" });
     }
 
-    const { metaName } = req.params;
-    const url = `https://graph.facebook.com/${VERSION}/${WA_BUSINESS_ACCOUNT_ID}/message_templates?name=${metaName}`;
+    const metaName = String(req.params.metaName ?? "");
+    if (!metaName) return res.status(400).json({ error: "metaName is required" });
+    const url = `https://graph.facebook.com/${VERSION}/${WA_BUSINESS_ACCOUNT_ID}/message_templates?name=${encodeURIComponent(metaName)}`;
 
     try {
         await axios.delete(url, {

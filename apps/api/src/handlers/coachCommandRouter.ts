@@ -30,6 +30,7 @@ export async function routeCoachCommand(
                     reps: pending.reps,
                     intensity: pending.intensity,
                     clientId,
+                    coachId,
                 });
                 sent++;
                 await logEvent(EventType.EXERCISE_VIDEO_SENT, {

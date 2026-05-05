@@ -1,14 +1,26 @@
 import { Router } from "express";
+import { z } from "zod";
 import { prisma } from "../lib/prisma";
 
 const router: Router = Router();
 
+const intakeSubmissionSchema = z.object({
+    clientId: z.string().uuid(),
+    token: z.string().min(1).max(128),
+    goals: z.string().max(2000).optional().nullable(),
+    medicalNotes: z.string().max(2000).optional().nullable(),
+    equipment: z.string().max(1000).optional().nullable(),
+    experience: z.string().max(1000).optional().nullable(),
+});
+
 // POST /intake - Public endpoint for clients/leads to submit their onboarding form
 // Requires a valid intake token to prevent unauthorized writes.
 router.post("/", async (req, res) => {
-    const { clientId, token, goals, medicalNotes, equipment, experience } = req.body;
-
-    if (!clientId || !token) return res.status(400).json({ error: "Missing clientId or token" });
+    const parsed = intakeSubmissionSchema.safeParse(req.body);
+    if (!parsed.success) {
+        return res.status(400).json({ error: "Invalid input", details: parsed.error.flatten() });
+    }
+    const { clientId, token, goals, medicalNotes, equipment, experience } = parsed.data;
 
     try {
         // Check clients first, then leads
