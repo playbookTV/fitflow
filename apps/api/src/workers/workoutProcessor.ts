@@ -121,15 +121,31 @@ export const workoutWorker = new Worker(
                 assertSendSuccess(result, `Workout delivery for client ${client.id}`);
 
                 // Send demo videos for exercises that have YMove IDs
+                let videosAttempted = 0;
+                let videosSucceeded = 0;
                 let videosFailed = 0;
+                const videoFailureReasons: string[] = [];
+                const exerciseCount = matchingDay?.exercises?.length ?? 0;
+                let exercisesWithoutYmove = 0;
+
                 if (matchingDay?.exercises && channel.sendVideo) {
                     const ymoveExercises = matchingDay.exercises.filter(
                         (we) => we.exercise.ymoveId
                     );
+                    exercisesWithoutYmove = exerciseCount - ymoveExercises.length;
+
+                    if (exerciseCount > 0 && ymoveExercises.length === 0) {
+                        console.warn(
+                            `[Workout Worker] No videos sent for client ${client.id} day ${workoutDay}: ${exerciseCount} exercises but none have ymoveId. Exercises: ${matchingDay.exercises.map((we) => we.exercise.name).join(", ")}`
+                        );
+                    }
 
                     for (const we of ymoveExercises) {
+                        videosAttempted++;
+                        let stage: "ymove_fetch" | "channel_send" = "ymove_fetch";
                         try {
                             const { videoUrl } = await getFreshVideoUrl(we.exercise.ymoveId!);
+                            stage = "channel_send";
                             const caption = [
                                 `*${we.exercise.name}*`,
                                 we.sets && we.reps ? `${we.sets} \u00D7 ${we.reps} reps` : null,
@@ -148,21 +164,56 @@ export const workoutWorker = new Worker(
                                     `Failed to send exercise video via ${client.preferredChannel}: ${result.error || "unknown error"}`
                                 );
                             }
+                            videosSucceeded++;
                         } catch (err) {
                             videosFailed++;
+                            const errName = (err as Error)?.name ?? "Error";
+                            const errMessage = (err as Error)?.message ?? String(err);
+                            const reason =
+                                errName === "YMoveCapExceededError"
+                                    ? "ymove_cap_exceeded"
+                                    : stage === "ymove_fetch"
+                                        ? "ymove_fetch_error"
+                                        : `${client.preferredChannel.toLowerCase()}_send_error`;
+                            videoFailureReasons.push(`${we.exercise.name}:${reason}`);
                             console.error(
-                                `[Workout Worker] Failed to send video for exercise ${we.exercise.name}:`,
+                                `[Workout Worker] Video send failed (${reason}) for exercise "${we.exercise.name}" (ymoveId=${we.exercise.ymoveId}) client=${client.id} channel=${client.preferredChannel}: ${errMessage}`,
                                 err
                             );
+                            captureWorkerFailure("workoutProcessor.sendVideo", err, {
+                                stage,
+                                reason,
+                                clientId: client.id,
+                                coachId: client.coachId,
+                                channel: client.preferredChannel,
+                                exerciseName: we.exercise.name,
+                                ymoveId: we.exercise.ymoveId,
+                                assignmentId,
+                                dayNumber: workoutDay,
+                            });
                         }
                     }
                 }
+
+                console.log(
+                    `[Workout Worker] Delivered to client ${client.id} day ${workoutDay}: ${exerciseCount} exercises, videos attempted=${videosAttempted} succeeded=${videosSucceeded} failed=${videosFailed} withoutYmove=${exercisesWithoutYmove}` +
+                        (videoFailureReasons.length ? ` reasons=[${videoFailureReasons.join("; ")}]` : "")
+                );
 
                 await logEvent(EventType.WORKOUT_DELIVERED, {
                     coachId: client.coachId,
                     clientId: client.id,
                     channel: client.preferredChannel,
-                    metadata: { planTitle: assignment.plan.title, dayNumber: workoutDay, videosFailed },
+                    metadata: {
+                        planTitle: assignment.plan.title,
+                        dayNumber: workoutDay,
+                        exerciseCount,
+                        videosAttempted,
+                        videosSucceeded,
+                        videosFailed,
+                        exercisesWithoutYmove,
+                        videoFailureReasons,
+                    },
                 });
             }
         } catch (error) {
