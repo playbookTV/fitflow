@@ -32,23 +32,27 @@ export const startMissedCheckinScheduler = () => {
             let enqueuedCount = 0;
 
             for (const clientId of clientIds) {
+                // Resolve clientId → coachId first so subsequent queries can scope by tenant.
+                // The clientId came from an admin EventLog scan, so this lookup is the one
+                // legitimate cross-tenant step.
+                const client = await prisma.client.findFirst({
+                    where: { id: clientId, __unsafeGlobal: true } as never,
+                });
+
+                if (!client) continue;
+
                 // Check if client has a CheckIn record this week
                 const recentCheckin = await prisma.checkIn.findFirst({
                     where: {
                         clientId,
+                        client: { coachId: client.coachId },
                         createdAt: { gte: weekStart },
                     },
                 });
 
                 if (!recentCheckin) {
-                    const client = await prisma.client.findUnique({
-                        where: { id: clientId },
-                    });
-
-                    if (!client) continue;
-
                     const assignment = await prisma.planAssignment.findFirst({
-                        where: { clientId, isActive: true },
+                        where: { clientId, client: { coachId: client.coachId }, isActive: true },
                         include: { plan: { include: { days: true } } },
                     });
 
