@@ -16,7 +16,7 @@ export const startRiskScoringScheduler = () => {
 
         try {
             const activeClients = await prisma.client.findMany({
-                where: { status: "ACTIVE" },
+                where: { status: "ACTIVE", __unsafeGlobal: true } as never,
                 select: { id: true, coachId: true },
             });
 

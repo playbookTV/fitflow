@@ -46,7 +46,7 @@ router.get("/profile/:slug", async (req, res) => {
     try {
         // 1. Check slug redirects (for changed slugs within 90-day window)
         const redirect = await prisma.slugRedirect.findUnique({
-            where: { oldSlug: slug.toLowerCase() },
+            where: { oldSlug: slug.toLowerCase(), __unsafeGlobal: true } as never,
         });
 
         if (redirect && redirect.expiresAt > new Date()) {
@@ -55,7 +55,9 @@ router.get("/profile/:slug", async (req, res) => {
 
         // Clean up expired redirect if found
         if (redirect?.expiresAt && redirect.expiresAt <= new Date()) {
-            await prisma.slugRedirect.delete({ where: { id: redirect.id } }).catch(() => {});
+            await prisma.slugRedirect.delete({
+                where: { id: redirect.id, __unsafeGlobal: true } as never,
+            }).catch(() => {});
         }
 
         // 2. Look up coach by slug
@@ -126,6 +128,7 @@ router.get("/profile/:slug", async (req, res) => {
         const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
         const recentView = await prisma.profileEvent.findFirst({
             where: {
+                coachId: coach.id,
                 coachSlug: coach.slug!,
                 event: "viewed",
                 ipHash,

@@ -58,7 +58,9 @@ FACTOR BREAKDOWN (0=healthy, 100=critical):
         }
 
         const data = await res.json();
-        const parsed = JSON.parse(data.content[0].text);
+        const raw = String(data.content[0].text).trim();
+        const unfenced = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
+        const parsed = JSON.parse(unfenced);
         return {
             summary: String(parsed.summary || "").slice(0, 500),
             suggestion: String(parsed.suggestion || "").slice(0, 500),
