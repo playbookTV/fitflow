@@ -95,6 +95,7 @@
     {
       "id": "NOTES",
       "title": "Session Notes",
+      "terminal": true,
       "data": {
         "status": { "type": "string", "__example__": "COMPLETED" },
         "rpe": { "type": "string", "__example__": "7" }
