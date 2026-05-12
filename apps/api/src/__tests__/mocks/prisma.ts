@@ -56,6 +56,14 @@ export const prismaMock = {
         count: vi.fn(),
     },
     workoutLog: {
+        findUnique: vi.fn(),
+        findFirst: vi.fn(),
+        findMany: vi.fn(),
+        create: vi.fn(),
+        count: vi.fn(),
+    },
+    mealLog: {
+        findFirst: vi.fn(),
         findMany: vi.fn(),
         create: vi.fn(),
         count: vi.fn(),
@@ -77,6 +85,8 @@ export const prismaMock = {
         upsert: vi.fn(),
     },
     message: {
+        findUnique: vi.fn(),
+        findFirst: vi.fn(),
         findMany: vi.fn(),
         create: vi.fn(),
         count: vi.fn(),
@@ -100,6 +110,7 @@ export const prismaMock = {
     },
     eventLog: {
         create: vi.fn(),
+        findFirst: vi.fn(),
         findMany: vi.fn(),
     },
     shortLink: {

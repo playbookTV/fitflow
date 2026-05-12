@@ -114,16 +114,13 @@ async function handleCheckinFlowResponse(clientId: string, data: FlowResponse) {
 /**
  * Process a workout log flow response
  */
-async function handleWorkoutLogFlowResponse(clientId: string, data: FlowResponse) {
+export async function handleWorkoutLogFlowResponse(clientId: string, coachId: string, data: FlowResponse) {
     const status = data.status as "COMPLETED" | "MODIFIED" | "SKIPPED";
     const rpe = Number.parseInt(data.rpe, 10);
     const notes = data.notes || null;
 
-    // Find active assignment — scope through client relation so the tenant guard
-    // is satisfied; clientId here was tenant-resolved upstream from the webhook
-    // entry point but we don't have coachId in scope at this layer.
     const assignment = await prisma.planAssignment.findFirst({
-        where: { clientId, isActive: true, client: { __unsafeGlobal: true } as never },
+        where: { clientId, isActive: true, client: { coachId } },
     });
 
     if (!assignment) {
@@ -131,13 +128,10 @@ async function handleWorkoutLogFlowResponse(clientId: string, data: FlowResponse
         return null;
     }
 
-    // Calculate day number
     const dayNumber = Math.ceil(
         (Date.now() - assignment.startDate.getTime()) / (1000 * 60 * 60 * 24)
     );
 
-    // Create workout log and update compliance atomically to prevent TOCTOU races.
-    // Compliance is expressed as a real percentage (logs / dayNumber * 100).
     const { workoutLog } = await prisma.$transaction(async (tx) => {
         const log = await tx.workoutLog.create({
             data: {
@@ -149,13 +143,18 @@ async function handleWorkoutLogFlowResponse(clientId: string, data: FlowResponse
             },
         });
 
-        const logCount = await tx.workoutLog.count({ where: { assignmentId: assignment.id } });
+        const logCount = await tx.workoutLog.count({
+            where: { assignmentId: assignment.id, client: { coachId } },
+        });
         const newCompliance = Math.min(100, Math.round((logCount / Math.max(dayNumber, 1)) * 100));
 
-        await tx.planAssignment.update({
-            where: { id: assignment.id },
+        const updated = await tx.planAssignment.updateMany({
+            where: { id: assignment.id, client: { coachId } },
             data: { compliance: newCompliance },
         });
+        if (updated.count !== 1) {
+            console.warn(`[Flow] planAssignment.updateMany affected ${updated.count} rows for assignment ${assignment.id}`);
+        }
 
         return { workoutLog: log };
     });
@@ -185,7 +184,7 @@ export function resolveButtonAction(payload: string): { templateId: string; butt
     return { templateId, buttonLabel: def.quickReplyButtons[buttonIndex] };
 }
 
-async function handleWorkoutButtonReply(client: any, buttonLabel: string) {
+export async function handleWorkoutButtonReply(client: any, buttonLabel: string) {
     const statusMap: Record<string, WorkoutStatus> = {
         "Done": WorkoutStatus.COMPLETED,
         "Skipped": WorkoutStatus.SKIPPED,
@@ -215,13 +214,18 @@ async function handleWorkoutButtonReply(client: any, buttonLabel: string) {
             },
         });
 
-        const count = await tx.workoutLog.count({ where: { assignmentId: assignment.id } });
+        const count = await tx.workoutLog.count({
+            where: { assignmentId: assignment.id, client: { coachId: client.coachId } },
+        });
         const compliance = Math.min(100, Math.round((count / Math.max(dayNumber, 1)) * 100));
 
-        await tx.planAssignment.update({
-            where: { id: assignment.id },
+        const updated = await tx.planAssignment.updateMany({
+            where: { id: assignment.id, client: { coachId: client.coachId } },
             data: { compliance },
         });
+        if (updated.count !== 1) {
+            console.warn(`[Webhook] planAssignment.updateMany affected ${updated.count} rows for assignment ${assignment.id}`);
+        }
 
         return { newCompliance: compliance };
     });
@@ -243,7 +247,7 @@ async function handleWorkoutButtonReply(client: any, buttonLabel: string) {
     });
 }
 
-async function handleMealButtonReply(client: any, buttonLabel: string) {
+export async function handleMealButtonReply(client: any, buttonLabel: string) {
     const isCompleted = buttonLabel === "Done" || buttonLabel === "✅ Done";
     const isSkipped = buttonLabel === "Skipped" || buttonLabel === "⏭ Skipped";
     if (!isCompleted && !isSkipped) return;
@@ -265,16 +269,21 @@ async function handleMealButtonReply(client: any, buttonLabel: string) {
         },
     });
 
-    const totalLogs = await prisma.mealLog.count({ where: { assignmentId: mealAssignment.id } });
+    const totalLogs = await prisma.mealLog.count({
+        where: { assignmentId: mealAssignment.id, client: { coachId: client.coachId } },
+    });
     const completedLogs = await prisma.mealLog.count({
-        where: { assignmentId: mealAssignment.id, status: "COMPLETED" },
+        where: { assignmentId: mealAssignment.id, status: "COMPLETED", client: { coachId: client.coachId } },
     });
     const compliance = totalLogs > 0 ? Math.round((completedLogs / totalLogs) * 100) : 100;
 
-    await prisma.mealAssignment.update({
-        where: { id: mealAssignment.id },
+    const updated = await prisma.mealAssignment.updateMany({
+        where: { id: mealAssignment.id, client: { coachId: client.coachId } },
         data: { compliance },
     });
+    if (updated.count !== 1) {
+        console.warn(`[Webhook] mealAssignment.updateMany affected ${updated.count} rows for assignment ${mealAssignment.id}`);
+    }
 
     const channel = await getChannel(client.preferredChannel, client.coachId);
     const recipientId = getRecipientId(client);
@@ -511,7 +520,7 @@ router.post("/", async (req, res) => {
                         if (flowType === "weekly_checkin" || flowToken.startsWith("checkin_")) {
                             await handleCheckinFlowResponse(client.id, responseData);
                         } else if (flowType === "workout_log" || flowToken.startsWith("workout_")) {
-                            await handleWorkoutLogFlowResponse(client.id, responseData);
+                            await handleWorkoutLogFlowResponse(client.id, client.coachId, responseData);
                         } else if (flowType && !KNOWN_FLOW_TYPES.has(flowType)) {
                             console.log(`[Webhook] Unknown flow type: ${flowType}`);
                         }

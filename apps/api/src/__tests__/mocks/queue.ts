@@ -25,6 +25,7 @@ vi.mock("../../lib/queue", () => ({
     engagementQueue: mockEngagementQueue,
     messageQueue: mockMessageQueue,
     mealQueue: mockMealQueue,
+    connection: { host: "localhost", port: 6379 },
 }));
 
 vi.mock("../../lib/redis", () => ({

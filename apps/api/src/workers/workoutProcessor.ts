@@ -411,9 +411,7 @@ renewalWorker.on("failed", (job, err) => captureWorkerFailure("renewalWorker", e
  * Uses its own dedicated "message-processing" queue so BullMQ never dispatches
  * a WORKOUT_DELIVERY job to this worker (or vice versa).
  */
-export const messageWorker = new Worker(
-    "message-processing", // Dedicated queue — previously incorrectly shared "workout-delivery"
-    async (job: Job) => {
+export async function processMessageJob(job: Job) {
         if (job.name !== "process-message") return;
 
         const { clientId, body, channel: jobChannel } = job.data;
@@ -462,17 +460,19 @@ export const messageWorker = new Worker(
         const target: "workout" | "meal" =
             lastDelivery?.eventType === EventType.MEAL_DELIVERED ? "meal" : "workout";
 
+        const coachId: string = job.data.coachId;
+
         if (target === "meal") {
             if (isModified) {
                 console.log(`[Message Worker] 'Modified' not supported for meals; ignoring for client ${clientId}`);
                 return;
             }
-            await logMealFromText(clientId, isDone, normalizedBody);
+            await logMealFromText(clientId, coachId, isDone, normalizedBody);
             return;
         }
 
         const assignment = await prisma.planAssignment.findFirst({
-            where: { clientId, isActive: true },
+            where: { clientId, isActive: true, client: { coachId } },
             include: { client: { include: { coach: true } } },
         });
 
@@ -497,13 +497,18 @@ export const messageWorker = new Worker(
                 },
             });
 
-            const count = await tx.workoutLog.count({ where: { assignmentId: assignment.id } });
+            const count = await tx.workoutLog.count({
+                where: { assignmentId: assignment.id, client: { coachId } },
+            });
             const compliance = Math.min(100, Math.round((count / Math.max(dayNumber, 1)) * 100));
 
-            await tx.planAssignment.update({
-                where: { id: assignment.id },
+            const updated = await tx.planAssignment.updateMany({
+                where: { id: assignment.id, client: { coachId } },
                 data: { compliance },
             });
+            if (updated.count !== 1) {
+                console.warn(`[Message Worker] planAssignment.updateMany affected ${updated.count} rows for assignment ${assignment.id}`);
+            }
 
             return { newCompliance: compliance };
         });
@@ -529,13 +534,17 @@ export const messageWorker = new Worker(
         });
 
         console.log(`[Message Worker] Workout ${status} for client ${clientId}, day ${dayNumber}, compliance ${newCompliance}%`);
-    },
+}
+
+export const messageWorker = new Worker(
+    "message-processing", // Dedicated queue — previously incorrectly shared "workout-delivery"
+    processMessageJob,
     { connection }
 );
 
-async function logMealFromText(clientId: string, isDone: boolean, rawBody: string) {
+async function logMealFromText(clientId: string, coachId: string, isDone: boolean, rawBody: string) {
     const mealAssignment = await prisma.mealAssignment.findFirst({
-        where: { clientId, isActive: true },
+        where: { clientId, isActive: true, client: { coachId } },
         include: { client: { include: { coach: true } } },
     });
 
@@ -557,16 +566,21 @@ async function logMealFromText(clientId: string, isDone: boolean, rawBody: strin
         },
     });
 
-    const totalLogs = await prisma.mealLog.count({ where: { assignmentId: mealAssignment.id } });
+    const totalLogs = await prisma.mealLog.count({
+        where: { assignmentId: mealAssignment.id, client: { coachId } },
+    });
     const completedLogs = await prisma.mealLog.count({
-        where: { assignmentId: mealAssignment.id, status: "COMPLETED" },
+        where: { assignmentId: mealAssignment.id, status: "COMPLETED", client: { coachId } },
     });
     const compliance = totalLogs > 0 ? Math.round((completedLogs / totalLogs) * 100) : 100;
 
-    await prisma.mealAssignment.update({
-        where: { id: mealAssignment.id },
+    const updated = await prisma.mealAssignment.updateMany({
+        where: { id: mealAssignment.id, client: { coachId } },
         data: { compliance },
     });
+    if (updated.count !== 1) {
+        console.warn(`[Message Worker] mealAssignment.updateMany affected ${updated.count} rows for assignment ${mealAssignment.id}`);
+    }
 
     const { client } = mealAssignment;
     const channel = await getChannel(client.preferredChannel, client.coachId);
