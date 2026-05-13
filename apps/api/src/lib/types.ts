@@ -21,6 +21,9 @@ export enum JobType {
 
     // AI risk scoring
     RISK_SCORE_COMPUTE = "RISK_SCORE_COMPUTE",
+
+    // Roster import
+    IMPORT_HANDOFF = "IMPORT_HANDOFF",
 }
 
 export interface MealDeliveryJob {
@@ -105,4 +108,10 @@ export interface WeekSummaryJob {
     sessionsSkipped: number;
     sessionsScheduled: number;
     consistencyRate: number;
+}
+
+export interface ImportHandoffJob {
+    clientId: string;
+    coachId: string;
+    batchId: string;
 }

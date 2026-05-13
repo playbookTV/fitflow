@@ -54,6 +54,7 @@ export enum TemplateId {
     SYSTEM_BANK_DETAILS = "system.bank_details",
     SYSTEM_BANK_CONFIRMED = "system.bank_confirmed",
     SYSTEM_BROADCAST = "system.broadcast",
+    SYSTEM_IMPORT_HANDOFF = "system.import_handoff",
 }
 
 export type ChannelType = "telegram" | "whatsapp";
@@ -237,6 +238,12 @@ export interface SystemBroadcastContext {
     client_first_name: string;
     coach_first_name: string;
     broadcast_message: string;
+}
+
+export interface ImportHandoffContext {
+    client_first_name: string;
+    coach_first_name: string;
+    custom_message?: string;
 }
 
 export interface MealDailyContext {

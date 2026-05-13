@@ -72,6 +72,12 @@ model Client {
   conversationPinned   Boolean   @default(false) @map("conversation_pinned")
   conversationArchived Boolean   @default(false) @map("conversation_archived")
 
+  importBatchId     String?            @map("import_batch_id")
+  importBatch       ClientImportBatch? @relation(fields: [importBatchId], references: [id], onDelete: SetNull)
+  importedAt        DateTime?          @map("imported_at")
+  importClientType  ImportClientType?  @map("import_client_type")
+  preExisting       Boolean            @default(false) @map("pre_existing")
+
   assignments       PlanAssignment[]
   mealAssignments   MealAssignment[]
   checkIns          CheckIn[]
@@ -85,7 +91,48 @@ model Client {
   createdAt         DateTime  @default(now()) @map("created_at")
   updatedAt         DateTime  @updatedAt @map("updated_at")
 
+  @@index([coachId, phone])
   @@map("clients")
+}
+
+model ClientImportBatch {
+  id                    String            @id @default(uuid())
+  coachId               String            @map("coach_id")
+  source                ImportSource
+  rowCount              Int               @map("row_count")
+  successCount          Int               @default(0) @map("success_count")
+  failureCount          Int               @default(0) @map("failure_count")
+  handoffTemplate       String?           @map("handoff_template")
+  handoffChannelDefault MessageChannel?   @map("handoff_channel_default")
+  handoffIntervalMs     Int?              @map("handoff_interval_ms")
+  idempotencyKey        String?           @unique @map("idempotency_key")
+  status                ImportBatchStatus @default(DRAFT)
+  clients               Client[]
+  createdAt             DateTime          @default(now()) @map("created_at")
+  committedAt           DateTime?         @map("committed_at")
+
+  @@index([coachId])
+  @@map("client_import_batches")
+}
+
+enum ImportSource {
+  CSV
+  PASTE
+  MANUAL
+}
+
+enum ImportBatchStatus {
+  DRAFT
+  VALIDATED
+  COMMITTED
+  PARTIALLY_COMMITTED
+  FAILED
+}
+
+enum ImportClientType {
+  NEW_LEAD
+  EXISTING_SKIP_INTAKE
+  EXISTING_REQUEST_FRESH_INTAKE
 }
 
 enum MessageChannel {

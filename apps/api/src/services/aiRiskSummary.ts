@@ -12,6 +12,30 @@ interface RiskSummaryResult {
     suggestion: string;
 }
 
+// Anthropic explicitly recommends retrying these. 529 = Overloaded, 429 = rate-limited,
+// 503 = service unavailable. Everything else is treated as a hard failure.
+const TRANSIENT_STATUSES = new Set([429, 503, 529]);
+const MAX_ATTEMPTS = 3;
+
+class AnthropicApiError extends Error {
+    constructor(public status: number) {
+        super(`Anthropic API error: ${status}`);
+        this.name = "AnthropicApiError";
+    }
+    get transient(): boolean {
+        return TRANSIENT_STATUSES.has(this.status);
+    }
+}
+
+function backoffDelayMs(attempt: number): number {
+    // 1s, 2s, 4s with up to ±25% jitter. Total worst-case ~7s across 3 attempts.
+    const base = 1000 * 2 ** (attempt - 1);
+    const jitter = base * 0.25 * (Math.random() * 2 - 1);
+    return Math.round(base + jitter);
+}
+
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
 export async function generateRiskSummary(
     factors: RiskFactors,
     score: number,
@@ -38,6 +62,33 @@ FACTOR BREAKDOWN (0=healthy, 100=critical):
 - Payment status: ${factors.payment}`;
 
     try {
+        const data = await callAnthropicWithRetry(systemPrompt, userMessage);
+        const raw = String(data.content[0].text).trim();
+        const unfenced = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
+        const parsed = JSON.parse(unfenced);
+        return {
+            summary: String(parsed.summary || "").slice(0, 500),
+            suggestion: String(parsed.suggestion || "").slice(0, 500),
+        };
+    } catch (error) {
+        // Transient upstream failures are expected occasionally; surface as warn,
+        // not error, so they don't drown the alert signal for real bugs.
+        if (error instanceof AnthropicApiError && error.transient) {
+            console.warn(`[aiRiskSummary] Anthropic overloaded after ${MAX_ATTEMPTS} attempts (status ${error.status}); using fallback summary`);
+        } else {
+            console.error("[aiRiskSummary] Failed to generate summary:", error);
+        }
+        return {
+            summary: `${clientContext.name.split(" ")[0]} has a risk score of ${score}. Review their recent activity for details.`,
+            suggestion: "Check in with the client to understand their current situation.",
+        };
+    }
+}
+
+async function callAnthropicWithRetry(systemPrompt: string, userMessage: string): Promise<any> {
+    let lastError: unknown;
+
+    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
         const res = await fetch("https://api.anthropic.com/v1/messages", {
             method: "POST",
             headers: {
@@ -53,23 +104,20 @@ FACTOR BREAKDOWN (0=healthy, 100=critical):
             }),
         });
 
-        if (!res.ok) {
-            throw new Error(`Anthropic API error: ${res.status}`);
+        if (res.ok) {
+            return await res.json();
         }
 
-        const data = await res.json();
-        const raw = String(data.content[0].text).trim();
-        const unfenced = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
-        const parsed = JSON.parse(unfenced);
-        return {
-            summary: String(parsed.summary || "").slice(0, 500),
-            suggestion: String(parsed.suggestion || "").slice(0, 500),
-        };
-    } catch (error) {
-        console.error("[aiRiskSummary] Failed to generate summary:", error);
-        return {
-            summary: `${clientContext.name.split(" ")[0]} has a risk score of ${score}. Review their recent activity for details.`,
-            suggestion: "Check in with the client to understand their current situation.",
-        };
+        const err = new AnthropicApiError(res.status);
+        lastError = err;
+
+        if (!err.transient || attempt === MAX_ATTEMPTS) {
+            throw err;
+        }
+
+        await sleep(backoffDelayMs(attempt));
     }
+
+    // Unreachable — loop either returns or throws — but TS needs the guard.
+    throw lastError;
 }
