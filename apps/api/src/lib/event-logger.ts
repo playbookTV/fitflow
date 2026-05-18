@@ -61,6 +61,7 @@ export const EventType = {
     PAYMENT_REMINDER_SENT: "payment.reminder_sent",
     RENEWAL_REMINDER_SENT: "renewal.reminder_sent",
     PAYMENT_CONFIRMED_SENT: "payment.confirmed_sent",
+    IMPORT_HANDOFF_SENT: "import.handoff_sent",
 
     // Exercise videos
     EXERCISE_VIDEO_SENT: "exercise.video_sent",

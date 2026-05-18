@@ -13,3 +13,4 @@ export const engagementQueue = new Queue("engagement", { connection });
 export const messageQueue = new Queue("message-processing", { connection });
 export const mealQueue = new Queue("meal-delivery", { connection });
 export const riskScoringQueue = new Queue("risk-scoring", { connection });
+export const importHandoffQueue = new Queue("import-handoff", { connection });
