@@ -405,6 +405,24 @@ export const META_TEMPLATES: Record<TemplateId, MetaTemplateDefinition> = {
         paramKeys: ["client_first_name", "broadcast_message", "coach_first_name"],
         exampleValues: ["Sarah", "Just a heads up — I'll be on holiday from 15-20 May. Your workouts will still be delivered as normal.", "Coach Mike"],
     },
+    [TemplateId.SYSTEM_IMPORT_HANDOFF]: {
+        metaName: "fitflow_system_import_handoff",
+        category: "UTILITY",
+        language: "en",
+        bodyText:
+            "Hi {{1}},\n\n" +
+            "Quick intro — I've just added you to my FitFlow coaching programme. " +
+            "You'll get your check-ins and workouts here on WhatsApp from now on.\n\n" +
+            "{{2}}\n\n" +
+            "Reply to this message any time if you have a question.\n\n" +
+            "Best, {{3}} — your coach",
+        paramKeys: ["client_first_name", "custom_message", "coach_first_name"],
+        exampleValues: [
+            "Sarah",
+            "Looking forward to working with you — let's get you moving.",
+            "Coach Mike",
+        ],
+    },
 };
 
 /**
